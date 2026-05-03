@@ -17,7 +17,7 @@ const Projector = () => {
     refetchInterval: 60_000,
   });
 
-  const refreshMs = (settingsQ.data?.imageRefreshSeconds ?? 60) * 1000;
+  const refreshMs = (settingsQ.data?.imageRefreshSeconds ?? 15) * 1000;
   const intervalMs = (settingsQ.data?.displayDurationSeconds ?? 6) * 1000;
 
   const imagesQ = useQuery({
@@ -98,12 +98,9 @@ const Projector = () => {
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-white/70">
             Enterprise Day · Live
           </p>
-          <h2 className="mt-3 font-serif-display text-6xl leading-none sm:text-8xl">
+          <h2 className="mt-3 font-serif-display text-xl leading-none sm:text-2xl">
             {current.uploadedBy}
           </h2>
-          <p className="mt-5 max-w-2xl font-display text-2xl text-white/90 sm:text-3xl">
-            {current.originalFileName}
-          </p>
         </div>
       </div>
 

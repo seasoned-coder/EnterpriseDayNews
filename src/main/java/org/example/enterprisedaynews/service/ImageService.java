@@ -28,8 +28,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ImageService {
 
-    private static final String UPLOADED_PATH_PREFIX = "/uploads/";
-
     /** Allowed mime types for uploaded images. */
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"
@@ -57,7 +55,7 @@ public class ImageService {
         }
 
         ImageMetadata metadata = ImageMetadata.builder()
-                .filePath(UPLOADED_PATH_PREFIX + fileName)
+                .filePath(fileName)
                 .originalFileName(originalName)
                 .uploadedBy(username)
                 .uploadedAt(LocalDateTime.now())

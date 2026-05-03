@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Inbox, Loader2 } from "lucide-react";
+import { Search, Inbox, Loader2, Check, X, Eye, EyeOff } from "lucide-react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { SubmissionCard } from "@/components/SubmissionCard";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,11 +58,16 @@ const StaffDashboard = () => {
     qc.invalidateQueries({ queryKey: ["submissions"] });
   };
 
+  const refreshProjector = () => {
+    qc.refetchQueries({ queryKey: ["projector-images"] });
+  };
+
   const approve = useMutation({
     mutationFn: (id: number) => api.approve(id),
     onSuccess: () => {
       toast({ title: "Approved", description: "Submission moved to Approved." });
       refreshAll();
+      refreshProjector();
     },
     onError: (e: Error) =>
       toast({ title: "Approve failed", description: e.message, variant: "destructive" }),
@@ -72,12 +78,28 @@ const StaffDashboard = () => {
     onSuccess: () => {
       toast({ title: "Rejected", description: "Submission moved to Rejected." });
       refreshAll();
+      refreshProjector();
     },
     onError: (e: Error) =>
       toast({ title: "Reject failed", description: e.message, variant: "destructive" }),
   });
 
-  const busy = approve.isPending || reject.isPending;
+  const toggleDisplay = useMutation({
+    mutationFn: ({ id, display }: { id: number; display: boolean }) =>
+      api.toggleDisplay(id, display),
+    onSuccess: (data) => {
+      toast({
+        title: data.display ? "Displayed" : "Hidden",
+        description: data.display ? "Image will appear on projector." : "Image hidden from projector.",
+      });
+      refreshAll();
+      refreshProjector();
+    },
+    onError: (e: Error) =>
+      toast({ title: "Toggle failed", description: e.message, variant: "destructive" }),
+  });
+
+  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending;
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,6 +185,7 @@ const StaffDashboard = () => {
                       busy={busy}
                       onApprove={(id) => approve.mutate(id)}
                       onReject={(id) => reject.mutate(id)}
+                      onToggleDisplay={(id, display) => toggleDisplay.mutate({ id, display })}
                       onClick={setActive}
                     />
                   ))}
@@ -179,25 +202,102 @@ const StaffDashboard = () => {
         </Tabs>
       </main>
 
-      <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
-        <DialogContent className="max-w-2xl overflow-hidden p-0">
-          {active && (
-            <>
-              <img
-                src={api.imageUrl(active.filePath)}
-                alt={`Submission by ${active.uploadedBy}`}
-                className="max-h-[60vh] w-full object-cover"
-              />
-              <DialogHeader className="p-6">
-                <DialogTitle className="font-display text-2xl">{active.uploadedBy}</DialogTitle>
-                <DialogDescription>
-                  {active.originalFileName} · {formatRelative(active.uploadedAt)}
-                </DialogDescription>
-              </DialogHeader>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+       <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
+         <DialogContent className="max-w-2xl overflow-hidden p-0">
+           {active && (
+             <>
+               <img
+                 src={api.imageUrl(active.filePath)}
+                 alt={`Submission by ${active.uploadedBy}`}
+                 className="max-h-[60vh] w-full object-cover"
+               />
+               <DialogHeader className="space-y-4 p-6">
+                 <div>
+                   <DialogTitle className="font-display text-2xl">{active.uploadedBy}</DialogTitle>
+                   <DialogDescription>
+                     {active.originalFileName} · {formatRelative(active.uploadedAt)}
+                   </DialogDescription>
+                 </div>
+
+                 {active.status === "NEW" && (
+                   <div className="flex gap-2">
+                     <Button
+                       disabled={busy}
+                       className="flex-1 bg-success text-success-foreground hover:bg-success/90"
+                       onClick={() => {
+                         approve.mutate(active.id);
+                         setActive(null);
+                       }}
+                     >
+                       <Check className="mr-2 h-4 w-4" /> Approve
+                     </Button>
+                     <Button
+                       disabled={busy}
+                       variant="outline"
+                       className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                       onClick={() => {
+                         reject.mutate(active.id);
+                         setActive(null);
+                       }}
+                     >
+                       <X className="mr-2 h-4 w-4" /> Reject
+                     </Button>
+                   </div>
+                 )}
+
+                 {active.status === "APPROVED" && (
+                   <div className="space-y-2">
+                     <Button
+                       disabled={busy}
+                       variant={active.display ? "default" : "outline"}
+                       className="w-full"
+                       onClick={() => {
+                         toggleDisplay.mutate({ id: active.id, display: !active.display });
+                       }}
+                     >
+                       {active.display ? (
+                         <>
+                           <Eye className="mr-2 h-4 w-4" /> Hide from Projector
+                         </>
+                       ) : (
+                         <>
+                           <EyeOff className="mr-2 h-4 w-4" /> Display on Projector
+                         </>
+                       )}
+                     </Button>
+                     <Button
+                       disabled={busy}
+                       variant="outline"
+                       className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                       onClick={() => {
+                         reject.mutate(active.id);
+                         setActive(null);
+                       }}
+                     >
+                       <X className="mr-2 h-4 w-4" /> Reject
+                     </Button>
+                   </div>
+                 )}
+
+                 {active.status === "REJECTED" && (
+                   <div className="flex gap-2">
+                     <Button
+                       disabled={busy}
+                       className="flex-1 bg-success text-success-foreground hover:bg-success/90"
+                       onClick={() => {
+                         approve.mutate(active.id);
+                         setActive(null);
+                       }}
+                     >
+                       <Check className="mr-2 h-4 w-4" /> Approve
+                     </Button>
+                   </div>
+                 )}
+               </DialogHeader>
+             </>
+           )}
+         </DialogContent>
+       </Dialog>
     </div>
   );
 };

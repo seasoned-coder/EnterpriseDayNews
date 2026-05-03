@@ -23,13 +23,18 @@ services:
       - uploads:/app/uploads
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: production
     ports:
       - "3000:80"
+      - "5173:5173"
     depends_on:
       - backend
     volumes:
       - uploads:/usr/share/nginx/html/uploads:ro
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   uploads:

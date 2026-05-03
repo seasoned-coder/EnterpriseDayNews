@@ -34,11 +34,12 @@ You can build the backend and frontend separately or let Docker Compose handle i
 mvn clean package
 ```
 
-#### Frontend (NPM)
+#### Frontend (NPM / Vite)
 ```bash
 cd frontend
 npm install
-npm run build
+npm run dev   # For development (Hot Reloading)
+npm run build # For production build
 ```
 
 ### 2. Run with Docker Compose
@@ -52,17 +53,18 @@ docker-compose up --build
 This will start:
 -   **PostgreSQL**: Database for image metadata and settings.
 -   **Backend (Java)**: REST API accessible at `http://localhost:8080`.
--   **Frontend (React)**: Web UI accessible at `http://localhost:3000`.
+-   **Frontend (Vite Dev)**: Accessible at `http://localhost:5173` (recommended for development).
+-   **Frontend (Nginx Prod)**: Accessible at `http://localhost:3000` (built bundle).
 
 ### 3. Accessing the Apps
 
 Since the application uses a mock authentication system, you can access different roles by using specific URLs or headers:
 
--   **Student View**: `http://localhost:3000/` (Default)
--   **Staff View**: `http://localhost:3000/` (Select Staff Role in the Mock UI)
--   **Projector View**: `http://localhost:3000/` (Select Projector Role in the Mock UI)
+-   **Student View**: `http://localhost:5173/student`
+-   **Staff View**: `http://localhost:5173/staff`
+-   **Projector View**: `http://localhost:5173/projector`
 
-*Note: In the current React implementation, a simple role selector is provided to simulate the authentication state.*
+*Note: In the new Lovable UI, routing is handled via `/student`, `/staff`, and `/projector` paths.*
 
 ## Authentication (Mocked)
 
@@ -70,15 +72,15 @@ The system is designed to integrate with an external authentication API. Current
 -   `X-User`: Username/ID of the user.
 -   `X-Role`: Role of the user (`STUDENT` or `STAFF`).
 
-In a production environment, these should be replaced with a real JWT or OAuth2 implementation.
+In development mode (Vite), the frontend automatically sends these headers based on the page you are on (e.g., "staff" for the staff dashboard).
 
 ## Project Structure
 
 -   `/src`: Spring Boot backend source code.
--   `/frontend`: React frontend source code.
+-   `/frontend`: React + Vite + Tailwind source code.
 -   `docker-compose.yml`: Orchestration for the database, backend, and frontend.
 -   `Dockerfile`: Docker configuration for the Java backend.
--   `frontend/Dockerfile`: Docker configuration for the React frontend.
+-   `frontend/Dockerfile`: Multi-stage Docker configuration for the frontend (Dev & Prod).
 
 ## API Endpoints
 
@@ -108,21 +110,19 @@ mvn clean test
 ```
 Coverage report: `target/site/jacoco/index.html` (currently ~92% instruction coverage).
 
-### Frontend (Jest + React Testing Library)
+### Frontend (Vitest)
 ```bash
 cd frontend
 npm install
 npm test
 ```
-This runs all `*.test.js` files under `frontend/src` once and exits. For watch mode use `npm run test:watch`.
+This runs Vitest for the new frontend structure. For watch mode use `npm run test:watch`.
 
 Tests cover:
-- `App.test.js` — top-level routing and navigation links.
-- `StudentUpload.test.js` — form rendering, username editing, successful and failed uploads, no-file guard.
-- `StaffDashboard.test.js` — view switching (new/approved/rejected), approve/reject actions, toggle-display behaviour.
-- `ProjectorDisplay.test.js` — empty state, fetching images & settings on mount, slideshow rotation using fake timers.
+- `App.test.tsx` — top-level routing.
+- `api.test.ts` — API client logic and header handling.
 
-`axios` is mocked in every test, so no backend is required.
+`axios` or `fetch` is mocked in every test, so no backend is required.
 
 ## License
 

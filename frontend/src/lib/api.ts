@@ -1,11 +1,12 @@
 // API client for the Enterprise Day News backend.
-// Override the base URL by setting VITE_API_BASE_URL (e.g. in .env.local) — defaults to http://localhost:8080.
+// In development with Vite, requests to /api and /uploads are proxied to the backend.
+// For other environments, override the base URL by setting VITE_API_BASE_URL (e.g. in .env.local).
 
-const RAW_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8080";
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 export const UPLOADS_BASE = `${API_BASE}/uploads`;
 
-export type SubmissionStatusApi = "PENDING" | "APPROVED" | "REJECTED";
+export type SubmissionStatusApi = "NEW" | "APPROVED" | "REJECTED";
 
 export interface ApiSubmission {
   id: number;
