@@ -1,0 +1,10 @@
+package org.example.enterprisedaynews.repository;
+
+import org.example.enterprisedaynews.model.ImageMetadata;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface ImageRepository extends JpaRepository<ImageMetadata, Long> {
+    List<ImageMetadata> findByStatus(ImageMetadata.ApprovalStatus status);
+    List<ImageMetadata> findByStatusAndDisplayOrderByDisplayOrderAsc(ImageMetadata.ApprovalStatus status, boolean display);
+}
