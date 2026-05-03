@@ -1,5 +1,9 @@
 name: Test and Coverage
 
+permissions:
+  contents: write
+  pages: write
+  
 on:
   push:
     branches:
