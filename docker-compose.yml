@@ -20,7 +20,7 @@ services:
     depends_on:
       - db
     volumes:
-      - uploads:/app/src/main/resources/static/uploads
+      - uploads:/app/uploads
 
   frontend:
     build: ./frontend
@@ -28,6 +28,8 @@ services:
       - "3000:80"
     depends_on:
       - backend
+    volumes:
+      - uploads:/usr/share/nginx/html/uploads:ro
 
 volumes:
   uploads:

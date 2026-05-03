@@ -1,8 +1,10 @@
 package org.example.enterprisedaynews.controller;
 
+import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.dto.ImageView;
 import org.example.enterprisedaynews.model.ImageMetadata;
+import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.service.ImageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,41 +15,41 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/staff")
+@RequiredArgsConstructor
 public class StaffController {
 
-    @Autowired
-    private ImageService imageService;
+    private final ImageService imageService;
 
     @GetMapping("/new")
-    public List<ImageMetadata> getNewImages() {
-        return imageService.getNewImages();
+    public List<ImageView> getNewImages() {
+        return imageService.getNewImages().stream().map(ImageView::from).toList();
     }
 
     @GetMapping("/approved")
-    public List<ImageMetadata> getApprovedImages() {
-        return imageService.getApprovedImages();
+    public List<ImageView> getApprovedImages() {
+        return imageService.getApprovedImages().stream().map(ImageView::from).toList();
     }
 
     @GetMapping("/rejected")
-    public List<ImageMetadata> getRejectedImages() {
-        return imageService.getRejectedImages();
+    public List<ImageView> getRejectedImages() {
+        return imageService.getRejectedImages().stream().map(ImageView::from).toList();
     }
 
     @PostMapping("/approve/{id}")
-    public ResponseEntity<ImageMetadata> approve(@PathVariable Long id, Principal principal) {
-        String username = (principal != null) ? principal.getName() : "anonymous_staff";
-        return ResponseEntity.ok(imageService.updateStatus(id, ImageMetadata.ApprovalStatus.APPROVEd, username));
+    public ResponseEntity<ImageView> approve(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(ImageView.from(
+                imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));
     }
 
     @PostMapping("/reject/{id}")
-    public ResponseEntity<ImageMetadata> reject(@PathVariable Long id, Principal principal) {
-        String username = (principal != null) ? principal.getName() : "anonymous_staff";
-        return ResponseEntity.ok(imageService.updateStatus(id, ImageMetadata.ApprovalStatus.REJECTed, username));
+    public ResponseEntity<ImageView> reject(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(ImageView.from(
+                imageService.updateStatus(id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal))));
     }
 
     @PostMapping("/toggle-display/{id}")
-    public ResponseEntity<ImageMetadata> toggleDisplay(@PathVariable Long id, @RequestParam boolean display) {
-        return ResponseEntity.ok(imageService.toggleDisplay(id, display));
+    public ResponseEntity<ImageView> toggleDisplay(@PathVariable Long id, @RequestParam boolean display) {
+        return ResponseEntity.ok(ImageView.from(imageService.toggleDisplay(id, display)));
     }
 
     @PostMapping("/order")
@@ -57,10 +59,12 @@ public class StaffController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<ImageMetadata> staffUpload(@RequestParam("file") MultipartFile file, Principal principal) throws IOException {
-        String username = (principal != null) ? principal.getName() : "anonymous_staff";
+    public ResponseEntity<ImageView> staffUpload(@RequestParam("file") MultipartFile file,
+                                                 Principal principal) throws IOException {
+        String username = ControllerSupport.usernameOf(principal);
         ImageMetadata metadata = imageService.uploadImage(file, username);
-        // Automatically approve staff uploads
-        return ResponseEntity.ok(imageService.updateStatus(metadata.getId(), ImageMetadata.ApprovalStatus.APPROVEd, username));
+        // Staff uploads are auto-approved.
+        return ResponseEntity.ok(ImageView.from(
+                imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));
     }
 }

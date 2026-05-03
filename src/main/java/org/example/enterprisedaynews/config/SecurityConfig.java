@@ -1,6 +1,7 @@
 package org.example.enterprisedaynews.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.enterprisedaynews.security.Roles;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,21 +13,33 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private MockAuthFilter mockAuthFilter;
+    private final ObjectProvider<MockAuthFilter> mockAuthFilterProvider;
+
+    public SecurityConfig(ObjectProvider<MockAuthFilter> mockAuthFilterProvider) {
+        this.mockAuthFilterProvider = mockAuthFilterProvider;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simple REST API
-            .addFilterBefore(mockAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/student/**").hasRole("STUDENT")
-                .requestMatchers("/api/staff/**").hasRole("STAFF")
+        // CSRF disabled — stateless REST API authenticated by header/JWT.
+        http.csrf(csrf -> csrf.disable());
+
+        // Only register the mock filter when its bean is present (i.e. dev/test profiles).
+        MockAuthFilter mockAuthFilter = mockAuthFilterProvider.getIfAvailable();
+        if (mockAuthFilter != null) {
+            http.addFilterBefore(mockAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        }
+
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/student/**").hasRole(Roles.STUDENT)
+                .requestMatchers("/api/staff/**").hasRole(Roles.STAFF)
                 .requestMatchers("/api/projector/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()
-            );
+        );
+        // H2 console runs in a frame in dev.
+        http.headers(h -> h.frameOptions(f -> f.sameOrigin()));
         return http.build();
     }
 }

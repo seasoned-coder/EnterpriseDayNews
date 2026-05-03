@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.enterprisedaynews.security.Roles;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,27 +13,31 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 /**
- * MOCK AUTHENTICATION FILTER
- * In a real app, this would call an external API or validate a JWT.
- * For now, it looks for an 'X-User' and 'X-Role' header to simulate login.
+ * Mock authentication filter for development and test profiles only.
+ *
+ * <p>Reads the {@link Roles#HEADER_USER} and {@link Roles#HEADER_ROLE} headers and
+ * populates the security context. <strong>Never</strong> active in {@code prod}, where
+ * a real auth provider (JWT/OAuth2) must be configured.
  */
 @Component
+@Profile({"dev", "test", "default"})
 public class MockAuthFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
-        String username = request.getHeader("X-User");
-        String role = request.getHeader("X-Role"); // e.g., "STUDENT", "STAFF"
+        String username = request.getHeader(Roles.HEADER_USER);
+        String role = request.getHeader(Roles.HEADER_ROLE);
 
-        if (username != null && role != null) {
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    username, null, Collections.singletonList(authority));
+        if (username != null && !username.isBlank() && role != null && !role.isBlank()) {
+            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(username, null, List.of(authority));
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 

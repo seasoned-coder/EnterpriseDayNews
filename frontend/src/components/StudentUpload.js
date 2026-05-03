@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { ENDPOINTS, ROLES, authHeaders } from '../api';
+import useMockAuth from '../hooks/useMockAuth';
 
 function StudentUpload() {
   const [file, setFile] = useState(null);
-  const [username, setUsername] = useState('student1'); // Mock login
+  const { username, setUsername } = useMockAuth('student1');
   const [message, setMessage] = useState('');
 
   const handleUpload = async (e) => {
@@ -14,25 +16,32 @@ function StudentUpload() {
     formData.append('file', file);
 
     try {
-      await axios.post('/api/student/upload', formData, {
+      await axios.post(ENDPOINTS.studentUpload, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'X-User': username,
-          'X-Role': 'STUDENT'
-        }
+          ...authHeaders(username, ROLES.STUDENT),
+        },
       });
       setMessage('Upload successful!');
     } catch (error) {
-      setMessage('Upload failed.');
+      const detail = error?.response?.status
+        ? ` (status ${error.response.status})`
+        : '';
+      setMessage(`Upload failed.${detail}`);
     }
   };
 
   return (
     <div>
       <h2>Student Upload</h2>
-      <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
+      <input
+        type="text"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Username"
+      />
       <form onSubmit={handleUpload}>
-        <input type="file" onChange={e => setFile(e.target.files[0])} />
+        <input type="file" onChange={(e) => setFile(e.target.files[0])} />
         <button type="submit">Upload</button>
       </form>
       {message && <p>{message}</p>}

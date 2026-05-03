@@ -3,17 +3,19 @@ package org.example.enterprisedaynews.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "images")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ImageMetadata {
 
     @Id
@@ -22,7 +24,7 @@ public class ImageMetadata {
 
     private String filePath;
     private String originalFileName;
-    private String uploadedBy; // Username or ID from auth
+    private String uploadedBy;
     private LocalDateTime uploadedAt;
 
     @Enumerated(EnumType.STRING)
@@ -35,6 +37,6 @@ public class ImageMetadata {
     private int displayOrder;
 
     public enum ApprovalStatus {
-        NEW, APPROVEd, REJECTed
+        NEW, APPROVED, REJECTED
     }
 }
