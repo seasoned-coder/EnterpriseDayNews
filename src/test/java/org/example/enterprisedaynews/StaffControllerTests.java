@@ -2,8 +2,10 @@ package org.example.enterprisedaynews;
 
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
+import org.example.enterprisedaynews.security.JwtProvider;
 import org.example.enterprisedaynews.security.Roles;
 import org.example.enterprisedaynews.service.ImageService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,6 +33,18 @@ class StaffControllerTests {
     @MockitoBean
     private ImageService imageService;
 
+    @Autowired
+    private JwtProvider jwtProvider;
+
+    private String staffToken;
+    private String studentToken;
+
+    @BeforeEach
+    void setUp() {
+        staffToken = "Bearer " + jwtProvider.generateToken("staff1", Roles.STAFF);
+        studentToken = "Bearer " + jwtProvider.generateToken("student1", Roles.STUDENT);
+    }
+
     private static ImageMetadata sampleImage(Long id, ApprovalStatus status) {
         ImageMetadata m = new ImageMetadata();
         m.setId(id);
@@ -43,8 +57,7 @@ class StaffControllerTests {
         when(imageService.getNewImages()).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/staff/new")
-                .header(Roles.HEADER_USER, "staff1")
-                .header(Roles.HEADER_ROLE, Roles.STAFF))
+                .header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
     }
@@ -55,8 +68,7 @@ class StaffControllerTests {
                 .thenReturn(sampleImage(1L, ApprovalStatus.APPROVED));
 
         mockMvc.perform(post("/api/staff/approve/1")
-                .header(Roles.HEADER_USER, "staff1")
-                .header(Roles.HEADER_ROLE, Roles.STAFF))
+                .header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
@@ -67,8 +79,7 @@ class StaffControllerTests {
                 .thenReturn(sampleImage(1L, ApprovalStatus.REJECTED));
 
         mockMvc.perform(post("/api/staff/reject/1")
-                .header(Roles.HEADER_USER, "staff1")
-                .header(Roles.HEADER_ROLE, Roles.STAFF))
+                .header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
     }
@@ -81,8 +92,7 @@ class StaffControllerTests {
 
         mockMvc.perform(post("/api/staff/toggle-display/1")
                 .param("display", "true")
-                .header(Roles.HEADER_USER, "staff1")
-                .header(Roles.HEADER_ROLE, Roles.STAFF))
+                .header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.display").value(true));
     }
@@ -92,8 +102,7 @@ class StaffControllerTests {
         mockMvc.perform(post("/api/staff/order")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[1, 2, 3]")
-                .header(Roles.HEADER_USER, "staff1")
-                .header(Roles.HEADER_ROLE, Roles.STAFF))
+                .header("Authorization", staffToken))
                 .andExpect(status().isOk());
     }
 
@@ -108,17 +117,49 @@ class StaffControllerTests {
 
         mockMvc.perform(multipart("/api/staff/upload")
                 .file(file)
-                .header(Roles.HEADER_USER, "staff1")
-                .header(Roles.HEADER_ROLE, Roles.STAFF))
+                .header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
 
     @Test
+    void testGetApprovedImages() throws Exception {
+        when(imageService.getApprovedImages()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/staff/approved")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void testGetRejectedImages() throws Exception {
+        when(imageService.getRejectedImages()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/staff/rejected")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void testDeleteImage() throws Exception {
+        mockMvc.perform(delete("/api/staff/1")
+                .header("Authorization", staffToken))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void testDeleteAllImages() throws Exception {
+        mockMvc.perform(delete("/api/staff/all")
+                .header("Authorization", staffToken))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void testStaffEndpointsForbiddenForStudents() throws Exception {
         mockMvc.perform(get("/api/staff/new")
-                .header(Roles.HEADER_USER, "alice")
-                .header(Roles.HEADER_ROLE, Roles.STUDENT))
+                .header("Authorization", studentToken))
                 .andExpect(status().isForbidden());
     }
 }

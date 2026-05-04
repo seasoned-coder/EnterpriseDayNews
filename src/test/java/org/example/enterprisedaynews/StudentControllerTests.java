@@ -13,11 +13,14 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,6 +59,16 @@ class StudentControllerTests {
                 .header("Authorization", studentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uploadedBy").value("student1"));
+    }
+
+    @Test
+    void testGetMyUploads() throws Exception {
+        when(imageService.getUserUploads("student1")).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/student/uploads")
+                .header("Authorization", studentToken))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
     }
 
     @Test

@@ -66,13 +66,15 @@ Since the application uses a mock authentication system, you can access differen
 
 *Note: In the new Lovable UI, routing is handled via `/student`, `/staff`, and `/projector` paths.*
 
-## Authentication (Mocked)
+## Authentication (JWT)
 
-The system is designed to integrate with an external authentication API. Currently, it uses a mock filter that looks for the following HTTP headers:
--   `X-User`: Username/ID of the user.
--   `X-Role`: Role of the user (`STUDENT` or `STAFF`).
+The system uses JWT (JSON Web Token) authentication.
+1.  **Login**: Users must first authenticate via `POST /api/auth/login` to receive a token.
+    -   Body: `{"username": "...", "password": "...", "role": "STUDENT|STAFF"}`
+    -   *Note: Currently, any password is accepted as long as it's not empty.*
+2.  **Bearer Token**: All protected API requests must include the `Authorization: Bearer <token>` header.
 
-In development mode (Vite), the frontend automatically sends these headers based on the page you are on (e.g., "staff" for the staff dashboard).
+The frontend automatically handles login and token management when navigating to `/student` or `/staff`.
 
 ## Project Structure
 
@@ -84,7 +86,9 @@ In development mode (Vite), the frontend automatically sends these headers based
 
 ## API Endpoints
 
+-   `POST /api/auth/login`: Authenticate and receive a JWT token.
 -   `POST /api/student/upload`: Upload an image (role: STUDENT).
+-   `GET  /api/student/uploads`: List current user's uploads.
 -   `GET  /api/staff/new`: List images awaiting review (role: STAFF).
 -   `GET  /api/staff/approved`: List approved images.
 -   `GET  /api/staff/rejected`: List rejected images.
@@ -93,14 +97,17 @@ In development mode (Vite), the frontend automatically sends these headers based
 -   `POST /api/staff/toggle-display/{id}?display=true|false`: Show/hide an approved image.
 -   `POST /api/staff/order`: Reorder approved images (JSON body: `[id1, id2, ...]`).
 -   `POST /api/staff/upload`: Staff upload (auto-approved).
+-   `DELETE /api/staff/{id}`: Delete an image.
+-   `DELETE /api/staff/all`: Delete all images.
 -   `GET  /api/projector/images`: List images to display (status=APPROVED & display=true, ordered).
 -   `GET  /api/projector/settings`: Current display settings.
 -   `POST /api/projector/settings`: Update display settings.
 
 ### Configuration
 
+-   `app.jwt.secret` — Secret key for signing JWTs.
+-   `app.jwt.expiration-ms` — Token expiration time (default: 1 hour).
 -   `app.upload-dir` (env: `APP_UPLOAD_DIR`) — directory where uploaded images are stored. Defaults to `./uploads`.
--   `spring.profiles.active` — `dev` (default) and `test` enable the mock auth filter; in `prod` the mock filter is disabled and a real auth provider must be configured.
 
 ## Running Tests
 
@@ -108,7 +115,7 @@ In development mode (Vite), the frontend automatically sends these headers based
 ```bash
 mvn clean test
 ```
-Coverage report: `target/site/jacoco/index.html` (currently ~92% instruction coverage).
+Coverage report: `target/site/jacoco/index.html` (currently >90% instruction coverage).
 
 ### Frontend (Vitest)
 ```bash
