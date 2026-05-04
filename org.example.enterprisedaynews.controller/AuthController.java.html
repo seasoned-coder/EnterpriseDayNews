@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.security.JwtProvider;
+import org.example.enterprisedaynews.security.Roles;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/auth&quot;)
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final JwtProvider jwtProvider;
+
+    /**
+     * Simple login for the school event. In a real app, this would verify credentials.
+     * Here we just take username and role to issue a token for the UI to use.
+     */
+    @PostMapping(&quot;/login&quot;)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; login(@RequestBody Map&lt;String, String&gt; request) {
+<span class="nc" id="L24">        String username = request.get(&quot;username&quot;);</span>
+<span class="nc" id="L25">        String role = request.get(&quot;role&quot;);</span>
+
+<span class="nc bnc" id="L27" title="All 10 branches missed.">        if (username == null || username.isBlank() || role == null || (!role.equals(Roles.STUDENT) &amp;&amp; !role.equals(Roles.STAFF))) {</span>
+<span class="nc" id="L28">            return ResponseEntity.badRequest().build();</span>
+        }
+
+<span class="nc" id="L31">        String token = jwtProvider.generateToken(username, role);</span>
+<span class="nc" id="L32">        return ResponseEntity.ok(Map.of(&quot;token&quot;, token));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

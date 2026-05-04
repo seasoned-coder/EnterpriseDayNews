@@ -27,12 +27,12 @@ public class StaffController {
 
     @GetMapping(&quot;/approved&quot;)
     public List&lt;ImageView&gt; getApprovedImages() {
-<span class="nc" id="L30">        return imageService.getApprovedImages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L30">        return imageService.getApprovedImages().stream().map(ImageView::from).toList();</span>
     }
 
     @GetMapping(&quot;/rejected&quot;)
     public List&lt;ImageView&gt; getRejectedImages() {
-<span class="nc" id="L35">        return imageService.getRejectedImages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L35">        return imageService.getRejectedImages().stream().map(ImageView::from).toList();</span>
     }
 
     @PostMapping(&quot;/approve/{id}&quot;)
@@ -70,14 +70,14 @@ public class StaffController {
 
     @DeleteMapping(&quot;/{id}&quot;)
     public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id) {
-<span class="nc" id="L73">        imageService.deleteImage(id);</span>
-<span class="nc" id="L74">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L73">        imageService.deleteImage(id);</span>
+<span class="fc" id="L74">        return ResponseEntity.noContent().build();</span>
     }
 
     @DeleteMapping(&quot;/all&quot;)
     public ResponseEntity&lt;Void&gt; deleteAll() {
-<span class="nc" id="L79">        imageService.deleteAllImages();</span>
-<span class="nc" id="L80">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L79">        imageService.deleteAllImages();</span>
+<span class="fc" id="L80">        return ResponseEntity.noContent().build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

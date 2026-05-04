@@ -9,8 +9,8 @@ final class ControllerSupport {
     }
 
     static String usernameOf(Principal principal) {
-<span class="pc bpc" id="L12" title="3 of 6 branches missed.">        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {</span>
-<span class="nc" id="L13">            return &quot;anonymous&quot;;</span>
+<span class="fc bfc" id="L12" title="All 6 branches covered.">        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {</span>
+<span class="fc" id="L13">            return &quot;anonymous&quot;;</span>
         }
 <span class="fc" id="L15">        return principal.getName();</span>
     }

@@ -29,8 +29,8 @@ public class StudentController {
 
     @GetMapping(&quot;/uploads&quot;)
     public ResponseEntity&lt;List&lt;ImageView&gt;&gt; getMyUploads(Principal principal) {
-<span class="nc" id="L32">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="nc" id="L33">        return ResponseEntity.ok(imageService.getUserUploads(username).stream().map(ImageView::from).toList());</span>
+<span class="fc" id="L32">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L33">        return ResponseEntity.ok(imageService.getUserUploads(username).stream().map(ImageView::from).toList());</span>
     }
 }
 
