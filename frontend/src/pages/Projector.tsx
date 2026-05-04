@@ -7,10 +7,22 @@ const Projector = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [playlist, setPlaylist] = useState<ApiSubmission[]>([]);
+  const [showToolbar, setShowToolbar] = useState(true);
 
   useEffect(() => {
     document.title = "Projector · Enterprise Day News";
   }, []);
+
+  // Toolbar visibility timer
+  useEffect(() => {
+    if (!showToolbar) return;
+    const t = setTimeout(() => setShowToolbar(false), 3000);
+    return () => clearTimeout(t);
+  }, [showToolbar]);
+
+  const handleMouseMove = () => {
+    if (!showToolbar) setShowToolbar(true);
+  };
 
   const imagesQ = useQuery({
     queryKey: ["projector-images"],
@@ -131,7 +143,10 @@ const Projector = () => {
 
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-gradient-projector text-white">
+    <div 
+      className="relative h-screen w-screen overflow-hidden bg-gradient-projector text-white"
+      onMouseMove={handleMouseMove}
+    >
       {items.map((it, i) => (
         <div
           key={`${it.id}-${i}`}
@@ -156,14 +171,10 @@ const Projector = () => {
           <h2 className="mt-3 font-serif-display text-xl leading-none sm:text-2xl">
             {current.uploadedBy}
           </h2>
-          <div className="mt-3 flex gap-4 text-xs text-white/70">
-            <span>🎯 Priority {current.priority}</span>
-            <span>⏱️ {current.durationSeconds}s</span>
-          </div>
         </div>
       </div>
 
-      <div className="pointer-events-auto absolute right-6 top-6 flex items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1 backdrop-blur">
+      <div className={`pointer-events-auto absolute right-6 top-6 flex items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1 backdrop-blur transition-opacity duration-500 ${showToolbar ? 'opacity-100' : 'opacity-0'}`}>
         <button
           onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
           className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
@@ -191,8 +202,8 @@ const Projector = () => {
         {items.map((_, i) => (
           <span
             key={i}
-            className={`h-1.5 rounded-full transition-all ${
-              i === index ? "w-8 bg-white" : "w-1.5 bg-white/40"
+            className={`h-1 rounded-full transition-all ${
+              i === index ? "w-7 bg-white/70" : "w-1 bg-white/10"
             }`}
           />
         ))}
