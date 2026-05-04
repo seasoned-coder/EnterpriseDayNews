@@ -25,13 +25,19 @@ const StudentUpload = () => {
 
   const myUploadsQ = useQuery({
     queryKey: ["my-uploads", name],
-    queryFn: () => api.studentGetMyUploads(name),
-    enabled: name.length > 0,
+    queryFn: async () => {
+      await api.login(name.trim(), "STUDENT");
+      return api.studentGetMyUploads(name.trim());
+    },
+    enabled: name.trim().length > 0,
     refetchInterval: 10_000,
   });
 
   const upload = useMutation({
-    mutationFn: () => api.studentUpload(name.trim(), file as File, priority, durationSeconds),
+    mutationFn: async () => {
+      await api.login(name.trim(), "STUDENT");
+      return api.studentUpload(name.trim(), file as File, priority, durationSeconds);
+    },
     onSuccess: () => {
       toast({
         title: "Sent it ✨",

@@ -1,7 +1,7 @@
 package org.example.enterprisedaynews.config;
 
+import org.example.enterprisedaynews.security.JwtAuthenticationFilter;
 import org.example.enterprisedaynews.security.Roles;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,24 +13,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final ObjectProvider<MockAuthFilter> mockAuthFilterProvider;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(ObjectProvider<MockAuthFilter> mockAuthFilterProvider) {
-        this.mockAuthFilterProvider = mockAuthFilterProvider;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // CSRF disabled — stateless REST API authenticated by header/JWT.
+        // CSRF disabled — stateless REST API authenticated by JWT.
         http.csrf(csrf -> csrf.disable());
 
-        // Only register the mock filter when its bean is present (i.e. dev/test profiles).
-        MockAuthFilter mockAuthFilter = mockAuthFilterProvider.getIfAvailable();
-        if (mockAuthFilter != null) {
-            http.addFilterBefore(mockAuthFilter, UsernamePasswordAuthenticationFilter.class);
-        }
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/student/**").hasRole(Roles.STUDENT)
                 .requestMatchers("/api/staff/**").hasRole(Roles.STAFF)
                 .requestMatchers("/api/projector/**").permitAll()

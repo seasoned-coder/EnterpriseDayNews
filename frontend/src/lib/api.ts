@@ -31,10 +31,12 @@ export interface ProjectorSettings {
   imageRefreshSeconds: number;
 }
 
-const headers = (role: "STUDENT" | "STAFF", user: string) => ({
-  "X-User": user,
-  "X-Role": role,
-});
+const headers = (role: "STUDENT" | "STAFF", user: string) => {
+  const token = localStorage.getItem(`token_${user}_${role}`);
+  return {
+    "Authorization": `Bearer ${token}`
+  };
+};
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -48,6 +50,17 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export const api = {
+  async login(username: string, role: "STUDENT" | "STAFF") {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, role }),
+    });
+    const data = await handle<{ token: string }>(res);
+    localStorage.setItem(`token_${username}_${role}`, data.token);
+    return data;
+  },
+
   imageUrl(filePath: string) {
     return `${UPLOADS_BASE}/${filePath}`;
   },

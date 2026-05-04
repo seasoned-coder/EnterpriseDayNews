@@ -27,50 +27,49 @@ const Projector = () => {
       return;
     }
 
-    // Calculate total duration for all items at their display duration
+    // Determine total weight of all items
+    const totalWeight = items.reduce((sum, i) => sum + i.priority, 0);
     const tenMinutesMs = 10 * 60 * 1000;
-    const totalDuration = items.reduce((sum, i) => sum + i.durationSeconds * 1000, 0);
+    
+    // Average duration of an item (weighted by priority)
+    const weightedAvgDurationMs = items.reduce((sum, i) => sum + (i.durationSeconds * 1000 * i.priority), 0) / totalWeight;
+    
+    // How many slots do we have in 10 minutes?
+    const totalSlots = Math.max(items.length, Math.floor(tenMinutesMs / weightedAvgDurationMs));
 
-    // Determine how many cycles we can fit in 10 minutes
-    const cyclesInTenMin = Math.max(1, Math.floor(tenMinutesMs / totalDuration));
-
-    // Build a playlist with weighted distribution
+    // Build a playlist where each item gets slots proportional to its priority
     const newPlaylist: ApiSubmission[] = [];
-    for (let cycle = 0; cycle < cyclesInTenMin; cycle++) {
-      // For each cycle, randomize the order but weight by priority
-      const shuffled = shuffleByPriority([...items]);
-      newPlaylist.push(...shuffled);
-    }
-
-    setPlaylist(newPlaylist);
-    setIndex(0);
-  }, [imagesQ.data]);
-
-  // Helper: shuffle array while weighting higher priority items to appear earlier in the list
-  const shuffleByPriority = (items: ApiSubmission[]): ApiSubmission[] => {
-    const result: ApiSubmission[] = [];
-    const remaining = [...items];
-
-    while (remaining.length > 0) {
-      // Pick one item weighted by priority
-      const totalWeight = remaining.reduce((sum, i) => sum + i.priority, 0);
-      let pick = Math.random() * totalWeight;
-      let pickedIdx = 0;
-
-      for (let i = 0; i < remaining.length; i++) {
-        pick -= remaining[i].priority;
-        if (pick <= 0) {
-          pickedIdx = i;
-          break;
+    
+    // 1. Ensure every item is in at least once
+    const baseItems = [...items];
+    
+    // 2. Fill remaining slots weighted by priority
+    const extraSlotsCount = totalSlots - items.length;
+    const extraItems: ApiSubmission[] = [];
+    
+    if (extraSlotsCount > 0) {
+      for (let i = 0; i < extraSlotsCount; i++) {
+        let pick = Math.random() * totalWeight;
+        for (const item of items) {
+          pick -= item.priority;
+          if (pick <= 0) {
+            extraItems.push(item);
+            break;
+          }
         }
       }
-
-      result.push(remaining[pickedIdx]);
-      remaining.splice(pickedIdx, 1);
     }
 
-    return result;
-  };
+    // 3. Combine and shuffle everything
+    const combined = [...baseItems, ...extraItems];
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [combined[i], combined[j]] = [combined[j], combined[i]];
+    }
+
+    setPlaylist(combined);
+    setIndex(0);
+  }, [imagesQ.data]);
 
   const items = playlist;
   const current = items[index];

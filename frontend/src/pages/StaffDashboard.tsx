@@ -36,7 +36,10 @@ const StaffDashboard = () => {
   const queries = useQueries({
     queries: (["new", "approved", "rejected"] as Tab[]).map((kind) => ({
       queryKey: ["submissions", kind] as const,
-      queryFn: () => api.list(kind),
+      queryFn: async () => {
+        await api.login("staff", "STAFF");
+        return api.list(kind);
+      },
       refetchInterval: 15_000,
     })),
   });
@@ -91,7 +94,10 @@ const StaffDashboard = () => {
   };
 
   const approve = useMutation({
-    mutationFn: (id: number) => api.approve(id),
+    mutationFn: async (id: number) => {
+      await api.login("staff", "STAFF");
+      return api.approve(id);
+    },
     onSuccess: () => {
       toast({ title: "Approved", description: "Submission moved to Approved." });
       refreshAll();
@@ -102,7 +108,10 @@ const StaffDashboard = () => {
   });
 
   const reject = useMutation({
-    mutationFn: (id: number) => api.reject(id),
+    mutationFn: async (id: number) => {
+      await api.login("staff", "STAFF");
+      return api.reject(id);
+    },
     onSuccess: () => {
       toast({ title: "Rejected", description: "Submission moved to Rejected." });
       refreshAll();
@@ -113,8 +122,10 @@ const StaffDashboard = () => {
   });
 
   const toggleDisplay = useMutation({
-    mutationFn: ({ id, display }: { id: number; display: boolean }) =>
-      api.toggleDisplay(id, display),
+    mutationFn: async ({ id, display }: { id: number; display: boolean }) => {
+      await api.login("staff", "STAFF");
+      return api.toggleDisplay(id, display);
+    },
     onSuccess: (data) => {
       toast({
         title: data.display ? "Displayed" : "Hidden",
@@ -128,7 +139,10 @@ const StaffDashboard = () => {
   });
 
   const reorder = useMutation({
-    mutationFn: (ids: number[]) => api.updateDisplayOrder(ids),
+    mutationFn: async (ids: number[]) => {
+      await api.login("staff", "STAFF");
+      return api.updateDisplayOrder(ids);
+    },
     onSuccess: () => {
       toast({ title: "Order updated", description: "Projector display order changed." });
       refreshAll();
@@ -139,7 +153,10 @@ const StaffDashboard = () => {
   });
 
   const deleteSub = useMutation({
-    mutationFn: (id: number) => api.delete(id),
+    mutationFn: async (id: number) => {
+      await api.login("staff", "STAFF");
+      return api.delete(id);
+    },
     onSuccess: () => {
       toast({ title: "Deleted", description: "Submission permanently deleted." });
       refreshAll();
@@ -151,7 +168,10 @@ const StaffDashboard = () => {
   });
 
   const clearDown = useMutation({
-    mutationFn: () => api.deleteAll(),
+    mutationFn: async () => {
+      await api.login("staff", "STAFF");
+      return api.deleteAll();
+    },
     onSuccess: () => {
       toast({ title: "Cleared", description: "All submissions and files have been cleared." });
       refreshAll();
