@@ -14,10 +14,13 @@ if [ "$LOCAL" != "$REMOTE" ]; then
     /usr/bin/git pull
 
     # Run docker without sudo (since we added the group)
+    echo "Starting docker compose build and up..."
     /usr/bin/docker compose up -d --build --remove-orphans
 
     # Optional cleanup
+    echo "Cleaning up old images..."
     /usr/bin/docker image prune -f
+    echo "Deployment finished."
 else
     echo "$(date): No changes found."
 fi
