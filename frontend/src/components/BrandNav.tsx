@@ -1,22 +1,22 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Newspaper } from "lucide-react";
+import { Newspaper, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface BrandNavProps {
   variant?: "light" | "dark";
 }
-
-const links = [
-  { to: "/student", label: "Student Upload" },
-  { to: "/staff", label: "Staff Dashboard" },
-  { to: "/projector", label: "Projector" },
-];
 
 export const BrandNav = ({ variant = "light" }: BrandNavProps) => {
   const location = useLocation();
   if (location.pathname === "/projector") return null;
 
   const isDark = variant === "dark";
+  const user = api.getCurrentUser();
+
+  const handleLogout = () => {
+    api.logout();
+  };
 
   return (
     <header
@@ -28,7 +28,7 @@ export const BrandNav = ({ variant = "light" }: BrandNavProps) => {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <NavLink to="/student" className="flex items-center gap-2.5">
+        <NavLink to="/" className="flex items-center gap-2.5">
           <span
             className={cn(
               "grid h-9 w-9 place-items-center rounded-xl",
@@ -42,29 +42,24 @@ export const BrandNav = ({ variant = "light" }: BrandNavProps) => {
           </span>
         </NavLink>
 
-        <nav className="flex items-center gap-1 sm:gap-2">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors sm:px-4",
-                  isDark
-                    ? isActive
-                      ? "bg-white/10 text-white"
-                      : "text-student-muted hover:text-white"
-                    : isActive
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
-                )
-              }
+        {user && (
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end hidden sm:flex">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-60">Signed in as</span>
+              <span className="text-sm font-bold">{user.username}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                isDark ? "hover:bg-white/10 text-student-ink" : "hover:bg-black/5 text-foreground"
+              )}
+              title="Logout"
             >
-              <span className="hidden sm:inline">{l.label}</span>
-              <span className="sm:hidden">{l.label.split(" ")[0]}</span>
-            </NavLink>
-          ))}
-        </nav>
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

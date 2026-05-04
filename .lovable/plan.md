@@ -1,4 +1,4 @@
-# Enterprise Day News — Visual Redesign
+# BT Enterprise Day News — Visual Redesign
 
 Restyle all three pages while keeping current functionality and routes intact. Two distinct moods sit on top of one shared design system so the app feels coherent.
 

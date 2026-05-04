@@ -12,38 +12,34 @@ const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
 const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
 
 const StudentUpload = () => {
-  const [name, setName] = useState("");
+  const user = api.getCurrentUser();
+  const name = user?.username || "";
   const [file, setFile] = useState<File | null>(null);
   const [priority, setPriority] = useState(1);
   const [durationSeconds, setDurationSeconds] = useState(10);
 
   useEffect(() => {
-    document.title = "Submit your story · Enterprise Day News";
-    const saved = localStorage.getItem("edn:student-name");
-    if (saved) setName(saved);
+    document.title = "Submit your story · BT Enterprise Day News";
   }, []);
 
   const myUploadsQ = useQuery({
     queryKey: ["my-uploads", name],
     queryFn: async () => {
-      await api.login(name.trim(), "STUDENT");
-      return api.studentGetMyUploads(name.trim());
+      return api.studentGetMyUploads(name);
     },
-    enabled: name.trim().length > 0,
+    enabled: name.length > 0,
     refetchInterval: 10_000,
   });
 
   const upload = useMutation({
     mutationFn: async () => {
-      await api.login(name.trim(), "STUDENT");
-      return api.studentUpload(name.trim(), file as File, priority, durationSeconds);
+      return api.studentUpload(name, file as File, priority, durationSeconds);
     },
     onSuccess: () => {
       toast({
         title: "Sent it ✨",
-        description: `Thanks ${name.trim()}! Your story is in the queue.`,
+        description: `Thanks ${name}! Your story is in the queue.`,
       });
-      localStorage.setItem("edn:student-name", name.trim());
       setFile(null);
       setPriority(1);
       setDurationSeconds(10);
@@ -87,22 +83,6 @@ const StudentUpload = () => {
           </div>
 
           <div className="mt-10 space-y-6 fade-in" style={{ animationDelay: "120ms" }}>
-            <div className="relative">
-              <input
-                id="student-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder=" "
-                className="peer h-16 w-full rounded-2xl border border-student-border bg-white/[0.04] px-5 pt-5 text-lg text-student-ink placeholder-transparent outline-none ring-0 transition focus:border-neon-2 focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_hsl(var(--neon-2)/0.15)]"
-              />
-              <label
-                htmlFor="student-name"
-                className="pointer-events-none absolute left-5 top-2 text-xs font-medium uppercase tracking-wider text-student-muted transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-base peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-xs peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-neon-2"
-              >
-                Your name
-              </label>
-            </div>
-
             <UploadDropzone file={file} onFileChange={setFile} />
 
             {/* Priority Slider */}

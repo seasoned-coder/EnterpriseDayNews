@@ -1,4 +1,4 @@
-// API client for the Enterprise Day News backend.
+// API client for the BT Enterprise Day News backend.
 // In development with Vite, requests to /api and /uploads are proxied to the backend.
 // For other environments, override the base URL by setting VITE_API_BASE_URL (e.g. in .env.local).
 
@@ -32,13 +32,18 @@ export interface ProjectorSettings {
 }
 
 const headers = (role: "STUDENT" | "STAFF", user: string) => {
-  const token = localStorage.getItem(`token_${user}_${role}`);
+  const token = localStorage.getItem("token");
   return {
     "Authorization": `Bearer ${token}`
   };
 };
 
 async function handle<T>(res: Response): Promise<T> {
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Request failed [${res.status}]: ${text || res.statusText}`);
@@ -50,15 +55,27 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  async login(username: string, role: "STUDENT" | "STAFF") {
+  async login(username: string, role: "STUDENT" | "STAFF", password?: string) {
     const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, role }),
+      body: JSON.stringify({ username, role, password }),
     });
     const data = await handle<{ token: string }>(res);
-    localStorage.setItem(`token_${username}_${role}`, data.token);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify({ username, role }));
     return data;
+  },
+
+  logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  },
+
+  getCurrentUser() {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) as { username: string, role: "STUDENT" | "STAFF" } : null;
   },
 
   imageUrl(filePath: string) {

@@ -15,7 +15,7 @@
     <artifactId>enterprise-day-news</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>enterprise-day-news</name>
-    <description>Enterprise Day News App</description>
+    <description>BT Enterprise Day News App</description>
 
     <properties>
         <java.version>25</java.version>

@@ -43,5 +43,5 @@ build/
 src/main/resources/static/uploads/
 node_modules/
 frontend/build/
-/frontend/dist/
+frontend/dist/
 /.output.txt

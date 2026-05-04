@@ -10,7 +10,7 @@ const Projector = () => {
   const [showToolbar, setShowToolbar] = useState(true);
 
   useEffect(() => {
-    document.title = "Projector · Enterprise Day News";
+    document.title = "Projector · BT Enterprise Day News";
   }, []);
 
   // Toolbar visibility timer

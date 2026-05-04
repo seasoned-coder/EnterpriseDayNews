@@ -1,4 +1,4 @@
-npm icd fro# Enterprise Day News App
+npm icd fro# BT Enterprise Day News App
 
 A suite of three web applications designed for school students to upload news article images, staff to vet and manage them, and a projector to display approved images in a rotating slideshow.
 
