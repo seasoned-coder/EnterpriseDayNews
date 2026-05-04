@@ -140,14 +140,21 @@ public class ImageService {
 
     @Transactional
     public ImageMetadata postFreeTextMessage(String text, String username, boolean flashMode) {
-        // If it's a FLASH message, replace existing ones
-        if (flashMode) {
-            List<ImageMetadata> existingFlashMessages = imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true);
-            for (ImageMetadata msg : existingFlashMessages) {
-                if (msg.isFlashMode()) {
-                    imageRepository.delete(msg);
-                }
-            }
+        // Find existing text-based info messages
+        List<ImageMetadata> existingMessages = imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true);
+        
+        // If we are posting a new text message, we want to REUSE/UPDATE the existing one if it's there
+        // rather than creating multiples.
+        if (!existingMessages.isEmpty()) {
+            ImageMetadata metadata = existingMessages.get(0);
+            metadata.setMessageText(text);
+            metadata.setUploadedBy(username);
+            metadata.setUploadedAt(LocalDateTime.now());
+            metadata.setVettedBy(username);
+            metadata.setVettedAt(LocalDateTime.now());
+            metadata.setFlashMode(flashMode);
+            metadata.setDisplay(true);
+            return imageRepository.save(metadata);
         }
 
         ImageMetadata metadata = ImageMetadata.builder()

@@ -286,20 +286,23 @@ class ImageServiceTests {
     }
 
     @Test
-    void testPostFreeTextReplacesFlash() {
+    void testPostFreeTextUpdatesExisting() {
         ImageMetadata existing = new ImageMetadata();
         existing.setId(100L);
-        existing.setFlashMode(true);
+        existing.setFlashMode(false);
         existing.setMessageText("Old Flash");
         existing.setInfoMessage(true);
 
         when(imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true)).thenReturn(List.of(existing));
         when(imageRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        imageService.postFreeTextMessage("New Flash", "staff", true);
+        ImageMetadata result = imageService.postFreeTextMessage("New Flash", "staff", true);
 
-        verify(imageRepository).delete(existing);
-        verify(imageRepository).save(argThat(m -> m.getMessageText().equals("New Flash") && m.isFlashMode()));
+        assertEquals(100L, result.getId());
+        assertEquals("New Flash", result.getMessageText());
+        assertTrue(result.isFlashMode());
+        verify(imageRepository, never()).delete(any());
+        verify(imageRepository).save(existing);
     }
 
     @Test
