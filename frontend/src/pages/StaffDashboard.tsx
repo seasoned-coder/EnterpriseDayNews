@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, CalendarX } from "lucide-react";
+import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, CalendarX, MessageSquare, Megaphone, Send, Upload } from "lucide-react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { SubmissionCard } from "@/components/SubmissionCard";
@@ -8,17 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
 
-type Tab = "new" | "approved" | "rejected" | "eod";
+type Tab = "new" | "approved" | "rejected" | "comm" | "eod";
 
 const StaffDashboard = () => {
   const [tab, setTab] = useState<Tab>("new");
@@ -27,6 +29,10 @@ const StaffDashboard = () => {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [clearDownOpen, setClearDownOpen] = useState(false);
   const [clearDownConfirm, setClearDownConfirm] = useState("");
+  const [freeText, setFreeText] = useState("");
+  const [isFlash, setIsFlash] = useState(true);
+  const [infoFile, setInfoFile] = useState<File | null>(null);
+
   const qc = useQueryClient();
 
   const user = api.getCurrentUser();
@@ -37,24 +43,26 @@ const StaffDashboard = () => {
   }, []);
 
   const queries = useQueries({
-    queries: (["new", "approved", "rejected"] as Tab[]).map((kind) => ({
+    queries: (["new", "approved", "rejected", "comm"] as Tab[]).map((kind) => ({
       queryKey: ["submissions", kind] as const,
       queryFn: async () => {
+        if (kind === "comm") return api.listInfo(staffName);
         return api.list(kind, staffName);
       },
       refetchInterval: 15_000,
     })),
   });
-  const [newQ, approvedQ, rejectedQ] = queries;
+  const [newQ, approvedQ, rejectedQ, commQ] = queries;
 
   const counts = {
     new: newQ.data?.length ?? 0,
     approved: approvedQ.data?.length ?? 0,
     rejected: rejectedQ.data?.length ?? 0,
+    comm: commQ.data?.length ?? 0,
     eod: 0,
   };
 
-  const activeQuery = tab === "new" ? newQ : tab === "approved" ? approvedQ : tab === "rejected" ? rejectedQ : { data: [], isLoading: false, isError: false };
+  const activeQuery = tab === "new" ? newQ : tab === "approved" ? approvedQ : tab === "rejected" ? rejectedQ : tab === "comm" ? commQ : { data: [], isLoading: false, isError: false, isPending: false };
 
   const filtered = useMemo(() => {
     const list = (activeQuery as any).data ?? [];
@@ -179,7 +187,49 @@ const StaffDashboard = () => {
       toast({ title: "Clear down failed", description: e.message, variant: "destructive" }),
   });
 
-  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || clearDown.isPending;
+  const uploadInfo = useMutation({
+    mutationFn: async ({ file, flash }: { file: File; flash: boolean }) => {
+      return api.uploadInfo(file, flash, staffName);
+    },
+    onSuccess: () => {
+      toast({ title: "Uploaded", description: "Information message uploaded." });
+      refreshAll();
+      refreshProjector();
+      setInfoFile(null);
+    },
+    onError: (e: Error) =>
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+  });
+
+  const postFreeText = useMutation({
+    mutationFn: async ({ text, flash }: { text: string; flash: boolean }) => {
+      return api.postFreeText(text, flash, staffName);
+    },
+    onSuccess: () => {
+      toast({ title: "Sent", description: "Urgent message active on projector." });
+      refreshAll();
+      refreshProjector();
+      setFreeText("");
+    },
+    onError: (e: Error) =>
+      toast({ title: "Post failed", description: e.message, variant: "destructive" }),
+  });
+
+  const toggleFlash = useMutation({
+    mutationFn: async ({ id, flash }: { id: number; flash: boolean }) => {
+      return api.toggleFlash(id, flash, staffName);
+    },
+    onSuccess: () => {
+      refreshAll();
+      refreshProjector();
+    },
+    onError: (e: Error) =>
+      toast({ title: "Flash toggle failed", description: e.message, variant: "destructive" }),
+  });
+
+  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || clearDown.isPending || uploadInfo.isPending || postFreeText.isPending || toggleFlash.isPending;
+
+  if (!user) return null;
 
   // Helper to reorder approved images
   const moveApprovedImage = (id: number, direction: "up" | "down") => {
@@ -236,13 +286,13 @@ const StaffDashboard = () => {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-8">
           <TabsList className="h-12 rounded-full bg-secondary p-1">
-            {(["new", "approved", "rejected", "eod"] as Tab[]).map((k) => (
+            {(["new", "approved", "rejected", "comm", "eod"] as Tab[]).map((k) => (
               <TabsTrigger
                 key={k}
                 value={k}
                 className="gap-2 rounded-full px-4 capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
               >
-                {k === "eod" ? "End of Day" : k}
+                {k === "eod" ? "End of Day" : k === "comm" ? "Event Communications" : k}
                 {k !== "eod" && (
                   <Badge
                     variant="secondary"
@@ -255,8 +305,69 @@ const StaffDashboard = () => {
             ))}
           </TabsList>
 
-          {(["new", "approved", "rejected"] as Tab[]).map((k) => (
+          {(["new", "approved", "rejected", "comm"] as Tab[]).map((k) => (
             <TabsContent key={k} value={k} className="mt-6">
+              {k === "comm" && (
+                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <Card className="p-6">
+                    <h3 className="flex items-center gap-2 font-display text-lg font-bold">
+                      <Megaphone className="h-5 w-5 text-primary" /> Urgent Free Text
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Immediately takes over the projector in FLASH MODE.
+                    </p>
+                    <div className="mt-4 space-y-4">
+                      <textarea
+                        value={freeText}
+                        onChange={(e) => setFreeText(e.target.value)}
+                        placeholder="Type urgent message here..."
+                        className="min-h-[100px] w-full rounded-xl border border-border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <Button 
+                        className="w-full" 
+                        disabled={!freeText.trim() || postFreeText.isPending}
+                        onClick={() => postFreeText.mutate({ text: freeText, flash: true })}
+                      >
+                        <Send className="mr-2 h-4 w-4" /> Send Urgent Message
+                      </Button>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <h3 className="flex items-center gap-2 font-display text-lg font-bold">
+                      <MessageSquare className="h-5 w-5 text-primary" /> Upload Information
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Add to the info library (images). Default hidden.
+                    </p>
+                    <div className="mt-4 space-y-4">
+                       <Input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => setInfoFile(e.target.files?.[0] || null)}
+                       />
+                       <div className="flex items-center gap-2">
+                          <input 
+                            type="checkbox" 
+                            id="flash-check" 
+                            checked={isFlash} 
+                            onChange={(e) => setIsFlash(e.target.checked)}
+                          />
+                          <label htmlFor="flash-check" className="text-sm font-medium">Flash Mode</label>
+                       </div>
+                       <Button 
+                        className="w-full" 
+                        variant="secondary"
+                        disabled={!infoFile || uploadInfo.isPending}
+                        onClick={() => infoFile && uploadInfo.mutate({ file: infoFile, flash: isFlash })}
+                      >
+                        <Upload className="mr-2 h-4 w-4" /> Upload Info Image
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
               {activeQuery.isLoading ? (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {Array.from({ length: 4 }).map((_, i) => (
@@ -286,6 +397,7 @@ const StaffDashboard = () => {
                       onReject={(id) => reject.mutate(id)}
                       onDelete={(id) => setDeleteId(id)}
                       onToggleDisplay={(id, display) => toggleDisplay.mutate({ id, display })}
+                      onToggleFlash={(id, flash) => toggleFlash.mutate({ id, flash })}
                       onMoveUp={tab === "approved" ? () => moveApprovedImage(s.id, "up") : undefined}
                       onMoveDown={tab === "approved" ? () => moveApprovedImage(s.id, "down") : undefined}
                       canMoveUp={tab === "approved" && (approvedQ.data?.findIndex(i => i.id === s.id) ?? -1) > 0}

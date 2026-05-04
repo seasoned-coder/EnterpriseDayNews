@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { GraduationCap, Briefcase, MonitorPlay, Newspaper } from "lucide-react";
+import { GraduationCap, Briefcase, MonitorPlay, Newspaper, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Landing = () => {
@@ -20,11 +20,11 @@ const Landing = () => {
             <Newspaper className="h-10 w-10 text-white" />
           </div>
           <h1 className="font-display text-6xl font-black tracking-tight sm:text-8xl">
-            Enterprise <br />
+            BT Enterprise <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-primary">Day News</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-400 sm:text-xl">
-            The beating heart of our school event. Share your stories, manage the feed, and watch it all live on the big screen.
+            The beating heart of our school event. Share your stories, manage the feed, and watch it all live on the BT big screen.
           </p>
         </div>
 
@@ -107,23 +107,5 @@ const LandingCard = ({ to, icon, title, description, variant, delay }: LandingCa
     </Link>
   );
 };
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M5 12h14" />
-    <path d="m12 5 7 7-7 7" />
-  </svg>
-);
 
 export default Landing;

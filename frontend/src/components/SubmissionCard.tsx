@@ -19,6 +19,7 @@ interface SubmissionCardProps {
   onDragStart?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
+  onToggleFlash?: (id: number, flash: boolean) => void;
   onClick?: (s: ApiSubmission) => void;
   busy?: boolean;
 }
@@ -48,6 +49,7 @@ export const SubmissionCard = ({
   onDragStart,
   onDragOver,
   onDrop,
+  onToggleFlash,
   onClick,
   busy,
 }: SubmissionCardProps) => {
@@ -74,22 +76,31 @@ export const SubmissionCard = ({
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img
-          src={api.imageUrl(submission.filePath)}
-          alt={`Submission by ${submission.uploadedBy}`}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect fill='%23eee' width='100%25' height='100%25'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' fill='%23999'>preview unavailable</text></svg>";
-          }}
-        />
+        {submission.isInfoMessage && submission.messageText ? (
+          <div className="flex h-full w-full items-center justify-center bg-indigo-900 p-6 text-center text-white">
+             <p className="font-display text-lg font-bold italic line-clamp-4">"{submission.messageText}"</p>
+          </div>
+        ) : (
+          <img
+            src={api.imageUrl(submission.filePath)}
+            alt={`Submission by ${submission.uploadedBy}`}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect fill='%23eee' width='100%25' height='100%25'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' fill='%23999'>preview unavailable</text></svg>";
+            }}
+          />
+        )}
         <Badge
           variant="outline"
           className={cn("absolute left-3 top-3 backdrop-blur", statusStyles[submission.status])}
         >
-          {statusLabel[submission.status]}
+          {submission.isInfoMessage ? "INFO" : statusLabel[submission.status]}
         </Badge>
+        {submission.isFlashMode && (
+          <Badge className="absolute right-3 top-3 bg-red-600 animate-pulse">FLASH</Badge>
+        )}
       </div>
 
         <div className="flex flex-1 flex-col gap-3 p-4">
@@ -163,7 +174,21 @@ export const SubmissionCard = ({
                     </>
                   )}
                 </Button>
-                {onReject && (
+                {submission.isInfoMessage && onToggleFlash && (
+                   <Button
+                    size="sm"
+                    disabled={busy}
+                    variant={submission.isFlashMode ? "destructive" : "outline"}
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFlash(submission.id, !submission.isFlashMode);
+                    }}
+                  >
+                    Flash
+                  </Button>
+                )}
+                {!submission.isInfoMessage && onReject && (
                   <Button
                     size="sm"
                     variant="outline"

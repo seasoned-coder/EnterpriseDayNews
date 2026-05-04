@@ -22,7 +22,7 @@ public class DisplaySettings {
     public static final String DEFAULT_ID = "DEFAULT";
     public static final int DEFAULT_INTERVAL_SECONDS = 5;
     public static final int DEFAULT_DURATION_SECONDS = 10;
-    public static final int DEFAULT_REFRESH_SECONDS = 60;
+    public static final int DEFAULT_REFRESH_SECONDS = 3;
 
     @Id
     private String id = DEFAULT_ID;

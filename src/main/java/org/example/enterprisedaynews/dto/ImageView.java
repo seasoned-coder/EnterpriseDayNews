@@ -19,7 +19,10 @@ public record ImageView(
         int displayOrder,
         int priority,
         int durationSeconds,
-        int totalCost
+        int totalCost,
+        boolean isInfoMessage,
+        boolean isFlashMode,
+        String messageText
 ) {
     public static ImageView from(ImageMetadata m) {
         return new ImageView(
@@ -35,7 +38,10 @@ public record ImageView(
                 m.getDisplayOrder(),
                 m.getPriority(),
                 m.getDurationSeconds(),
-                m.getTotalCost()
+                m.getTotalCost(),
+                m.isInfoMessage(),
+                m.isFlashMode(),
+                m.getMessageText()
         );
     }
 }

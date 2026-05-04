@@ -79,4 +79,30 @@ public class StaffController {
         imageService.deleteAllImages();
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/info")
+    public List<ImageView> getInfoMessages() {
+        return imageService.getInfoMessages().stream().map(ImageView::from).toList();
+    }
+
+    @PostMapping("/info/upload")
+    public ResponseEntity<ImageView> uploadInfoMessage(@RequestParam("file") MultipartFile file,
+                                                       @RequestParam(value = "flash", defaultValue = "false") boolean flash,
+                                                       Principal principal) throws IOException {
+        String username = ControllerSupport.usernameOf(principal);
+        return ResponseEntity.ok(ImageView.from(imageService.uploadInfoMessage(file, username, flash)));
+    }
+
+    @PostMapping("/info/free-text")
+    public ResponseEntity<ImageView> postFreeText(@RequestBody String text,
+                                                  @RequestParam(value = "flash", defaultValue = "true") boolean flash,
+                                                  Principal principal) {
+        String username = ControllerSupport.usernameOf(principal);
+        return ResponseEntity.ok(ImageView.from(imageService.postFreeTextMessage(text, username, flash)));
+    }
+
+    @PostMapping("/toggle-flash/{id}")
+    public ResponseEntity<ImageView> toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
+        return ResponseEntity.ok(ImageView.from(imageService.toggleFlashMode(id, flash)));
+    }
 }

@@ -38,7 +38,7 @@ export const BrandNav = ({ variant = "light" }: BrandNavProps) => {
             <Newspaper className="h-5 w-5" />
           </span>
           <span className="font-display text-lg font-bold tracking-tight">
-            Enterprise Day <span className={isDark ? "text-gradient-neon" : "text-primary"}>News</span>
+            BT Enterprise Day <span className={isDark ? "text-gradient-neon" : "text-primary"}>News</span>
           </span>
         </NavLink>
 

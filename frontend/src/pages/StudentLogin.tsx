@@ -47,7 +47,7 @@ const StudentLogin = () => {
           <div className="fade-in">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-student-border bg-white/[0.04] px-3 py-1 text-xs font-medium text-student-muted backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-neon-2" />
-              Enterprise Day · Student Portal
+              BT Enterprise Day · Student Portal
             </div>
 
             <h1 className="font-display text-5xl font-extrabold leading-[0.95] sm:text-7xl">

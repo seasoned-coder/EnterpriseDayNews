@@ -162,4 +162,62 @@ class StaffControllerTests {
                 .header("Authorization", studentToken))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void testGetInfoMessages() throws Exception {
+        when(imageService.getInfoMessages()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/staff/info")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void testUploadInfoMessage() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "info.jpg", "image/jpeg", "content".getBytes());
+        ImageMetadata m = sampleImage(20L, ApprovalStatus.APPROVED);
+        m.setInfoMessage(true);
+
+        when(imageService.uploadInfoMessage(any(), eq("staff1"), eq(true))).thenReturn(m);
+
+        mockMvc.perform(multipart("/api/staff/info/upload")
+                .file(file)
+                .param("flash", "true")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isInfoMessage").value(true));
+    }
+
+    @Test
+    void testPostFreeText() throws Exception {
+        ImageMetadata m = sampleImage(30L, ApprovalStatus.APPROVED);
+        m.setInfoMessage(true);
+        m.setMessageText("Urgent News");
+        m.setFlashMode(true);
+
+        when(imageService.postFreeTextMessage(eq("Urgent News"), eq("staff1"), eq(true))).thenReturn(m);
+
+        mockMvc.perform(post("/api/staff/info/free-text")
+                .param("flash", "true")
+                .contentType(MediaType.TEXT_PLAIN)
+                .content("Urgent News")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messageText").value("Urgent News"))
+                .andExpect(jsonPath("$.isFlashMode").value(true));
+    }
+
+    @Test
+    void testToggleFlash() throws Exception {
+        ImageMetadata m = sampleImage(1L, ApprovalStatus.APPROVED);
+        m.setFlashMode(true);
+        when(imageService.toggleFlashMode(eq(1L), eq(true))).thenReturn(m);
+
+        mockMvc.perform(post("/api/staff/toggle-flash/1")
+                .param("flash", "true")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isFlashMode").value(true));
+    }
 }

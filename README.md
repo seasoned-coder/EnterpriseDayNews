@@ -1,6 +1,11 @@
-npm icd fro# BT Enterprise Day News App
+# BT Enterprise Day News App
 
 A suite of three web applications designed for school students to upload news article images, staff to vet and manage them, and a projector to display approved images in a rotating slideshow.
+
+> **IMPORTANT: Blank Screen / Branding Issues**: If you experience a blank screen after login or do not see the updated "BT" branding, it is likely due to stale browser cache or a stale Docker build. Please follow these steps:
+> 1. **Rebuild Docker**: Run `docker-compose up --build --force-recreate` to ensure the latest frontend changes are compiled.
+> 2. **Clear Browser Cache**: Use `Ctrl + F5` (or `Cmd + Shift + R`) to force a hard reload of the page.
+> 3. **Incognito Mode**: Try accessing the site in an Incognito/Private window to rule out persistent cache issues.
 
 ## Project Overview
 

@@ -27,7 +27,7 @@ const Projector = () => {
   const imagesQ = useQuery({
     queryKey: ["projector-images"],
     queryFn: api.projectorImages,
-    refetchInterval: 15_000,
+    refetchInterval: 3_000,
   });
 
   // Generate a weighted playlist: ensure all images shown in 10-min window, but prioritize higher priority items
@@ -38,6 +38,12 @@ const Projector = () => {
       setIndex(0);
       return;
     }
+
+    // Special handling for FLASH MODE: if any items are in flash mode, the backend 
+    // already filters to ONLY flash messages. We should detect if the NEW data 
+    // contains flash messages and if we weren't showing them before, jump to them.
+    const hasFlash = items.some(i => i.isFlashMode);
+    const wasFlash = playlist.some(i => i.isFlashMode);
 
     // Determine total weight of all items
     const totalWeight = items.reduce((sum, i) => sum + i.priority, 0);
@@ -50,8 +56,14 @@ const Projector = () => {
     const totalSlots = Math.max(items.length, Math.floor(tenMinutesMs / weightedAvgDurationMs));
 
     // Build a playlist where each item gets slots proportional to its priority
-    const newPlaylist: ApiSubmission[] = [];
-    
+    if (hasFlash) {
+      const flashItems = items.filter(i => i.isFlashMode);
+      setPlaylist(flashItems);
+      if (!wasFlash) setIndex(0);
+      else if (index >= flashItems.length) setIndex(0);
+      return;
+    }
+
     // 1. Ensure every item is in at least once
     const baseItems = [...items];
     
@@ -80,7 +92,10 @@ const Projector = () => {
     }
 
     setPlaylist(combined);
-    setIndex(0);
+    
+    if (index >= combined.length) {
+      setIndex(0);
+    }
   }, [imagesQ.data]);
 
   const items = playlist;
@@ -154,11 +169,26 @@ const Projector = () => {
           style={{ opacity: i === index ? 1 : 0 }}
           aria-hidden={i !== index}
         >
-          <img
-            src={api.imageUrl(it.filePath)}
-            alt={`${it.uploadedBy} submission`}
-            className="ken-burns h-full w-full object-cover"
-          />
+          {it.messageText ? (
+            <div className="flex h-full w-full items-center justify-center bg-indigo-950 p-12 text-center">
+               <div className="max-w-5xl">
+                  {it.isFlashMode && (
+                    <p className="mb-6 text-sm font-bold uppercase tracking-[0.5em] text-red-500 animate-pulse">
+                      Urgent Announcement
+                    </p>
+                  )}
+                  <h1 className="font-serif-display text-5xl leading-tight sm:text-7xl md:text-8xl">
+                    {it.messageText}
+                  </h1>
+               </div>
+            </div>
+          ) : (
+            <img
+              src={api.imageUrl(it.filePath)}
+              alt={`${it.uploadedBy} submission`}
+              className="ken-burns h-full w-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
         </div>
       ))}

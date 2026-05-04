@@ -113,7 +113,55 @@ public class ImageService {
     }
 
     public List<ImageMetadata> getDisplayImages() {
+        List<ImageMetadata> activeFlashes = imageRepository.findAll().stream()
+                .filter(ImageMetadata::isFlashMode)
+                .toList();
+        if (!activeFlashes.isEmpty()) {
+            return activeFlashes;
+        }
         return imageRepository.findByStatusAndDisplayOrderByDisplayOrderAsc(ApprovalStatus.APPROVED, true);
+    }
+
+    public List<ImageMetadata> getInfoMessages() {
+        return imageRepository.findByIsInfoMessageOrderByUploadedAtDesc(true);
+    }
+
+    @Transactional
+    public ImageMetadata uploadInfoMessage(MultipartFile file, String username, boolean flashMode) throws IOException {
+        ImageMetadata metadata = uploadImage(file, username, 4, 10);
+        metadata.setInfoMessage(true);
+        metadata.setFlashMode(flashMode);
+        metadata.setStatus(ApprovalStatus.APPROVED);
+        metadata.setVettedBy(username);
+        metadata.setVettedAt(LocalDateTime.now());
+        metadata.setDisplay(false); // Default should be HIDE
+        return imageRepository.save(metadata);
+    }
+
+    @Transactional
+    public ImageMetadata postFreeTextMessage(String text, String username, boolean flashMode) {
+        ImageMetadata metadata = ImageMetadata.builder()
+                .messageText(text)
+                .uploadedBy(username)
+                .uploadedAt(LocalDateTime.now())
+                .status(ApprovalStatus.APPROVED)
+                .vettedBy(username)
+                .vettedAt(LocalDateTime.now())
+                .display(true) // Free text with FLASH MODE should probably be active immediately? 
+                // "for really urgent messages we also need a 'free text box' , that also gets 'FLASH MODE' status and when active immediately takes over the projector."
+                .isInfoMessage(true)
+                .isFlashMode(flashMode)
+                .priority(4)
+                .durationSeconds(10)
+                .build();
+        return imageRepository.save(metadata);
+    }
+
+    @Transactional
+    public ImageMetadata toggleFlashMode(Long id, boolean flashMode) {
+        ImageMetadata metadata = findOrThrow(id);
+        metadata.setFlashMode(flashMode);
+        return imageRepository.save(metadata);
     }
 
     @Transactional

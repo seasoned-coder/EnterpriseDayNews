@@ -9,4 +9,5 @@ public interface ImageRepository extends JpaRepository<ImageMetadata, Long> {
     List<ImageMetadata> findByStatusOrderByUploadedAtDesc(ImageMetadata.ApprovalStatus status);
     List<ImageMetadata> findByStatusAndDisplayOrderByDisplayOrderAsc(ImageMetadata.ApprovalStatus status, boolean display);
     List<ImageMetadata> findByUploadedByOrderByUploadedAtDesc(String uploadedBy);
+    List<ImageMetadata> findByIsInfoMessageOrderByUploadedAtDesc(boolean isInfoMessage);
 }

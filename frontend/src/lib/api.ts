@@ -22,6 +22,9 @@ export interface ApiSubmission {
   priority: number;
   durationSeconds: number;
   totalCost: number;
+  isInfoMessage: boolean;
+  isFlashMode: boolean;
+  messageText: string | null;
 }
 
 export interface ProjectorSettings {
@@ -151,6 +154,41 @@ export const api = {
       method: "DELETE",
       headers: headers("STAFF", staffName),
     }).then(handle<void>);
+  },
+
+  listInfo(staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/info`, {
+      headers: headers("STAFF", staffName),
+    }).then(handle<ApiSubmission[]>);
+  },
+
+  uploadInfo(file: File, flash: boolean, staffName = "staff") {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("flash", flash.toString());
+    return fetch(`${API_BASE}/api/staff/info/upload`, {
+      method: "POST",
+      headers: headers("STAFF", staffName),
+      body: fd,
+    }).then(handle<ApiSubmission>);
+  },
+
+  postFreeText(text: string, flash: boolean, staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/info/free-text?flash=${flash}`, {
+      method: "POST",
+      headers: {
+        ...headers("STAFF", staffName),
+        "Content-Type": "text/plain",
+      },
+      body: text,
+    }).then(handle<ApiSubmission>);
+  },
+
+  toggleFlash(id: number, flash: boolean, staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/toggle-flash/${id}?flash=${flash}`, {
+      method: "POST",
+      headers: headers("STAFF", staffName),
+    }).then(handle<ApiSubmission>);
   },
 
   projectorImages() {

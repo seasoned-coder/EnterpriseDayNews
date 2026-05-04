@@ -40,6 +40,10 @@ public class ImageMetadata {
     private int durationSeconds;    // 10, 20, or 30 seconds
     private int totalCost;          // cost = priorityCost + durationCost
 
+    private boolean isInfoMessage;
+    private boolean isFlashMode;
+    private String messageText;
+
     public enum ApprovalStatus {
         NEW, APPROVED, REJECTED
     }

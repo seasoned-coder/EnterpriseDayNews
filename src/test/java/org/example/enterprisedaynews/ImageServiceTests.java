@@ -150,6 +150,45 @@ class ImageServiceTests {
     }
 
     @Test
+    void testGetDisplayImagesFlashOverridesDisplay() {
+        ImageMetadata m1 = new ImageMetadata();
+        m1.setId(1L);
+        m1.setStatus(ApprovalStatus.APPROVED);
+        m1.setDisplay(true);
+        m1.setFlashMode(false);
+
+        ImageMetadata m2 = new ImageMetadata();
+        m2.setId(2L);
+        m2.setStatus(ApprovalStatus.APPROVED);
+        m2.setDisplay(false); // Display is FALSE
+        m2.setFlashMode(true); // but FLASH is TRUE
+
+        when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
+
+        List<ImageMetadata> result = imageService.getDisplayImages();
+
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getId());
+    }
+
+    @Test
+    void testGetDisplayImagesMultipleFlash() {
+        ImageMetadata m1 = new ImageMetadata();
+        m1.setId(1L);
+        m1.setFlashMode(true);
+
+        ImageMetadata m2 = new ImageMetadata();
+        m2.setId(2L);
+        m2.setFlashMode(true);
+
+        when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
+
+        List<ImageMetadata> result = imageService.getDisplayImages();
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
     void testToggleDisplayNotFound() {
         when(imageRepository.findById(999L)).thenReturn(Optional.empty());
         assertThrows(ImageNotFoundException.class, () -> imageService.toggleDisplay(999L, true));

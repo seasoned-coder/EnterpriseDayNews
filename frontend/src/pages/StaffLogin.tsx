@@ -46,7 +46,7 @@ const StaffLogin = () => {
           <div className="fade-in">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-              Enterprise Day · Staff Dashboard
+              BT Enterprise Day · Staff Dashboard
             </div>
 
             <h1 className="font-display text-5xl font-extrabold tracking-tight sm:text-7xl">
