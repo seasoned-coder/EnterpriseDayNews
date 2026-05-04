@@ -2,6 +2,7 @@
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -9,18 +10,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
-<span class="fc" id="L12">public class WebConfig implements WebMvcConfigurer {</span>
+<span class="fc" id="L13">public class WebConfig implements WebMvcConfigurer {</span>
 
     @Value(&quot;${app.upload-dir:./uploads}&quot;)
     private String uploadDir;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-<span class="fc" id="L19">        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();</span>
-<span class="fc" id="L20">        String location = &quot;file:&quot; + uploadPath.toString().replace(&quot;\\&quot;, &quot;/&quot;) + &quot;/&quot;;</span>
+<span class="fc" id="L20">        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();</span>
+<span class="fc" id="L21">        String location = &quot;file:&quot; + uploadPath.toString().replace(&quot;\\&quot;, &quot;/&quot;) + &quot;/&quot;;</span>
 
-<span class="fc" id="L22">        registry.addResourceHandler(&quot;/uploads/**&quot;)</span>
-<span class="fc" id="L23">                .addResourceLocations(location);</span>
-<span class="fc" id="L24">    }</span>
+<span class="fc" id="L23">        registry.addResourceHandler(&quot;/uploads/**&quot;)</span>
+<span class="fc" id="L24">                .addResourceLocations(location);</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+<span class="fc" id="L29">        registry.addMapping(&quot;/**&quot;)</span>
+<span class="fc" id="L30">                .allowedOrigins(&quot;*&quot;)</span>
+<span class="fc" id="L31">                .allowedMethods(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;)</span>
+<span class="fc" id="L32">                .allowedHeaders(&quot;*&quot;)</span>
+<span class="fc" id="L33">                .allowCredentials(false);</span>
+<span class="fc" id="L34">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
