@@ -12,6 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -36,7 +37,7 @@ class StudentControllerTests {
         metadata.setId(1L);
         metadata.setUploadedBy("student1");
 
-        when(imageService.uploadImage(any(), eq("student1"))).thenReturn(metadata);
+        when(imageService.uploadImage(any(), eq("student1"), anyInt(), anyInt())).thenReturn(metadata);
 
         mockMvc.perform(multipart("/api/student/upload")
                 .file(file)
