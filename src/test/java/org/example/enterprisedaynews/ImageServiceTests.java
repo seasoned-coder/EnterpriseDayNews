@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -258,21 +258,63 @@ class ImageServiceTests {
     }
 
     @Test
-    void testDeleteAllImages() throws IOException {
-        String f1 = "f1.png";
-        String f2 = "f2.png";
+    void testDeleteAllImagesProtectsInfoMessages() throws IOException {
+        String f1 = "student.png";
+        String f2 = "staff-info.png";
         Files.writeString(tempDir.resolve(f1), "c1");
         Files.writeString(tempDir.resolve(f2), "c2");
 
-        ImageMetadata m1 = new ImageMetadata(); m1.setFilePath(f1);
-        ImageMetadata m2 = new ImageMetadata(); m2.setFilePath(f2);
+        ImageMetadata m1 = new ImageMetadata(); 
+        m1.setId(1L);
+        m1.setFilePath(f1);
+        m1.setInfoMessage(false);
+
+        ImageMetadata m2 = new ImageMetadata(); 
+        m2.setId(2L);
+        m2.setFilePath(f2);
+        m2.setInfoMessage(true);
 
         when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
 
         imageService.deleteAllImages();
 
-        assertFalse(Files.exists(tempDir.resolve(f1)));
-        assertFalse(Files.exists(tempDir.resolve(f2)));
-        verify(imageRepository).deleteAll();
+        assertFalse(Files.exists(tempDir.resolve(f1)), "Student image should be deleted from disk");
+        assertTrue(Files.exists(tempDir.resolve(f2)), "Staff info image should NOT be deleted from disk");
+        
+        verify(imageRepository).delete(m1);
+        verify(imageRepository, never()).delete(m2);
+    }
+
+    @Test
+    void testPostFreeTextReplacesFlash() {
+        ImageMetadata existing = new ImageMetadata();
+        existing.setId(100L);
+        existing.setFlashMode(true);
+        existing.setMessageText("Old Flash");
+        existing.setInfoMessage(true);
+
+        when(imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true)).thenReturn(List.of(existing));
+        when(imageRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        imageService.postFreeTextMessage("New Flash", "staff", true);
+
+        verify(imageRepository).delete(existing);
+        verify(imageRepository).save(argThat(m -> m.getMessageText().equals("New Flash") && m.isFlashMode()));
+    }
+
+    @Test
+    void testDeleteTextMessageNoNPE() {
+        ImageMetadata textMsg = new ImageMetadata();
+        textMsg.setId(16L);
+        textMsg.setMessageText("Important Announcement");
+        textMsg.setFilePath(null);
+        textMsg.setInfoMessage(true);
+
+        when(imageRepository.findById(16L)).thenReturn(Optional.of(textMsg));
+
+        // This should not throw NullPointerException
+        assertDoesNotThrow(() -> imageService.deleteImage(16L));
+        
+        verify(imageRepository).delete(textMsg);
     }
 }

@@ -102,8 +102,11 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/toggle-display/{id}?display=true|false`: Show/hide an approved image.
 -   `POST /api/staff/order`: Reorder approved images (JSON body: `[id1, id2, ...]`).
 -   `POST /api/staff/upload`: Staff upload (auto-approved).
+-   `POST /api/staff/info`: Staff upload of an information message (image).
+-   `POST /api/staff/text`: Post a free-text urgent message.
+-   `POST /api/staff/toggle-flash/{id}?flash=true|false`: Toggle FLASH mode for an image/message.
 -   `DELETE /api/staff/{id}`: Delete an image.
--   `DELETE /api/staff/all`: Delete all images.
+-   `DELETE /api/staff/all`: Delete all images (resets for end of day, preserves staff library items).
 -   `GET  /api/projector/images`: List images to display (status=APPROVED & display=true, ordered).
 -   `GET  /api/projector/settings`: Current display settings.
 -   `POST /api/projector/settings`: Update display settings.

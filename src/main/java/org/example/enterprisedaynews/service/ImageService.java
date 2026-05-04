@@ -140,6 +140,16 @@ public class ImageService {
 
     @Transactional
     public ImageMetadata postFreeTextMessage(String text, String username, boolean flashMode) {
+        // If it's a FLASH message, replace existing ones
+        if (flashMode) {
+            List<ImageMetadata> existingFlashMessages = imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true);
+            for (ImageMetadata msg : existingFlashMessages) {
+                if (msg.isFlashMode()) {
+                    imageRepository.delete(msg);
+                }
+            }
+        }
+
         ImageMetadata metadata = ImageMetadata.builder()
                 .messageText(text)
                 .uploadedBy(username)
@@ -219,14 +229,20 @@ public class ImageService {
 
     @Transactional
     public void deleteAllImages() {
+        // Delete all images EXCEPT staff information messages (isInfoMessage = true)
         List<ImageMetadata> all = imageRepository.findAll();
         for (ImageMetadata metadata : all) {
-            deletePhysicalFile(metadata.getFilePath());
+            if (!metadata.isInfoMessage()) {
+                deletePhysicalFile(metadata.getFilePath());
+                imageRepository.delete(metadata);
+            }
         }
-        imageRepository.deleteAll();
     }
 
     private void deletePhysicalFile(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return;
+        }
         try {
             Path filePath = Paths.get(uploadDir).resolve(fileName);
             Files.deleteIfExists(filePath);

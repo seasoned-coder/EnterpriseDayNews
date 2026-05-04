@@ -323,13 +323,28 @@ const StaffDashboard = () => {
                         placeholder="Type urgent message here..."
                         className="min-h-[100px] w-full rounded-xl border border-border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
-                      <Button 
-                        className="w-full" 
-                        disabled={!freeText.trim() || postFreeText.isPending}
-                        onClick={() => postFreeText.mutate({ text: freeText, flash: true })}
-                      >
-                        <Send className="mr-2 h-4 w-4" /> Send Urgent Message
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          className="flex-1" 
+                          disabled={!freeText.trim() || postFreeText.isPending}
+                          onClick={() => postFreeText.mutate({ text: freeText, flash: true })}
+                        >
+                          <Send className="mr-2 h-4 w-4" /> Send Urgent Message
+                        </Button>
+                        {commQ.data?.some(m => m.isFlashMode && m.messageText) && (
+                          <Button
+                            variant="outline"
+                            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => {
+                              const flashMsg = commQ.data?.find(m => m.isFlashMode && m.messageText);
+                              if (flashMsg) deleteSub.mutate(flashMsg.id);
+                            }}
+                            disabled={deleteSub.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </Card>
 

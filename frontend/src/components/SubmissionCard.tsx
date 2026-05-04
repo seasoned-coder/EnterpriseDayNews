@@ -234,9 +234,9 @@ export const SubmissionCard = ({
             </div>
           )}
 
-         {submission.status === "REJECTED" && (onApprove || onDelete) && (
+         {(submission.status === "REJECTED" || submission.isInfoMessage) && (onApprove || onDelete) && (
            <div className="mt-auto flex gap-2 pt-1">
-             {onApprove && (
+             {onApprove && submission.status !== "APPROVED" && (
                <Button
                  size="sm"
                  disabled={busy}
