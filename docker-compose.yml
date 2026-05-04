@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: enterpriseday
       POSTGRES_USER: user
@@ -9,6 +10,7 @@ services:
       - "5432:5432"
 
   backend:
+    restart: unless-stopped
     build: .
     ports:
       - "8080:8080"
@@ -23,6 +25,7 @@ services:
       - uploads:/app/uploads
 
   frontend:
+    restart: unless-stopped
     build:
       context: ./frontend
       target: production
