@@ -67,5 +67,17 @@ public class StaffController {
 <span class="fc" id="L67">        return ResponseEntity.ok(ImageView.from(</span>
 <span class="fc" id="L68">                imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));</span>
     }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id) {
+<span class="nc" id="L73">        imageService.deleteImage(id);</span>
+<span class="nc" id="L74">        return ResponseEntity.noContent().build();</span>
+    }
+
+    @DeleteMapping(&quot;/all&quot;)
+    public ResponseEntity&lt;Void&gt; deleteAll() {
+<span class="nc" id="L79">        imageService.deleteAllImages();</span>
+<span class="nc" id="L80">        return ResponseEntity.noContent().build();</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

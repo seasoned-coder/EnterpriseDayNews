@@ -36,8 +36,12 @@ public class ImageMetadata {
     private boolean display;
     private int displayOrder;
 
-<span class="fc" id="L39">    public enum ApprovalStatus {</span>
-<span class="fc" id="L40">        NEW, APPROVED, REJECTED</span>
+    private int priority;           // 1-4, configurable cost
+    private int durationSeconds;    // 10, 20, or 30 seconds
+    private int totalCost;          // cost = priorityCost + durationCost
+
+<span class="fc" id="L43">    public enum ApprovalStatus {</span>
+<span class="fc" id="L44">        NEW, APPROVED, REJECTED</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
