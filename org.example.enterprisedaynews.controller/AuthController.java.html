@@ -14,22 +14,45 @@ import java.util.Map;
 public class AuthController {
 
     private final JwtProvider jwtProvider;
+    
+    // Hardcoded credentials for the school event as requested.
+    // In a production app, these would be in a database with hashed passwords.
+<span class="fc" id="L20">    private static final Map&lt;String, String&gt; STUDENT_CREDS = Map.of(</span>
+        &quot;student&quot;, &quot;ed2026&quot;,
+        &quot;guest&quot;, &quot;welcome&quot;
+    );
+    
+<span class="fc" id="L25">    private static final Map&lt;String, String&gt; STAFF_CREDS = Map.of(</span>
+        &quot;staff1&quot;, &quot;secret123&quot;,
+        &quot;admin&quot;, &quot;enterprise-day-2026&quot;
+    );
 
     /**
-     * Simple login for the school event. In a real app, this would verify credentials.
-     * Here we just take username and role to issue a token for the UI to use.
+     * Simple login for the school event. Verifies credentials against a hardcoded map.
      */
     @PostMapping(&quot;/login&quot;)
     public ResponseEntity&lt;Map&lt;String, String&gt;&gt; login(@RequestBody Map&lt;String, String&gt; request) {
-<span class="nc" id="L24">        String username = request.get(&quot;username&quot;);</span>
-<span class="nc" id="L25">        String role = request.get(&quot;role&quot;);</span>
+<span class="fc" id="L35">        String username = request.get(&quot;username&quot;);</span>
+<span class="fc" id="L36">        String role = request.get(&quot;role&quot;);</span>
+<span class="fc" id="L37">        String password = request.get(&quot;password&quot;);</span>
 
-<span class="nc bnc" id="L27" title="All 10 branches missed.">        if (username == null || username.isBlank() || role == null || (!role.equals(Roles.STUDENT) &amp;&amp; !role.equals(Roles.STAFF))) {</span>
-<span class="nc" id="L28">            return ResponseEntity.badRequest().build();</span>
+<span class="pc bpc" id="L39" title="4 of 12 branches missed.">        if (username == null || username.isBlank() || role == null || password == null || (!role.equals(Roles.STUDENT) &amp;&amp; !role.equals(Roles.STAFF))) {</span>
+<span class="fc" id="L40">            return ResponseEntity.badRequest().build();</span>
         }
 
-<span class="nc" id="L31">        String token = jwtProvider.generateToken(username, role);</span>
-<span class="nc" id="L32">        return ResponseEntity.ok(Map.of(&quot;token&quot;, token));</span>
+<span class="fc" id="L43">        boolean authenticated = false;</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (Roles.STUDENT.equals(role)) {</span>
+<span class="fc" id="L45">            authenticated = password.equals(STUDENT_CREDS.get(username.toLowerCase()));</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        } else if (Roles.STAFF.equals(role)) {</span>
+<span class="nc" id="L47">            authenticated = password.equals(STAFF_CREDS.get(username.toLowerCase()));</span>
+        }
+
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (!authenticated) {</span>
+<span class="fc" id="L51">            return ResponseEntity.status(401).build();</span>
+        }
+
+<span class="fc" id="L54">        String token = jwtProvider.generateToken(username, role);</span>
+<span class="fc" id="L55">        return ResponseEntity.ok(Map.of(&quot;token&quot;, token));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
