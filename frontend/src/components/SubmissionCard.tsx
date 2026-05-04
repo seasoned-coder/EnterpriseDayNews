@@ -1,4 +1,5 @@
-import { Check, X, Clock, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, X, Clock, Eye, EyeOff, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,14 @@ interface SubmissionCardProps {
   onApprove?: (id: number) => void;
   onReject?: (id: number) => void;
   onToggleDisplay?: (id: number, display: boolean) => void;
+  onDelete?: (id: number) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
   onClick?: (s: ApiSubmission) => void;
   busy?: boolean;
 }
@@ -26,11 +35,43 @@ const statusLabel: Record<ApiSubmission["status"], string> = {
   REJECTED: "Rejected",
 };
 
-export const SubmissionCard = ({ submission, onApprove, onReject, onToggleDisplay, onClick, busy }: SubmissionCardProps) => {
+export const SubmissionCard = ({
+  submission,
+  onApprove,
+  onReject,
+  onToggleDisplay,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onClick,
+  busy,
+}: SubmissionCardProps) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
   return (
     <Card
+      draggable={!!onDragStart}
+      onDragStart={onDragStart}
+      onDragOver={(e) => {
+        setIsDragOver(true);
+        onDragOver?.(e);
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={(e) => {
+        setIsDragOver(false);
+        onDrop?.(e);
+      }}
       onClick={() => onClick?.(submission)}
-      className="group flex cursor-pointer flex-col overflow-hidden border-border/70 bg-card shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      className={cn(
+        "group flex cursor-pointer flex-col overflow-hidden border-border/70 bg-card shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-lg",
+        onDragStart && "cursor-grab active:cursor-grabbing",
+        isDragOver && "ring-2 ring-primary ring-offset-2"
+      )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
@@ -51,14 +92,25 @@ export const SubmissionCard = ({ submission, onApprove, onReject, onToggleDispla
         </Badge>
       </div>
 
-       <div className="flex flex-1 flex-col gap-3 p-4">
-         <div>
-           <p className="font-display text-base font-bold leading-tight">{submission.uploadedBy}</p>
-           <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-             <Clock className="h-3 w-3" />
-             {formatRelative(submission.uploadedAt)} · {submission.originalFileName}
-           </p>
-         </div>
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          <div>
+            <p className="font-display text-base font-bold leading-tight">{submission.uploadedBy}</p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {formatRelative(submission.uploadedAt)}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Badge variant="secondary" className="text-xs">
+                🎯 P{submission.priority}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                ⏱️ {submission.durationSeconds}s
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                💰 {submission.totalCost}
+              </Badge>
+            </div>
+          </div>
 
          {submission.status === "NEW" && (onApprove || onReject) && (
            <div className="mt-auto flex gap-2 pt-1">
@@ -88,48 +140,76 @@ export const SubmissionCard = ({ submission, onApprove, onReject, onToggleDispla
            </div>
          )}
 
-         {submission.status === "APPROVED" && (
-           <div className="mt-auto space-y-2 pt-1">
-             <div className="flex gap-2">
-               <Button
-                 size="sm"
-                 disabled={busy}
-                 variant={submission.display ? "default" : "outline"}
-                 className="flex-1"
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   onToggleDisplay?.(submission.id, !submission.display);
-                 }}
-               >
-                 {submission.display ? (
-                   <>
-                     <Eye className="mr-1 h-4 w-4" /> Hide
-                   </>
-                 ) : (
-                   <>
-                     <EyeOff className="mr-1 h-4 w-4" /> Display
-                   </>
-                 )}
-               </Button>
-               {onReject && (
-                 <Button
-                   size="sm"
-                   variant="outline"
-                   disabled={busy}
-                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                   onClick={(e) => {
-                     e.stopPropagation();
-                     onReject(submission.id);
-                   }}
-                 >
-                   <X className="mr-1 h-4 w-4" /> Reject
-                 </Button>
-               )}
-             </div>
-           </div>
-         )}
+          {submission.status === "APPROVED" && (
+            <div className="mt-auto space-y-2 pt-1">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={busy}
+                  variant={submission.display ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleDisplay?.(submission.id, !submission.display);
+                  }}
+                >
+                  {submission.display ? (
+                    <>
+                      <Eye className="mr-1 h-4 w-4" /> Hide
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="mr-1 h-4 w-4" /> Display
+                    </>
+                  )}
+                </Button>
+                {onReject && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReject(submission.id);
+                    }}
+                  >
+                    <X className="mr-1 h-4 w-4" /> Reject
+                  </Button>
+                )}
+              </div>
+              {(onMoveUp || onMoveDown) && (
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy || !canMoveUp}
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveUp?.();
+                    }}
+                  >
+                    <ChevronUp className="mr-1 h-3 w-3" /> Up
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy || !canMoveDown}
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveDown?.();
+                    }}
+                  >
+                    <ChevronDown className="mr-1 h-3 w-3" /> Down
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
-         {submission.status === "REJECTED" && (onApprove || onReject) && (
+         {submission.status === "REJECTED" && (onApprove || onDelete) && (
            <div className="mt-auto flex gap-2 pt-1">
              {onApprove && (
                <Button
@@ -142,6 +222,20 @@ export const SubmissionCard = ({ submission, onApprove, onReject, onToggleDispla
                  }}
                >
                  <Check className="mr-1 h-4 w-4" /> Approve
+               </Button>
+             )}
+             {onDelete && (
+               <Button
+                 size="sm"
+                 variant="outline"
+                 disabled={busy}
+                 className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   onDelete(submission.id);
+                 }}
+               >
+                 <Trash2 className="mr-1 h-4 w-4" /> Delete
                </Button>
              )}
            </div>

@@ -39,7 +39,7 @@ public class ImageService {
     private String uploadDir;
 
     @Transactional
-    public ImageMetadata uploadImage(MultipartFile file, String username) throws IOException {
+    public ImageMetadata uploadImage(MultipartFile file, String username, int priority, int durationSeconds) throws IOException {
         validateFile(file);
 
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image";
@@ -61,9 +61,32 @@ public class ImageService {
                 .uploadedAt(LocalDateTime.now())
                 .status(ApprovalStatus.NEW)
                 .display(false)
+                .priority(priority)
+                .durationSeconds(durationSeconds)
+                .totalCost(calculateCost(priority, durationSeconds))
                 .build();
 
         return imageRepository.save(metadata);
+    }
+
+    /**
+     * Legacy method for backward compatibility (no priority/duration).
+     */
+    @Transactional
+    public ImageMetadata uploadImage(MultipartFile file, String username) throws IOException {
+        return uploadImage(file, username, 1, 10);
+    }
+
+    private int calculateCost(int priority, int durationSeconds) {
+        // Costs: priority 1=5, 2=10, 3=15, 4=20
+        int priorityCost = priority * 5;
+        // Costs: 10s=5, 20s=10, 30s=15
+        int durationCost = (durationSeconds / 10) * 5;
+        return priorityCost + durationCost;
+    }
+
+    public List<ImageMetadata> getUserUploads(String username) {
+        return imageRepository.findByUploadedByOrderByUploadedAtDesc(username);
     }
 
     private void validateFile(MultipartFile file) {
@@ -78,15 +101,15 @@ public class ImageService {
     }
 
     public List<ImageMetadata> getNewImages() {
-        return imageRepository.findByStatus(ApprovalStatus.NEW);
+        return imageRepository.findByStatusOrderByUploadedAtDesc(ApprovalStatus.NEW);
     }
 
     public List<ImageMetadata> getApprovedImages() {
-        return imageRepository.findByStatus(ApprovalStatus.APPROVED);
+        return imageRepository.findByStatusOrderByDisplayOrderAsc(ApprovalStatus.APPROVED);
     }
 
     public List<ImageMetadata> getRejectedImages() {
-        return imageRepository.findByStatus(ApprovalStatus.REJECTED);
+        return imageRepository.findByStatusOrderByUploadedAtDesc(ApprovalStatus.REJECTED);
     }
 
     public List<ImageMetadata> getDisplayImages() {
@@ -137,6 +160,31 @@ public class ImageService {
             m.setDisplayOrder(i);
         }
         imageRepository.saveAll(found);
+    }
+
+    @Transactional
+    public void deleteImage(Long id) {
+        ImageMetadata metadata = findOrThrow(id);
+        deletePhysicalFile(metadata.getFilePath());
+        imageRepository.delete(metadata);
+    }
+
+    @Transactional
+    public void deleteAllImages() {
+        List<ImageMetadata> all = imageRepository.findAll();
+        for (ImageMetadata metadata : all) {
+            deletePhysicalFile(metadata.getFilePath());
+        }
+        imageRepository.deleteAll();
+    }
+
+    private void deletePhysicalFile(String fileName) {
+        try {
+            Path filePath = Paths.get(uploadDir).resolve(fileName);
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            log.error("Failed to delete physical file: {}", fileName, e);
+        }
     }
 
     private ImageMetadata findOrThrow(Long id) {

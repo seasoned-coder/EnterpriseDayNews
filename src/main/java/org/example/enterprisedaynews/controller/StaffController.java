@@ -67,4 +67,16 @@ public class StaffController {
         return ResponseEntity.ok(ImageView.from(
                 imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        imageService.deleteImage(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/all")
+    public ResponseEntity<Void> deleteAll() {
+        imageService.deleteAllImages();
+        return ResponseEntity.noContent().build();
+    }
 }

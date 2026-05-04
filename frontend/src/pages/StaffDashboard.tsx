@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Inbox, Loader2, Check, X, Eye, EyeOff } from "lucide-react";
+import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, CalendarX } from "lucide-react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { SubmissionCard } from "@/components/SubmissionCard";
@@ -18,12 +18,15 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
 
-type Tab = "new" | "approved" | "rejected";
+type Tab = "new" | "approved" | "rejected" | "eod";
 
 const StaffDashboard = () => {
   const [tab, setTab] = useState<Tab>("new");
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<ApiSubmission | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [clearDownOpen, setClearDownOpen] = useState(false);
+  const [clearDownConfirm, setClearDownConfirm] = useState("");
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -43,16 +46,17 @@ const StaffDashboard = () => {
     new: newQ.data?.length ?? 0,
     approved: approvedQ.data?.length ?? 0,
     rejected: rejectedQ.data?.length ?? 0,
+    eod: 0,
   };
 
-  const activeQuery = tab === "new" ? newQ : tab === "approved" ? approvedQ : rejectedQ;
+  const activeQuery = tab === "new" ? newQ : tab === "approved" ? approvedQ : tab === "rejected" ? rejectedQ : { data: [], isLoading: false, isError: false };
 
   const filtered = useMemo(() => {
-    const list = activeQuery.data ?? [];
-    return list.filter((s) =>
+    const list = (activeQuery as any).data ?? [];
+    return list.filter((s: ApiSubmission) =>
       s.uploadedBy.toLowerCase().includes(query.toLowerCase())
     );
-  }, [activeQuery.data, query]);
+  }, [activeQuery, query]);
 
   const refreshAll = () => {
     qc.invalidateQueries({ queryKey: ["submissions"] });
@@ -60,6 +64,30 @@ const StaffDashboard = () => {
 
   const refreshProjector = () => {
     qc.refetchQueries({ queryKey: ["projector-images"] });
+  };
+
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+
+  const handleDragStart = (id: number) => {
+    setDraggedId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (dropId: number) => {
+    if (draggedId === null || draggedId === dropId) return;
+    const items = [...(approvedQ.data ?? [])];
+    const draggedIdx = items.findIndex(i => i.id === draggedId);
+    const dropIdx = items.findIndex(i => i.id === dropId);
+    
+    if (draggedIdx === -1 || dropIdx === -1) return;
+
+    const [draggedItem] = items.splice(draggedIdx, 1);
+    items.splice(dropIdx, 0, draggedItem);
+    reorder.mutate(items.map(i => i.id));
+    setDraggedId(null);
   };
 
   const approve = useMutation({
@@ -99,7 +127,60 @@ const StaffDashboard = () => {
       toast({ title: "Toggle failed", description: e.message, variant: "destructive" }),
   });
 
-  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending;
+  const reorder = useMutation({
+    mutationFn: (ids: number[]) => api.updateDisplayOrder(ids),
+    onSuccess: () => {
+      toast({ title: "Order updated", description: "Projector display order changed." });
+      refreshAll();
+      refreshProjector();
+    },
+    onError: (e: Error) =>
+      toast({ title: "Reorder failed", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteSub = useMutation({
+    mutationFn: (id: number) => api.delete(id),
+    onSuccess: () => {
+      toast({ title: "Deleted", description: "Submission permanently deleted." });
+      refreshAll();
+      refreshProjector();
+      setDeleteId(null);
+    },
+    onError: (e: Error) =>
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" }),
+  });
+
+  const clearDown = useMutation({
+    mutationFn: () => api.deleteAll(),
+    onSuccess: () => {
+      toast({ title: "Cleared", description: "All submissions and files have been cleared." });
+      refreshAll();
+      refreshProjector();
+      setClearDownOpen(false);
+      setClearDownConfirm("");
+    },
+    onError: (e: Error) =>
+      toast({ title: "Clear down failed", description: e.message, variant: "destructive" }),
+  });
+
+  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || clearDown.isPending;
+
+  // Helper to reorder approved images
+  const moveApprovedImage = (id: number, direction: "up" | "down") => {
+    const approved = approvedQ.data ?? [];
+    const index = approved.findIndex(i => i.id === id);
+    if (index === -1) return;
+
+    if (direction === "up" && index > 0) {
+      const newOrder = [...approved];
+      [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+      reorder.mutate(newOrder.map(i => i.id));
+    } else if (direction === "down" && index < approved.length - 1) {
+      const newOrder = [...approved];
+      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+      reorder.mutate(newOrder.map(i => i.id));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,19 +220,21 @@ const StaffDashboard = () => {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-8">
           <TabsList className="h-12 rounded-full bg-secondary p-1">
-            {(["new", "approved", "rejected"] as Tab[]).map((k) => (
+            {(["new", "approved", "rejected", "eod"] as Tab[]).map((k) => (
               <TabsTrigger
                 key={k}
                 value={k}
                 className="gap-2 rounded-full px-4 capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
               >
-                {k}
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-[1.25rem] justify-center rounded-full bg-foreground/10 px-1.5 text-[10px] font-semibold"
-                >
-                  {counts[k]}
-                </Badge>
+                {k === "eod" ? "End of Day" : k}
+                {k !== "eod" && (
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-[1.25rem] justify-center rounded-full bg-foreground/10 px-1.5 text-[10px] font-semibold"
+                  >
+                    {counts[k]}
+                  </Badge>
+                )}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -178,14 +261,22 @@ const StaffDashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filtered.map((s) => (
+                  {filtered.map((s: ApiSubmission, idx: number) => (
                     <SubmissionCard
                       key={s.id}
                       submission={s}
                       busy={busy}
                       onApprove={(id) => approve.mutate(id)}
                       onReject={(id) => reject.mutate(id)}
+                      onDelete={(id) => setDeleteId(id)}
                       onToggleDisplay={(id, display) => toggleDisplay.mutate({ id, display })}
+                      onMoveUp={tab === "approved" ? () => moveApprovedImage(s.id, "up") : undefined}
+                      onMoveDown={tab === "approved" ? () => moveApprovedImage(s.id, "down") : undefined}
+                      canMoveUp={tab === "approved" && (approvedQ.data?.findIndex(i => i.id === s.id) ?? -1) > 0}
+                      canMoveDown={tab === "approved" && (approvedQ.data?.findIndex(i => i.id === s.id) ?? -1) < (approvedQ.data?.length ?? 0) - 1}
+                      onDragStart={tab === "approved" ? () => handleDragStart(s.id) : undefined}
+                      onDragOver={tab === "approved" ? handleDragOver : undefined}
+                      onDrop={tab === "approved" ? () => handleDrop(s.id) : undefined}
                       onClick={setActive}
                     />
                   ))}
@@ -199,6 +290,26 @@ const StaffDashboard = () => {
               )}
             </TabsContent>
           ))}
+
+          <TabsContent value="eod" className="mt-6">
+            <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/50 px-6 py-20 text-center">
+              <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+                <CalendarX className="h-6 w-6" />
+              </div>
+              <p className="font-display text-lg font-semibold text-destructive">Clear All Submissions</p>
+              <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                This will permanently delete ALL database records and ALL physical images from the storage.
+                This action is irreversible.
+              </p>
+              <Button
+                variant="destructive"
+                className="mt-6"
+                onClick={() => setClearDownOpen(true)}
+              >
+                Clear Down
+              </Button>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -291,11 +402,75 @@ const StaffDashboard = () => {
                      >
                        <Check className="mr-2 h-4 w-4" /> Approve
                      </Button>
+                     <Button
+                       disabled={busy}
+                       variant="outline"
+                       className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                       onClick={() => {
+                         setDeleteId(active.id);
+                         setActive(null);
+                       }}
+                     >
+                       <Trash2 className="mr-2 h-4 w-4" /> Delete
+                     </Button>
                    </div>
                  )}
                </DialogHeader>
              </>
            )}
+         </DialogContent>
+       </Dialog>
+
+       <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle>Are you sure?</DialogTitle>
+             <DialogDescription>
+               This will permanently delete the database record and the physical image. This action cannot be undone.
+             </DialogDescription>
+           </DialogHeader>
+           <div className="flex justify-end gap-3 mt-4">
+             <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+             <Button
+                variant="destructive"
+                disabled={busy}
+                onClick={() => deleteId && deleteSub.mutate(deleteId)}
+             >
+               {deleteSub.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               Yes, Delete Permanently
+             </Button>
+           </div>
+         </DialogContent>
+       </Dialog>
+
+       <Dialog open={clearDownOpen} onOpenChange={(o) => !o && setClearDownOpen(false)}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle className="text-destructive">Are you absolutely sure?</DialogTitle>
+             <DialogDescription>
+               This will wipe ALL submissions and images from the entire system.
+               To confirm, please type <span className="font-bold text-foreground">clear down</span> below.
+             </DialogDescription>
+           </DialogHeader>
+           <div className="space-y-4 mt-4">
+             <Input
+               value={clearDownConfirm}
+               onChange={(e) => setClearDownConfirm(e.target.value)}
+               placeholder="Type 'clear down' to confirm"
+               className="border-destructive/30 focus-visible:ring-destructive"
+             />
+             <div className="flex justify-end gap-3">
+               <Button variant="outline" onClick={() => setClearDownOpen(false)}>Cancel</Button>
+               <Button
+                  variant="destructive"
+                  disabled={busy || clearDownConfirm !== "clear down"}
+                  onClick={() => clearDown.mutate()}
+               >
+                 {clearDown.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                 Confirm Clear Down
+               </Button>
+             </div>
+           </div>
          </DialogContent>
        </Dialog>
     </div>

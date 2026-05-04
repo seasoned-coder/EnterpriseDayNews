@@ -36,6 +36,10 @@ public class ImageMetadata {
     private boolean display;
     private int displayOrder;
 
+    private int priority;           // 1-4, configurable cost
+    private int durationSeconds;    // 10, 20, or 30 seconds
+    private int totalCost;          // cost = priorityCost + durationCost
+
     public enum ApprovalStatus {
         NEW, APPROVED, REJECTED
     }

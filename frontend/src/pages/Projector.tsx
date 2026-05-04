@@ -1,41 +1,98 @@
 import { useEffect, useState } from "react";
 import { Pause, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, type ApiSubmission } from "@/lib/api";
 
 const Projector = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [playlist, setPlaylist] = useState<ApiSubmission[]>([]);
 
   useEffect(() => {
     document.title = "Projector · Enterprise Day News";
   }, []);
 
-  const settingsQ = useQuery({
-    queryKey: ["projector-settings"],
-    queryFn: api.projectorSettings,
-    refetchInterval: 60_000,
-  });
-
-  const refreshMs = (settingsQ.data?.imageRefreshSeconds ?? 15) * 1000;
-  const intervalMs = (settingsQ.data?.displayDurationSeconds ?? 6) * 1000;
-
   const imagesQ = useQuery({
     queryKey: ["projector-images"],
     queryFn: api.projectorImages,
-    refetchInterval: refreshMs,
+    refetchInterval: 15_000,
   });
 
-  const items = imagesQ.data ?? [];
+  // Generate a weighted playlist: ensure all images shown in 10-min window, but prioritize higher priority items
+  useEffect(() => {
+    const items = imagesQ.data ?? [];
+    if (items.length === 0) {
+      setPlaylist([]);
+      setIndex(0);
+      return;
+    }
+
+    // Calculate total duration for all items at their display duration
+    const tenMinutesMs = 10 * 60 * 1000;
+    const totalDuration = items.reduce((sum, i) => sum + i.durationSeconds * 1000, 0);
+
+    // Determine how many cycles we can fit in 10 minutes
+    const cyclesInTenMin = Math.max(1, Math.floor(tenMinutesMs / totalDuration));
+
+    // Build a playlist with weighted distribution
+    const newPlaylist: ApiSubmission[] = [];
+    for (let cycle = 0; cycle < cyclesInTenMin; cycle++) {
+      // For each cycle, randomize the order but weight by priority
+      const shuffled = shuffleByPriority([...items]);
+      newPlaylist.push(...shuffled);
+    }
+
+    setPlaylist(newPlaylist);
+    setIndex(0);
+  }, [imagesQ.data]);
+
+  // Helper: shuffle array while weighting higher priority items to appear earlier in the list
+  const shuffleByPriority = (items: ApiSubmission[]): ApiSubmission[] => {
+    const result: ApiSubmission[] = [];
+    const remaining = [...items];
+
+    while (remaining.length > 0) {
+      // Pick one item weighted by priority
+      const totalWeight = remaining.reduce((sum, i) => sum + i.priority, 0);
+      let pick = Math.random() * totalWeight;
+      let pickedIdx = 0;
+
+      for (let i = 0; i < remaining.length; i++) {
+        pick -= remaining[i].priority;
+        if (pick <= 0) {
+          pickedIdx = i;
+          break;
+        }
+      }
+
+      result.push(remaining[pickedIdx]);
+      remaining.splice(pickedIdx, 1);
+    }
+
+    return result;
+  };
+
+  const items = playlist;
+  const current = items[index];
+
+  // Auto-advance based on duration of current item
+  useEffect(() => {
+    if (paused || !current || items.length <= 1) {
+      return;
+    }
+
+    const durationMs = current.durationSeconds * 1000;
+    const t = setTimeout(() => {
+      setIndex((i) => (i + 1) % items.length);
+    }, durationMs);
+
+    return () => clearTimeout(t);
+  }, [paused, current, items.length, index]);
 
   useEffect(() => {
-    if (paused || items.length <= 1) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % items.length), intervalMs);
-    return () => clearInterval(t);
-  }, [paused, items.length, intervalMs]);
-
-  useEffect(() => {
-    if (index >= items.length) setIndex(0);
+    if (index >= items.length) {
+      setIndex(0);
+    }
   }, [items.length, index]);
 
   useEffect(() => {
@@ -73,13 +130,12 @@ const Projector = () => {
     );
   }
 
-  const current = items[index];
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-gradient-projector text-white">
       {items.map((it, i) => (
         <div
-          key={it.id}
+          key={`${it.id}-${i}`}
           className="absolute inset-0 transition-opacity duration-1000"
           style={{ opacity: i === index ? 1 : 0 }}
           aria-hidden={i !== index}
@@ -101,6 +157,10 @@ const Projector = () => {
           <h2 className="mt-3 font-serif-display text-xl leading-none sm:text-2xl">
             {current.uploadedBy}
           </h2>
+          <div className="mt-3 flex gap-4 text-xs text-white/70">
+            <span>🎯 Priority {current.priority}</span>
+            <span>⏱️ {current.durationSeconds}s</span>
+          </div>
         </div>
       </div>
 

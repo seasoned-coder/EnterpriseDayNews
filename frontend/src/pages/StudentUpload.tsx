@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { api } from "@/lib/api";
+import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+
+const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
+const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
 
 const StudentUpload = () => {
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [priority, setPriority] = useState(1);
+  const [durationSeconds, setDurationSeconds] = useState(10);
 
   useEffect(() => {
     document.title = "Submit your story · Enterprise Day News";
@@ -17,8 +23,15 @@ const StudentUpload = () => {
     if (saved) setName(saved);
   }, []);
 
+  const myUploadsQ = useQuery({
+    queryKey: ["my-uploads", name],
+    queryFn: () => api.studentGetMyUploads(name),
+    enabled: name.length > 0,
+    refetchInterval: 10_000,
+  });
+
   const upload = useMutation({
-    mutationFn: () => api.studentUpload(name.trim(), file as File),
+    mutationFn: () => api.studentUpload(name.trim(), file as File, priority, durationSeconds),
     onSuccess: () => {
       toast({
         title: "Sent it ✨",
@@ -26,6 +39,9 @@ const StudentUpload = () => {
       });
       localStorage.setItem("edn:student-name", name.trim());
       setFile(null);
+      setPriority(1);
+      setDurationSeconds(10);
+      myUploadsQ.refetch();
     },
     onError: (err: Error) => {
       toast({
@@ -36,6 +52,8 @@ const StudentUpload = () => {
     },
   });
 
+  const totalCost = (PRIORITY_COSTS[priority as keyof typeof PRIORITY_COSTS] ?? 5) +
+                    (DURATION_COSTS[durationSeconds as keyof typeof DURATION_COSTS] ?? 5);
   const canSubmit = name.trim().length > 0 && file && !upload.isPending;
 
   return (
@@ -81,6 +99,51 @@ const StudentUpload = () => {
 
             <UploadDropzone file={file} onFileChange={setFile} />
 
+            {/* Priority Slider */}
+            <div className="space-y-2 rounded-xl border border-student-border bg-white/[0.03] p-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-student-muted">
+                  Priority: <span className="text-neon-2">{priority}</span> (cost: {PRIORITY_COSTS[priority as keyof typeof PRIORITY_COSTS]})
+                </label>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="4"
+                value={priority}
+                onChange={(e) => setPriority(parseInt(e.target.value))}
+                className="w-full accent-neon-2"
+              />
+              <p className="text-xs text-student-muted">1=Low, 4=High - Higher priority shows more often</p>
+            </div>
+
+            {/* Duration Slider */}
+            <div className="space-y-2 rounded-xl border border-student-border bg-white/[0.03] p-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-student-muted">
+                  Duration: <span className="text-neon-2">{durationSeconds}s</span> (cost: {DURATION_COSTS[durationSeconds as keyof typeof DURATION_COSTS]})
+                </label>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="30"
+                step="10"
+                value={durationSeconds}
+                onChange={(e) => setDurationSeconds(parseInt(e.target.value))}
+                className="w-full accent-neon-2"
+              />
+              <p className="text-xs text-student-muted">How long your story appears on screen</p>
+            </div>
+
+            {/* Total Cost */}
+            <div className="rounded-xl border border-neon-2/30 bg-neon-2/5 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-student-muted">Total Cost:</span>
+                <span className="text-2xl font-bold text-neon-2">{totalCost}</span>
+              </div>
+            </div>
+
             <Button
               onClick={() => upload.mutate()}
               disabled={!canSubmit}
@@ -94,6 +157,59 @@ const StudentUpload = () => {
               By uploading you confirm everyone in the photo is happy to be featured.
             </p>
           </div>
+
+          {/* My Previous Uploads */}
+          {name.trim().length > 0 && (
+            <div className="mt-16 space-y-4 fade-in" style={{ animationDelay: "240ms" }}>
+              <h2 className="font-display text-2xl font-bold">Your uploads</h2>
+
+              {myUploadsQ.isLoading ? (
+                <div className="flex items-center justify-center py-8 text-student-muted">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                </div>
+              ) : myUploadsQ.data && myUploadsQ.data.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {myUploadsQ.data.map((upload) => (
+                    <div key={upload.id} className="rounded-xl border border-student-border bg-white/[0.03] p-4">
+                      <img
+                        src={api.imageUrl(upload.filePath)}
+                        alt={upload.originalFileName}
+                        className="mb-3 aspect-video w-full rounded-lg object-cover"
+                      />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            className={
+                              upload.status === "APPROVED"
+                                ? "bg-green-500/20 text-green-400"
+                                : upload.status === "REJECTED"
+                                ? "bg-red-500/20 text-red-400"
+                                : "bg-yellow-500/20 text-yellow-400"
+                            }
+                          >
+                            {upload.status}
+                          </Badge>
+                          {upload.display && (
+                            <Badge className="bg-blue-500/20 text-blue-400">On Projector</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-student-muted">
+                          {formatRelative(upload.uploadedAt)}
+                        </p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Priority: <span className="font-semibold text-neon-2">{upload.priority}</span></span>
+                          <span>Duration: <span className="font-semibold text-neon-2">{upload.durationSeconds}s</span></span>
+                          <span>Cost: <span className="font-semibold text-neon-2">{upload.totalCost}</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-sm text-student-muted">No uploads yet</p>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>

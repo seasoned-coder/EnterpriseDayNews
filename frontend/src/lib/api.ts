@@ -19,6 +19,9 @@ export interface ApiSubmission {
   vettedAt: string | null;
   display: boolean;
   displayOrder: number;
+  priority: number;
+  durationSeconds: number;
+  totalCost: number;
 }
 
 export interface ProjectorSettings {
@@ -49,15 +52,23 @@ export const api = {
     return `${UPLOADS_BASE}/${filePath}`;
   },
 
-  async studentUpload(name: string, file: File) {
+  async studentUpload(name: string, file: File, priority: number = 1, durationSeconds: number = 10) {
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("priority", priority.toString());
+    fd.append("durationSeconds", durationSeconds.toString());
     const res = await fetch(`${API_BASE}/api/student/upload`, {
       method: "POST",
       headers: headers("STUDENT", name),
       body: fd,
     });
     return handle<ApiSubmission>(res);
+  },
+
+  studentGetMyUploads(name: string) {
+    return fetch(`${API_BASE}/api/student/uploads`, {
+      headers: headers("STUDENT", name),
+    }).then(handle<ApiSubmission[]>);
   },
 
   list(kind: "new" | "approved" | "rejected", staffName = "staff") {
@@ -85,6 +96,31 @@ export const api = {
       method: "POST",
       headers: headers("STAFF", staffName),
     }).then(handle<ApiSubmission>);
+  },
+
+  updateDisplayOrder(ids: number[], staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/order`, {
+      method: "POST",
+      headers: {
+        ...headers("STAFF", staffName),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(ids),
+    }).then(handle<void>);
+  },
+
+  delete(id: number, staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/${id}`, {
+      method: "DELETE",
+      headers: headers("STAFF", staffName),
+    }).then(handle<void>);
+  },
+
+  deleteAll(staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/all`, {
+      method: "DELETE",
+      headers: headers("STAFF", staffName),
+    }).then(handle<void>);
   },
 
   projectorImages() {

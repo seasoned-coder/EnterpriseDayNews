@@ -195,8 +195,45 @@ class ImageServiceTests {
         imageService.getNewImages();
         imageService.getApprovedImages();
         imageService.getRejectedImages();
-        verify(imageRepository).findByStatus(ApprovalStatus.NEW);
-        verify(imageRepository).findByStatus(ApprovalStatus.APPROVED);
-        verify(imageRepository).findByStatus(ApprovalStatus.REJECTED);
+        verify(imageRepository).findByStatusOrderByUploadedAtDesc(ApprovalStatus.NEW);
+        verify(imageRepository).findByStatusOrderByDisplayOrderAsc(ApprovalStatus.APPROVED);
+        verify(imageRepository).findByStatusOrderByUploadedAtDesc(ApprovalStatus.REJECTED);
+    }
+
+    @Test
+    void testDeleteImage() throws IOException {
+        String fileName = "to-delete.png";
+        Path filePath = tempDir.resolve(fileName);
+        Files.writeString(filePath, "content");
+
+        ImageMetadata m = new ImageMetadata();
+        m.setId(1L);
+        m.setFilePath(fileName);
+
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(m));
+
+        imageService.deleteImage(1L);
+
+        assertFalse(Files.exists(filePath));
+        verify(imageRepository).delete(m);
+    }
+
+    @Test
+    void testDeleteAllImages() throws IOException {
+        String f1 = "f1.png";
+        String f2 = "f2.png";
+        Files.writeString(tempDir.resolve(f1), "c1");
+        Files.writeString(tempDir.resolve(f2), "c2");
+
+        ImageMetadata m1 = new ImageMetadata(); m1.setFilePath(f1);
+        ImageMetadata m2 = new ImageMetadata(); m2.setFilePath(f2);
+
+        when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
+
+        imageService.deleteAllImages();
+
+        assertFalse(Files.exists(tempDir.resolve(f1)));
+        assertFalse(Files.exists(tempDir.resolve(f2)));
+        verify(imageRepository).deleteAll();
     }
 }

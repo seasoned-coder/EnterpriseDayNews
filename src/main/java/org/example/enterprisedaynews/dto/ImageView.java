@@ -16,7 +16,10 @@ public record ImageView(
         String vettedBy,
         LocalDateTime vettedAt,
         boolean display,
-        int displayOrder
+        int displayOrder,
+        int priority,
+        int durationSeconds,
+        int totalCost
 ) {
     public static ImageView from(ImageMetadata m) {
         return new ImageView(
@@ -29,7 +32,10 @@ public record ImageView(
                 m.getVettedBy(),
                 m.getVettedAt(),
                 m.isDisplay(),
-                m.getDisplayOrder()
+                m.getDisplayOrder(),
+                m.getPriority(),
+                m.getDurationSeconds(),
+                m.getTotalCost()
         );
     }
 }
