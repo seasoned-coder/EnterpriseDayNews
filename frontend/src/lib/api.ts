@@ -25,6 +25,7 @@ export interface ApiSubmission {
   isInfoMessage: boolean;
   isFlashMode: boolean;
   messageText: string | null;
+  externalUrl: string | null;
 }
 
 export interface ProjectorSettings {
@@ -181,6 +182,17 @@ export const api = {
         "Content-Type": "text/plain",
       },
       body: text,
+    }).then(handle<ApiSubmission>);
+  },
+  
+  postUrl(url: string, flash: boolean, staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/info/url?flash=${flash}`, {
+      method: "POST",
+      headers: {
+        ...headers("STAFF", staffName),
+        "Content-Type": "text/plain",
+      },
+      body: url,
     }).then(handle<ApiSubmission>);
   },
 

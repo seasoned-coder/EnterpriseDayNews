@@ -43,6 +43,9 @@ public class ImageMetadata {
     private boolean isInfoMessage;
     private boolean isFlashMode;
     private String messageText;
+    private String externalUrl;
+    private String screenshotPath;
+    private LocalDateTime lastScreenshotAt;
 
     public enum ApprovalStatus {
         NEW, APPROVED, REJECTED

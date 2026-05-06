@@ -5,6 +5,7 @@ import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.service.ImageNotFoundException;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.ScreenshotService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ class ImageServiceTests {
 
     @Mock
     private ImageRepository imageRepository;
+
+    @Mock
+    private ScreenshotService screenshotService;
 
     @InjectMocks
     private ImageService imageService;
@@ -240,29 +244,36 @@ class ImageServiceTests {
     }
 
     @Test
-    void testDeleteImage() throws IOException {
+    void testDeleteImageWithScreenshot() throws IOException {
         String fileName = "to-delete.png";
+        String screenshotName = "screenshot.jpg";
         Path filePath = tempDir.resolve(fileName);
+        Path screenshotPath = tempDir.resolve(screenshotName);
         Files.writeString(filePath, "content");
+        Files.writeString(screenshotPath, "screenshot-content");
 
         ImageMetadata m = new ImageMetadata();
         m.setId(1L);
         m.setFilePath(fileName);
+        m.setScreenshotPath(screenshotName);
 
         when(imageRepository.findById(1L)).thenReturn(Optional.of(m));
 
         imageService.deleteImage(1L);
 
         assertFalse(Files.exists(filePath));
+        assertFalse(Files.exists(screenshotPath));
         verify(imageRepository).delete(m);
     }
 
     @Test
-    void testDeleteAllImagesProtectsInfoMessages() throws IOException {
+    void testDeleteAllImagesWipesEverything() throws IOException {
         String f1 = "student.png";
         String f2 = "staff-info.png";
+        String s2 = "screenshot2.jpg";
         Files.writeString(tempDir.resolve(f1), "c1");
         Files.writeString(tempDir.resolve(f2), "c2");
+        Files.writeString(tempDir.resolve(s2), "s2");
 
         ImageMetadata m1 = new ImageMetadata(); 
         m1.setId(1L);
@@ -272,6 +283,7 @@ class ImageServiceTests {
         ImageMetadata m2 = new ImageMetadata(); 
         m2.setId(2L);
         m2.setFilePath(f2);
+        m2.setScreenshotPath(s2);
         m2.setInfoMessage(true);
 
         when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
@@ -279,10 +291,11 @@ class ImageServiceTests {
         imageService.deleteAllImages();
 
         assertFalse(Files.exists(tempDir.resolve(f1)), "Student image should be deleted from disk");
-        assertTrue(Files.exists(tempDir.resolve(f2)), "Staff info image should NOT be deleted from disk");
+        assertFalse(Files.exists(tempDir.resolve(f2)), "Staff info image should be deleted from disk");
+        assertFalse(Files.exists(tempDir.resolve(s2)), "Screenshot should be deleted from disk");
         
         verify(imageRepository).delete(m1);
-        verify(imageRepository, never()).delete(m2);
+        verify(imageRepository).delete(m2);
     }
 
     @Test
@@ -302,6 +315,24 @@ class ImageServiceTests {
         assertEquals("New Flash", result.getMessageText());
         assertTrue(result.isFlashMode());
         verify(imageRepository, never()).delete(any());
+        verify(imageRepository).save(existing);
+    }
+
+    @Test
+    void testPostExternalUrlUpdatesExisting() {
+        ImageMetadata existing = new ImageMetadata();
+        existing.setId(200L);
+        existing.setExternalUrl("https://old.com");
+        existing.setInfoMessage(true);
+
+        when(imageRepository.findByIsInfoMessageAndExternalUrlIsNotNull(true)).thenReturn(List.of(existing));
+        when(imageRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ImageMetadata result = imageService.postExternalUrl("https://new.com", "staff", true);
+
+        assertEquals(200L, result.getId());
+        assertEquals("https://new.com", result.getExternalUrl());
+        assertTrue(result.isFlashMode());
         verify(imageRepository).save(existing);
     }
 

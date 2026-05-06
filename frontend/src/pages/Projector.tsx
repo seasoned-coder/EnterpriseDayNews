@@ -182,6 +182,36 @@ const Projector = () => {
                   </h1>
                </div>
             </div>
+          ) : it.externalUrl ? (
+            <div className="relative h-full w-full bg-indigo-950">
+              {it.screenshotPath ? (
+                <img 
+                  src={api.imageUrl(it.screenshotPath)}
+                  alt="Website Snapshot"
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <div className="text-center">
+                    <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                    <p className="mt-4 text-xl">Capturing website snapshot...</p>
+                  </div>
+                </div>
+              )}
+              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                <div className="rounded-lg bg-black/80 p-4 text-center">
+                  <p className="text-sm">Showing a real-time snapshot.</p>
+                  <a 
+                    href={it.externalUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-2 block text-blue-400 underline pointer-events-auto"
+                  >
+                    Open live site in new tab
+                  </a>
+                </div>
+              </div>
+            </div>
           ) : (
             <img
               src={api.imageUrl(it.filePath)}

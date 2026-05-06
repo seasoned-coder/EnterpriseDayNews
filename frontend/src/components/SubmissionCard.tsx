@@ -80,6 +80,19 @@ export const SubmissionCard = ({
           <div className="flex h-full w-full items-center justify-center bg-indigo-900 p-6 text-center text-white">
              <p className="font-display text-lg font-bold italic line-clamp-4">"{submission.messageText}"</p>
           </div>
+        ) : submission.isInfoMessage && submission.externalUrl ? (
+          <div className="relative h-full w-full bg-emerald-900">
+             {submission.screenshotPath ? (
+               <img 
+                 src={api.imageUrl(submission.screenshotPath)}
+                 alt="URL Preview"
+                 className="h-full w-full object-cover opacity-60"
+               />
+             ) : null}
+             <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">
+                <p className="font-display text-xs font-medium break-all line-clamp-4">{submission.externalUrl}</p>
+             </div>
+          </div>
         ) : (
           <img
             src={api.imageUrl(submission.filePath)}

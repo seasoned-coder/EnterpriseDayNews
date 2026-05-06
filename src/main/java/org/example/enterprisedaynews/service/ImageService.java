@@ -34,6 +34,7 @@ public class ImageService {
     );
 
     private final ImageRepository imageRepository;
+    private final ScreenshotService screenshotService;
 
     @Value("${app.upload-dir:./uploads}")
     private String uploadDir;
@@ -175,6 +176,50 @@ public class ImageService {
     }
 
     @Transactional
+    public ImageMetadata postExternalUrl(String url, String username, boolean flashMode) {
+        // Reuse/update existing URL message if it exists
+        List<ImageMetadata> existing = imageRepository.findByIsInfoMessageAndExternalUrlIsNotNull(true);
+
+        if (!existing.isEmpty()) {
+            ImageMetadata metadata = existing.get(0);
+            metadata.setExternalUrl(url);
+            metadata.setUploadedBy(username);
+            metadata.setUploadedAt(LocalDateTime.now());
+            metadata.setVettedBy(username);
+            metadata.setVettedAt(LocalDateTime.now());
+            metadata.setFlashMode(flashMode);
+            metadata.setDisplay(true);
+            try {
+                screenshotService.captureScreenshot(metadata);
+            } catch (IOException e) {
+                log.error("Failed to capture initial screenshot: {}", e.getMessage());
+            }
+            return imageRepository.save(metadata);
+        }
+
+        ImageMetadata metadata = ImageMetadata.builder()
+                .externalUrl(url)
+                .uploadedBy(username)
+                .uploadedAt(LocalDateTime.now())
+                .status(ApprovalStatus.APPROVED)
+                .vettedBy(username)
+                .vettedAt(LocalDateTime.now())
+                .display(true)
+                .isInfoMessage(true)
+                .isFlashMode(flashMode)
+                .priority(4)
+                .durationSeconds(10)
+                .build();
+        ImageMetadata saved = imageRepository.save(metadata);
+        try {
+            screenshotService.captureScreenshot(saved);
+        } catch (IOException e) {
+            log.error("Failed to capture initial screenshot: {}", e.getMessage());
+        }
+        return saved;
+    }
+
+    @Transactional
     public ImageMetadata toggleFlashMode(Long id, boolean flashMode) {
         ImageMetadata metadata = findOrThrow(id);
         metadata.setFlashMode(flashMode);
@@ -231,18 +276,18 @@ public class ImageService {
     public void deleteImage(Long id) {
         ImageMetadata metadata = findOrThrow(id);
         deletePhysicalFile(metadata.getFilePath());
+        deletePhysicalFile(metadata.getScreenshotPath());
         imageRepository.delete(metadata);
     }
 
     @Transactional
     public void deleteAllImages() {
-        // Delete all images EXCEPT staff information messages (isInfoMessage = true)
+        // Delete ALL images including staff information messages and their screenshots
         List<ImageMetadata> all = imageRepository.findAll();
         for (ImageMetadata metadata : all) {
-            if (!metadata.isInfoMessage()) {
-                deletePhysicalFile(metadata.getFilePath());
-                imageRepository.delete(metadata);
-            }
+            deletePhysicalFile(metadata.getFilePath());
+            deletePhysicalFile(metadata.getScreenshotPath());
+            imageRepository.delete(metadata);
         }
     }
 

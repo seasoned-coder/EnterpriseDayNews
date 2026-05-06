@@ -101,6 +101,14 @@ public class StaffController {
         return ResponseEntity.ok(ImageView.from(imageService.postFreeTextMessage(text, username, flash)));
     }
 
+    @PostMapping("/info/url")
+    public ResponseEntity<ImageView> postUrl(@RequestBody String url,
+                                             @RequestParam(value = "flash", defaultValue = "true") boolean flash,
+                                             Principal principal) {
+        String username = ControllerSupport.usernameOf(principal);
+        return ResponseEntity.ok(ImageView.from(imageService.postExternalUrl(url, username, flash)));
+    }
+
     @PostMapping("/toggle-flash/{id}")
     public ResponseEntity<ImageView> toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
         return ResponseEntity.ok(ImageView.from(imageService.toggleFlashMode(id, flash)));

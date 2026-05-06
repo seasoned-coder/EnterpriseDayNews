@@ -22,7 +22,9 @@ public record ImageView(
         int totalCost,
         boolean isInfoMessage,
         boolean isFlashMode,
-        String messageText
+        String messageText,
+        String externalUrl,
+        String screenshotPath
 ) {
     public static ImageView from(ImageMetadata m) {
         return new ImageView(
@@ -41,7 +43,9 @@ public record ImageView(
                 m.getTotalCost(),
                 m.isInfoMessage(),
                 m.isFlashMode(),
-                m.getMessageText()
+                m.getMessageText(),
+                m.getExternalUrl(),
+                m.getScreenshotPath()
         );
     }
 }

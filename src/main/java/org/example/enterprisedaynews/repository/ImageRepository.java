@@ -11,4 +11,5 @@ public interface ImageRepository extends JpaRepository<ImageMetadata, Long> {
     List<ImageMetadata> findByUploadedByOrderByUploadedAtDesc(String uploadedBy);
     List<ImageMetadata> findByIsInfoMessageOrderByUploadedAtDesc(boolean isInfoMessage);
     List<ImageMetadata> findByIsInfoMessageAndMessageTextIsNotNull(boolean isInfoMessage);
+    List<ImageMetadata> findByIsInfoMessageAndExternalUrlIsNotNull(boolean isInfoMessage);
 }

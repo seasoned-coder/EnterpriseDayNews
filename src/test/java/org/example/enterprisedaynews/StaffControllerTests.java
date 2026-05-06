@@ -209,6 +209,25 @@ class StaffControllerTests {
     }
 
     @Test
+    void testPostUrl() throws Exception {
+        ImageMetadata m = sampleImage(40L, ApprovalStatus.APPROVED);
+        m.setInfoMessage(true);
+        m.setExternalUrl("https://example.com");
+        m.setFlashMode(true);
+
+        when(imageService.postExternalUrl(eq("https://example.com"), eq("staff1"), eq(true))).thenReturn(m);
+
+        mockMvc.perform(post("/api/staff/info/url")
+                .param("flash", "true")
+                .contentType(MediaType.TEXT_PLAIN)
+                .content("https://example.com")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.externalUrl").value("https://example.com"))
+                .andExpect(jsonPath("$.isFlashMode").value(true));
+    }
+
+    @Test
     void testToggleFlash() throws Exception {
         ImageMetadata m = sampleImage(1L, ApprovalStatus.APPROVED);
         m.setFlashMode(true);

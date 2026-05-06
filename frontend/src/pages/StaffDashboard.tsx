@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, CalendarX, MessageSquare, Megaphone, Send, Upload } from "lucide-react";
+import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, CalendarX, MessageSquare, Megaphone, Send, Upload, Link as LinkIcon } from "lucide-react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { SubmissionCard } from "@/components/SubmissionCard";
@@ -30,6 +30,7 @@ const StaffDashboard = () => {
   const [clearDownOpen, setClearDownOpen] = useState(false);
   const [clearDownConfirm, setClearDownConfirm] = useState("");
   const [freeText, setFreeText] = useState("");
+  const [externalUrl, setExternalUrl] = useState("");
   const [isFlash, setIsFlash] = useState(true);
   const [infoFile, setInfoFile] = useState<File | null>(null);
 
@@ -215,6 +216,20 @@ const StaffDashboard = () => {
       toast({ title: "Post failed", description: e.message, variant: "destructive" }),
   });
 
+  const postUrl = useMutation({
+    mutationFn: async ({ url, flash }: { url: string; flash: boolean }) => {
+      return api.postUrl(url, flash, staffName);
+    },
+    onSuccess: () => {
+      toast({ title: "Sent", description: "URL active on projector." });
+      refreshAll();
+      refreshProjector();
+      setExternalUrl("");
+    },
+    onError: (e: Error) =>
+      toast({ title: "Post failed", description: e.message, variant: "destructive" }),
+  });
+
   const toggleFlash = useMutation({
     mutationFn: async ({ id, flash }: { id: number; flash: boolean }) => {
       return api.toggleFlash(id, flash, staffName);
@@ -227,7 +242,7 @@ const StaffDashboard = () => {
       toast({ title: "Flash toggle failed", description: e.message, variant: "destructive" }),
   });
 
-  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || clearDown.isPending || uploadInfo.isPending || postFreeText.isPending || toggleFlash.isPending;
+  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || clearDown.isPending || uploadInfo.isPending || postFreeText.isPending || postUrl.isPending || toggleFlash.isPending;
 
   if (!user) return null;
 
@@ -338,6 +353,45 @@ const StaffDashboard = () => {
                             onClick={() => {
                               const flashMsg = commQ.data?.find(m => m.isFlashMode && m.messageText);
                               if (flashMsg) deleteSub.mutate(flashMsg.id);
+                            }}
+                            disabled={deleteSub.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <h3 className="flex items-center gap-2 font-display text-lg font-bold">
+                      <LinkIcon className="h-5 w-5 text-primary" /> External URL
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Display a live website snapshot on the projector. Updated every 10 seconds.
+                    </p>
+                    <div className="mt-4 space-y-4">
+                      <Input
+                        value={externalUrl}
+                        onChange={(e) => setExternalUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        className="rounded-xl"
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          className="flex-1" 
+                          disabled={!externalUrl.trim() || postUrl.isPending}
+                          onClick={() => postUrl.mutate({ url: externalUrl, flash: true })}
+                        >
+                          <Send className="mr-2 h-4 w-4" /> Display URL
+                        </Button>
+                        {commQ.data?.some(m => m.isFlashMode && m.externalUrl) && (
+                          <Button
+                            variant="outline"
+                            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => {
+                              const flashUrl = commQ.data?.find(m => m.isFlashMode && m.externalUrl);
+                              if (flashUrl) deleteSub.mutate(flashUrl.id);
                             }}
                             disabled={deleteSub.isPending}
                           >
