@@ -10,6 +10,9 @@ services:
       - "5432:5432"
 
   backend:
+    # 1. Provide the GitHub Image Name
+    image: ghcr.io/seasoned-coder/news-backend:latest
+    # 2. Keep the build instruction for your laptop
     restart: unless-stopped
     build: .
     ports:
@@ -25,6 +28,9 @@ services:
       - uploads:/app/uploads
 
   frontend:
+    # 1. Provide the GitHub Image Name
+    image: ghcr.io/seasoned-coder/news-frontend:latest
+    # 2. Keep the build instruction for your laptop
     restart: unless-stopped
     build:
       context: ./frontend

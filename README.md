@@ -52,7 +52,22 @@ npm run build # For production build
 The easiest way to run the entire stack is using Docker Compose:
 
 ```bash
+export CR_PAT=your_github_pat_here  # Set this if you want to pull the latest frontend image from GitHub Packages
+echo $CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
 docker-compose up --build
+```
+```powershell
+# Set your token as a variable in the current session
+$env:CR_PAT = "YOUR_GITHUB_TOKEN_HERE"
+
+# Pipe the token into docker login
+$env:CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+# Build both the frontend and backend images
+docker compose build
+
+# Push them both to GitHub Container Registry
+docker compose push
 ```
 
 This will start:
