@@ -6,7 +6,8 @@ import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { api, formatRelative } from "@/lib/api";
+import { useNsfwCheck } from "@/hooks/useNsfwCheck";
 
 const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
 const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
@@ -17,6 +18,27 @@ const StudentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [priority, setPriority] = useState(1);
   const [durationSeconds, setDurationSeconds] = useState(10);
+
+  const { scanStatus, scanFile, resetScan } = useNsfwCheck();
+
+  const handleFileChange = async (f: File | null) => {
+    setFile(f);
+    if (!f) {
+      resetScan();
+      return;
+    }
+    const result = await scanFile(f);
+    if (result === "flagged") {
+      toast({
+        title: "Image not accepted",
+        description:
+          "That image can't be submitted — it may contain content that isn't appropriate for the school event. Please choose a different photo.",
+        variant: "destructive",
+      });
+      setFile(null);
+      resetScan();
+    }
+  };
 
   useEffect(() => {
     document.title = "Submit your story · BT Enterprise Day News";
@@ -43,6 +65,7 @@ const StudentUpload = () => {
       setFile(null);
       setPriority(1);
       setDurationSeconds(10);
+      resetScan();
       myUploadsQ.refetch();
     },
     onError: (err: Error) => {
@@ -56,7 +79,12 @@ const StudentUpload = () => {
 
   const totalCost = (PRIORITY_COSTS[priority as keyof typeof PRIORITY_COSTS] ?? 5) +
                     (DURATION_COSTS[durationSeconds as keyof typeof DURATION_COSTS] ?? 5);
-  const canSubmit = name.trim().length > 0 && file && !upload.isPending;
+  const canSubmit =
+    name.trim().length > 0 &&
+    file !== null &&
+    !upload.isPending &&
+    scanStatus !== "scanning" &&
+    scanStatus !== "flagged";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-student-bg text-student-ink">
@@ -83,7 +111,7 @@ const StudentUpload = () => {
           </div>
 
           <div className="mt-10 space-y-6 fade-in" style={{ animationDelay: "120ms" }}>
-            <UploadDropzone file={file} onFileChange={setFile} />
+            <UploadDropzone file={file} onFileChange={handleFileChange} scanStatus={scanStatus} />
 
             {/* Priority Slider */}
             <div className="space-y-2 rounded-xl border border-student-border bg-white/[0.03] p-4">
@@ -135,7 +163,11 @@ const StudentUpload = () => {
               disabled={!canSubmit}
               className="group h-16 w-full rounded-2xl bg-gradient-neon text-lg font-bold text-white shadow-[0_20px_60px_-20px_hsl(var(--neon-1)/0.8)] transition-all hover:scale-[1.01] hover:shadow-[0_25px_70px_-15px_hsl(var(--neon-1)/0.9)] disabled:opacity-50 disabled:hover:scale-100"
             >
-              {upload.isPending ? "Sending…" : "Send it"}
+              {upload.isPending
+                ? "Sending…"
+                : scanStatus === "scanning"
+                ? "Checking image…"
+                : "Send it"}
               <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Button>
 

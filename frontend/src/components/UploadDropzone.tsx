@@ -1,13 +1,15 @@
 import { useCallback, useRef, useState, type DragEvent, type ChangeEvent } from "react";
-import { Upload, ImageIcon, X } from "lucide-react";
+import { Upload, ImageIcon, X, ShieldCheck, Loader2, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { type NsfwScanStatus } from "@/hooks/useNsfwCheck";
 
 interface UploadDropzoneProps {
   file: File | null;
   onFileChange: (file: File | null) => void;
+  scanStatus?: NsfwScanStatus;
 }
 
-export const UploadDropzone = ({ file, onFileChange }: UploadDropzoneProps) => {
+export const UploadDropzone = ({ file, onFileChange, scanStatus = "idle" }: UploadDropzoneProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -101,6 +103,26 @@ export const UploadDropzone = ({ file, onFileChange }: UploadDropzoneProps) => {
           <ImageIcon className="h-3.5 w-3.5" />
           <span className="max-w-[180px] truncate font-medium">{file.name}</span>
           <span className="text-student-muted">· {(file.size / 1024).toFixed(0)} KB</span>
+        </div>
+      )}
+
+      {/* Content-scan status badge */}
+      {scanStatus === "scanning" && (
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-student-muted backdrop-blur">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Checking image…
+        </div>
+      )}
+      {scanStatus === "clean" && file?.type.startsWith("image/") && (
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-400">
+          <ShieldCheck className="h-3 w-3" />
+          Looks good
+        </div>
+      )}
+      {scanStatus === "flagged" && (
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-400">
+          <ShieldAlert className="h-3 w-3" />
+          Image not accepted
         </div>
       )}
     </div>
