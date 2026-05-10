@@ -27,6 +27,30 @@ const StudentUpload = () => {
       resetScan();
       return;
     }
+
+    // ── Size checks ────────────────────────────────────────────────────────
+    const sizeResult = checkFileSize(f);
+    if (sizeResult === "too-large") {
+      toast({
+        title: "File too large",
+        description:
+          "That file is over 25 MB and would take too long to upload. Please export it at a lower file size and try again.",
+        variant: "destructive",
+      });
+      setFile(null);
+      resetScan();
+      return;
+    }
+    if (sizeResult === "too-small") {
+      toast({
+        title: "Image may look blurry",
+        description:
+          "This image is under 3 MB — it might not display very well on the big screen. A high-quality JPEG between 5 MB and 15 MB will look much sharper.",
+      });
+      // Non-blocking: they can still submit if they want
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     const result = await scanFile(f);
     if (result === "flagged") {
       toast({
