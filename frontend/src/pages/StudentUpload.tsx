@@ -108,6 +108,11 @@ const StudentUpload = () => {
             <p className="mt-4 max-w-md text-base text-student-muted sm:text-lg">
               Snap it, upload it, and your moment lands on the big screen for the whole school to see.
             </p>
+
+            {/* Upload guidance */}
+            <div className="mt-6 rounded-2xl border border-student-border bg-white/[0.03] px-5 py-4 text-sm text-student-muted leading-relaxed max-w-xl">
+              We recommend using a <span className="text-student-ink font-medium">4K resolution (3840 × 2160 px)</span> to keep your pictures crisp and sharp. For the best balance of quality and speed, save your images as <span className="text-student-ink font-medium">high-quality JPEGs</span> with a file size between <span className="text-student-ink font-medium">5 MB and 15 MB</span>. This ensures the image looks great without slowing down the system or taking too long to upload.
+            </div>
           </div>
 
           <div className="mt-10 space-y-6 fade-in" style={{ animationDelay: "120ms" }}>
