@@ -42,12 +42,27 @@ const StudentUpload = () => {
       return;
     }
     if (sizeResult === "too-small") {
-      toast({
-        title: "Image may look blurry",
-        description:
-          "This image is under 3 MB — it might not display very well on the big screen. A high-quality JPEG between 5 MB and 15 MB will look much sharper.",
-      });
-      // Non-blocking: they can still submit if they want
+      const kb = f.size / 1024;
+      if (kb < 10) {
+        // Hard block: file is almost certainly corrupted or invalid
+        toast({
+          title: "File is corrupted or invalid",
+          description:
+            "That file is too small or corrupted — it can't be processed. Please check the file and try again.",
+          variant: "destructive",
+        });
+        setFile(null);
+        resetScan();
+        return;
+      } else {
+        // Soft warning: small but potentially valid image
+        toast({
+          title: "Image may look blurry",
+          description:
+            "This image is under 3 MB — it might not display very well on the big screen. A high-quality JPEG between 5 MB and 15 MB will look much sharper.",
+        });
+        // Non-blocking: they can still submit if they want
+      }
     }
     // ──────────────────────────────────────────────────────────────────────
 
@@ -134,7 +149,7 @@ const StudentUpload = () => {
             </p>
 
             {/* Upload guidance */}
-            <div className="mt-6 rounded-2xl border border-student-border bg-white/[0.03] px-5 py-4 text-sm text-student-muted leading-relaxed max-w-xl">
+            <div className="mt-6 w-full rounded-2xl border border-student-border bg-white/[0.03] px-4 py-4 text-sm text-student-muted leading-relaxed sm:px-5">
               We recommend using a <span className="text-student-ink font-medium">4K resolution (3840 × 2160 px)</span> to keep your pictures crisp and sharp. For the best balance of quality and speed, save your images as <span className="text-student-ink font-medium">high-quality JPEGs</span> with a file size between <span className="text-student-ink font-medium">5 MB and 15 MB</span>. This ensures the image looks great without slowing down the system or taking too long to upload.
             </div>
           </div>
