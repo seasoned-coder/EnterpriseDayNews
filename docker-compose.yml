@@ -42,5 +42,18 @@ services:
     volumes:
       - uploads:/usr/share/nginx/html/uploads:ro
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   uploads:
+  caddy_data:
+  caddy_config:
