@@ -1,0 +1,3 @@
+enterprisedaynews.chickenkiller.com {
+    reverse_proxy frontend:80
+}
