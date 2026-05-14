@@ -93,7 +93,7 @@ export const UploadDropzone = ({ file, onFileChange, scanStatus = "idle" }: Uplo
             Drop your story here
           </p>
           <p className="mt-1.5 text-sm text-student-muted">
-            or <span className="text-neon-2 underline-offset-4 group-hover:underline">click to browse</span> · images, video, or PDF
+            or <span className="text-neon-2 underline-offset-4 group-hover:underline">click to browse for your advert image</span> ·
           </p>
         </>
       )}
