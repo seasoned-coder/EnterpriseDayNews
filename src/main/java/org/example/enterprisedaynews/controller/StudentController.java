@@ -32,5 +32,12 @@ public class StudentController {
         String username = ControllerSupport.usernameOf(principal);
         return ResponseEntity.ok(imageService.getUserUploads(username).stream().map(ImageView::from).toList());
     }
+
+    @DeleteMapping("/uploads/{id}")
+    public ResponseEntity<Void> deleteMyUpload(@PathVariable Long id, Principal principal) {
+        String username = ControllerSupport.usernameOf(principal);
+        imageService.deleteStudentImage(id, username);
+        return ResponseEntity.noContent().build();
+    }
 }
 

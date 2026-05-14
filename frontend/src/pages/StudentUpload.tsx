@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2, Trash2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { api, formatRelative } from "@/lib/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { checkFileSize } from "@/lib/fileSizeCheck";
 import { useNsfwCheck } from "@/hooks/useNsfwCheck";
 
 const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
@@ -18,6 +29,7 @@ const StudentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [priority, setPriority] = useState(1);
   const [durationSeconds, setDurationSeconds] = useState(10);
+  const [deleteTarget, setDeleteTarget] = useState<ApiSubmission | null>(null);
 
   const { scanStatus, scanFile, resetScan } = useNsfwCheck();
 
@@ -110,6 +122,27 @@ const StudentUpload = () => {
     onError: (err: Error) => {
       toast({
         title: "Upload failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteUpload = useMutation({
+    mutationFn: async (id: number) => {
+      return api.studentDeleteMyUpload(id, name);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Upload deleted",
+        description: "Your file was permanently deleted.",
+      });
+      setDeleteTarget(null);
+      myUploadsQ.refetch();
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Delete failed",
         description: err.message,
         variant: "destructive",
       });
@@ -233,6 +266,20 @@ const StudentUpload = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {myUploadsQ.data.map((upload) => (
                     <div key={upload.id} className="rounded-xl border border-student-border bg-white/[0.03] p-4">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <p className="min-w-0 text-xs font-medium text-student-ink truncate">{upload.originalFileName}</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                          onClick={() => setDeleteTarget(upload)}
+                          disabled={deleteUpload.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
                       <img
                         src={api.imageUrl(upload.filePath)}
                         alt={upload.originalFileName}
@@ -272,6 +319,31 @@ const StudentUpload = () => {
               )}
             </div>
           )}
+
+          <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Permanently delete this upload?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This cannot be undone. The file will be permanently removed from the system and will stop showing on the projector if it is currently live.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteUpload.isPending}>Keep upload</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => {
+                    if (deleteTarget) {
+                      deleteUpload.mutate(deleteTarget.id);
+                    }
+                  }}
+                  disabled={deleteUpload.isPending}
+                >
+                  {deleteUpload.isPending ? "Deleting..." : "Delete permanently"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
     </div>

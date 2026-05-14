@@ -104,6 +104,13 @@ export const api = {
     }).then(handle<ApiSubmission[]>);
   },
 
+  studentDeleteMyUpload(id: number, name: string) {
+    return fetch(`${API_BASE}/api/student/uploads/${id}`, {
+      method: "DELETE",
+      headers: headers("STUDENT", name),
+    }).then(handle<void>);
+  },
+
   list(kind: "new" | "approved" | "rejected", staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/${kind}`, {
       headers: headers("STAFF", staffName),

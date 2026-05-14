@@ -4,6 +4,8 @@ import { GraduationCap, Briefcase, MonitorPlay, Newspaper, ArrowRight } from "lu
 import { cn } from "@/lib/utils";
 
 const Landing = () => {
+  const appVersion = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? "dev";
+
   return (
     <div className="relative min-h-screen bg-slate-950 text-white selection:bg-primary/30">
       {/* Background patterns */}
@@ -57,6 +59,7 @@ const Landing = () => {
 
         <footer className="mt-32 text-center text-slate-500 fade-in" style={{ animationDelay: "400ms" }}>
           <p className="text-sm font-medium uppercase tracking-widest">BT Enterprise Day News System</p>
+          <p className="mt-2 text-xs text-slate-400">Version {appVersion}</p>
         </footer>
       </main>
     </div>

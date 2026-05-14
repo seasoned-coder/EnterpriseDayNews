@@ -25,6 +25,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 @ExtendWith(MockitoExtension.class)
 class ImageServiceTests {
@@ -255,6 +256,39 @@ class ImageServiceTests {
 
         assertFalse(Files.exists(filePath));
         verify(imageRepository).delete(m);
+    }
+
+    @Test
+    void testDeleteStudentImageOwned() throws IOException {
+        String fileName = "owned-delete.png";
+        Path filePath = tempDir.resolve(fileName);
+        Files.writeString(filePath, "content");
+
+        ImageMetadata m = new ImageMetadata();
+        m.setId(7L);
+        m.setFilePath(fileName);
+        m.setUploadedBy("student1");
+
+        when(imageRepository.findById(7L)).thenReturn(Optional.of(m));
+
+        imageService.deleteStudentImage(7L, "student1");
+
+        assertFalse(Files.exists(filePath));
+        verify(imageRepository).delete(m);
+    }
+
+    @Test
+    void testDeleteStudentImageDifferentOwnerForbidden() {
+        ImageMetadata m = new ImageMetadata();
+        m.setId(8L);
+        m.setUploadedBy("student2");
+
+        when(imageRepository.findById(8L)).thenReturn(Optional.of(m));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> imageService.deleteStudentImage(8L, "student1"));
+        assertEquals(FORBIDDEN, ex.getStatusCode());
+        verify(imageRepository, never()).delete(any());
     }
 
     @Test

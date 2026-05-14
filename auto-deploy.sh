@@ -13,9 +13,12 @@ if [ "$LOCAL" != "$REMOTE" ]; then
     echo "$(date): New changes detected. Deploying..."
     /usr/bin/git pull
 
+    APP_VERSION="$(/usr/bin/date -u +%Y.%m.%d-%H%M%S)-$(/usr/bin/git rev-parse --short HEAD)"
+    echo "Build version: $APP_VERSION"
+
     # Run docker without sudo (since we added the group)
     echo "Starting docker compose build and up..."
-    /usr/bin/docker compose up -d --build --remove-orphans
+    APP_VERSION="$APP_VERSION" /usr/bin/docker compose up -d --build --remove-orphans
 
     # Optional cleanup
     echo "Cleaning up old images..."

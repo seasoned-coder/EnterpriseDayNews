@@ -14,10 +14,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -72,6 +73,15 @@ class StudentControllerTests {
     }
 
     @Test
+    void testDeleteMyUpload() throws Exception {
+        mockMvc.perform(delete("/api/student/uploads/42")
+                .header("Authorization", studentToken))
+                .andExpect(status().isNoContent());
+
+        verify(imageService).deleteStudentImage(42L, "student1");
+    }
+
+    @Test
     void testStudentUploadUnauthorized() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.jpg", "image/jpeg", "content".getBytes());
@@ -87,6 +97,13 @@ class StudentControllerTests {
 
         mockMvc.perform(multipart("/api/student/upload")
                 .file(file)
+                .header("Authorization", staffToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testDeleteMyUploadWrongRole() throws Exception {
+        mockMvc.perform(delete("/api/student/uploads/42")
                 .header("Authorization", staffToken))
                 .andExpect(status().isForbidden());
     }

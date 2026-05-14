@@ -35,6 +35,8 @@ services:
     build:
       context: ./frontend
       target: production
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
     ports:
       - "3000:80"
     depends_on:

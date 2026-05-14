@@ -70,6 +70,40 @@ docker compose build
 docker compose push
 ```
 
+### 2.1 Versioned Local Build + Push (Recommended)
+
+If you build from your laptop, use the helper scripts in the repo root. They:
+- stamp `APP_VERSION` as `YYYY.MM.DD-HHMMSS-<git-sha>`
+- run `docker compose build`
+- tag backend/frontend images with both `latest` and the stamped version
+- push only if build succeeds
+
+```powershell
+# Windows PowerShell
+cd C:\code\EnterpriseDayNews
+.\build-and-push.ps1
+```
+
+```bash
+# macOS / Linux
+cd /path/to/EnterpriseDayNews
+./build-and-push.sh
+```
+
+Optional flags:
+
+```powershell
+.\build-and-push.ps1 -BuildOnly
+.\build-and-push.ps1 -Version 2026.05.14-120000-ab12cd3
+.\build-and-push.ps1 -DryRun
+```
+
+```bash
+./build-and-push.sh --build-only
+./build-and-push.sh --version 2026.05.14-120000-ab12cd3
+./build-and-push.sh --dry-run
+```
+
 This will start:
 -   **PostgreSQL**: Database for image metadata and settings.
 -   **Backend (Java)**: REST API accessible at `http://localhost:8080`.

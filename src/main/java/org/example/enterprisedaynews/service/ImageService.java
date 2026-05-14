@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -230,6 +231,19 @@ public class ImageService {
     @Transactional
     public void deleteImage(Long id) {
         ImageMetadata metadata = findOrThrow(id);
+        deleteImage(metadata);
+    }
+
+    @Transactional
+    public void deleteStudentImage(Long id, String username) {
+        ImageMetadata metadata = findOrThrow(id);
+        if (!Objects.equals(metadata.getUploadedBy(), username)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own uploads");
+        }
+        deleteImage(metadata);
+    }
+
+    private void deleteImage(ImageMetadata metadata) {
         deletePhysicalFile(metadata.getFilePath());
         imageRepository.delete(metadata);
     }
