@@ -32,6 +32,13 @@ public class StudentController {
 <span class="fc" id="L32">        String username = ControllerSupport.usernameOf(principal);</span>
 <span class="fc" id="L33">        return ResponseEntity.ok(imageService.getUserUploads(username).stream().map(ImageView::from).toList());</span>
     }
+
+    @DeleteMapping(&quot;/uploads/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteMyUpload(@PathVariable Long id, Principal principal) {
+<span class="fc" id="L38">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L39">        imageService.deleteStudentImage(id, username);</span>
+<span class="fc" id="L40">        return ResponseEntity.noContent().build();</span>
+    }
 }
 
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
