@@ -52,3 +52,29 @@ describe("api.login", () => {
   });
 });
 
+describe("api.createStudentAccount", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+    window.history.pushState({}, "", "/");
+  });
+
+  it("does not redirect to landing on a forbidden response", async () => {
+    window.history.pushState({}, "", "/staff/students");
+    localStorage.setItem("token", "staff-token");
+    localStorage.setItem("user", JSON.stringify({ username: "staff1", role: "STAFF" }));
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Forbidden", { status: 403, statusText: "Forbidden" }),
+    );
+
+    await expect(api.createStudentAccount("year10", "fred", "staff1")).rejects.toThrow(
+      "Request failed [403]: Forbidden",
+    );
+
+    expect(window.location.pathname).toBe("/staff/students");
+    expect(localStorage.getItem("token")).toBe("staff-token");
+    expect(localStorage.getItem("user")).toBe(JSON.stringify({ username: "staff1", role: "STAFF" }));
+  });
+});
+

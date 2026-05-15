@@ -66,7 +66,7 @@ const headers = () => {
 async function handle<T>(res: Response, options: HandleOptions = {}): Promise<T> {
   const { redirectOnAuthFailure = true } = options;
 
-  if (redirectOnAuthFailure && (res.status === 401 || res.status === 403)) {
+  if (redirectOnAuthFailure && res.status === 401) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.location.href = "/";
