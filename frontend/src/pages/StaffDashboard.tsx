@@ -15,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
@@ -23,6 +22,7 @@ import { api, formatRelative, type ApiSubmission } from "@/lib/api";
 type Tab = "new" | "approved" | "rejected" | "comm" | "eod";
 
 const StaffDashboard = () => {
+  const moderationTabs: Exclude<Tab, "eod">[] = ["new", "approved", "rejected", "comm"];
   const [tab, setTab] = useState<Tab>("new");
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<ApiSubmission | null>(null);
@@ -39,15 +39,15 @@ const StaffDashboard = () => {
   const staffName = user?.username || "staff";
 
   useEffect(() => {
-    document.title = "Staff Dashboard · BT Enterprise Day News";
+    document.title = "Advert Dashboard · BT Enterprise Day News";
   }, []);
 
   const queries = useQueries({
-    queries: (["new", "approved", "rejected", "comm"] as Tab[]).map((kind) => ({
+    queries: moderationTabs.map((kind) => ({
       queryKey: ["submissions", kind] as const,
       queryFn: async () => {
         if (kind === "comm") return api.listInfo(staffName);
-        return api.list(kind, staffName);
+        return api.list(kind as "new" | "approved" | "rejected", staffName);
       },
       refetchInterval: 15_000,
     })),
@@ -250,7 +250,10 @@ const StaffDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <BrandNav variant="light" />
+      <BrandNav
+        variant="light"
+        secondaryLink={{ to: "/staff/students", label: "Student accounts" }}
+      />
 
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -259,7 +262,7 @@ const StaffDashboard = () => {
               Moderation
             </p>
             <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Staff Dashboard
+              Advert Dashboard
             </h1>
             <p className="mt-2 max-w-xl text-muted-foreground">
               Review student submissions before they appear on the projector.
@@ -305,7 +308,7 @@ const StaffDashboard = () => {
             ))}
           </TabsList>
 
-          {(["new", "approved", "rejected", "comm"] as Tab[]).map((k) => (
+          {moderationTabs.map((k) => (
             <TabsContent key={k} value={k} className="mt-6">
               {k === "comm" && (
                 <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -403,7 +406,7 @@ const StaffDashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filtered.map((s: ApiSubmission, idx: number) => (
+                  {filtered.map((s: ApiSubmission) => (
                     <SubmissionCard
                       key={s.id}
                       submission={s}
