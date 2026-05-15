@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 public class StudentAccountService {
 
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._-]+$");
+    private static final Pattern BCRYPT_HASH_PATTERN = Pattern.compile("^\\$2[aby]?\\$\\d{2}\\$.{53}$");
     private static final int MIN_PASSWORD_LENGTH = 6;
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final int TEMP_LOCK_MINUTES = 15;
@@ -73,7 +74,7 @@ public class StudentAccountService {
                     "Too many failed attempts. This account is temporarily locked.");
         }
 
-        if (!passwordEncoder.matches(normalizedPassword, account.getPasswordHash())) {
+        if (!passwordMatches(account, normalizedPassword)) {
             boolean lockedNow = registerFailedAttempt(account);
             if (lockedNow) {
                 throw new ResponseStatusException(HttpStatus.LOCKED,
@@ -229,6 +230,34 @@ public class StudentAccountService {
     private void clearFailedAttemptState(StudentAccount account) {
         account.setFailedLoginAttempts(0);
         account.setTemporaryLockUntil(null);
+    }
+
+    private boolean passwordMatches(StudentAccount account, String rawPassword) {
+        String storedPassword = account.getPasswordHash();
+        if (storedPassword == null || storedPassword.isBlank()) {
+            return false;
+        }
+
+        if (isBcryptHash(storedPassword)) {
+            try {
+                return passwordEncoder.matches(rawPassword, storedPassword);
+            } catch (IllegalArgumentException ignored) {
+                return false;
+            }
+        }
+
+        if (!storedPassword.equals(rawPassword)) {
+            return false;
+        }
+
+        account.setPasswordHash(passwordEncoder.encode(rawPassword));
+        account.setUpdatedAt(LocalDateTime.now());
+        studentAccountRepository.save(account);
+        return true;
+    }
+
+    private boolean isBcryptHash(String passwordHash) {
+        return BCRYPT_HASH_PATTERN.matcher(passwordHash).matches();
     }
 
     private String normalizeUsername(String username) {

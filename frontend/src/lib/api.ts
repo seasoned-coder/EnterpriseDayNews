@@ -6,6 +6,10 @@ const RAW_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ""
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 export const UPLOADS_BASE = `${API_BASE}/uploads`;
 
+interface HandleOptions {
+  redirectOnAuthFailure?: boolean;
+}
+
 export type SubmissionStatusApi = "NEW" | "APPROVED" | "REJECTED";
 
 export interface ApiSubmission {
@@ -59,8 +63,10 @@ const headers = () => {
   };
 };
 
-async function handle<T>(res: Response): Promise<T> {
-  if (res.status === 401 || res.status === 403) {
+async function handle<T>(res: Response, options: HandleOptions = {}): Promise<T> {
+  const { redirectOnAuthFailure = true } = options;
+
+  if (redirectOnAuthFailure && (res.status === 401 || res.status === 403)) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.location.href = "/";
@@ -82,7 +88,9 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, role, password }),
     });
-    const data = await handle<{ token: string; username: string; role: "STUDENT" | "STAFF" }>(res);
+    const data = await handle<{ token: string; username: string; role: "STUDENT" | "STAFF" }>(res, {
+      redirectOnAuthFailure: false,
+    });
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify({ username: data.username, role: data.role }));
     return data;

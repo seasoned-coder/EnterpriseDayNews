@@ -26,3 +26,29 @@ describe("api.studentDeleteMyUpload", () => {
   });
 });
 
+describe("api.login", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+    window.history.pushState({}, "", "/");
+  });
+
+  it("does not redirect to the landing page on invalid credentials", async () => {
+    window.history.pushState({}, "", "/student/login");
+    localStorage.setItem("token", "existing-token");
+    localStorage.setItem("user", JSON.stringify({ username: "student", role: "STUDENT" }));
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Invalid username or password", { status: 401, statusText: "Unauthorized" }),
+    );
+
+    await expect(api.login("student", "STUDENT", "wrongpass")).rejects.toThrow(
+      "Request failed [401]: Invalid username or password",
+    );
+
+    expect(window.location.pathname).toBe("/student/login");
+    expect(localStorage.getItem("token")).toBe("existing-token");
+    expect(localStorage.getItem("user")).toBe(JSON.stringify({ username: "student", role: "STUDENT" }));
+  });
+});
+

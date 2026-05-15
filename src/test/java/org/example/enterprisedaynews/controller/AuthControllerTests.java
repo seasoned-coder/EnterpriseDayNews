@@ -1,6 +1,7 @@
 package org.example.enterprisedaynews.controller;
 
 import org.example.enterprisedaynews.security.Roles;
+import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.example.enterprisedaynews.service.StudentAccountService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,9 @@ class AuthControllerTests {
 
     @Autowired
     private StudentAccountService studentAccountService;
+
+    @Autowired
+    private StudentAccountRepository studentAccountRepository;
 
     @Test
     void testLoginSuccess() throws Exception {
@@ -95,5 +99,23 @@ class AuthControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(correctPasswordBody))
                 .andExpect(status().isLocked());
+    }
+
+    @Test
+    void testLegacyPlaintextStudentPasswordIsUpgradedOnLogin() throws Exception {
+        var account = studentAccountService.createAccount("legacyuser", "Legacy1");
+        account.setPasswordHash("Legacy1");
+        studentAccountRepository.save(account);
+
+        String body = "{\"username\": \"legacyuser\", \"role\": \"" + Roles.STUDENT + "\", \"password\": \"Legacy1\"}";
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("legacyuser"));
+
+        var refreshed = studentAccountRepository.findByUsername("legacyuser").orElseThrow();
+        org.junit.jupiter.api.Assertions.assertNotEquals("Legacy1", refreshed.getPasswordHash());
+        org.junit.jupiter.api.Assertions.assertTrue(refreshed.getPasswordHash().startsWith("$2"));
     }
 }
