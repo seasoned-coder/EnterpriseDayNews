@@ -9,6 +9,7 @@ import StudentLogin from "./pages/StudentLogin.tsx";
 import StaffLogin from "./pages/StaffLogin.tsx";
 import StudentUpload from "./pages/StudentUpload.tsx";
 import StaffDashboard from "./pages/StaffDashboard.tsx";
+import StudentAccountsDashboard from "./pages/StudentAccountsDashboard.tsx";
 import Projector from "./pages/Projector.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { api } from "@/lib/api";
@@ -46,6 +47,14 @@ const App = () => (
             element={
               <ProtectedRoute role="STAFF">
                 <StaffDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff/students"
+            element={
+              <ProtectedRoute role="STAFF">
+                <StudentAccountsDashboard />
               </ProtectedRoute>
             }
           />

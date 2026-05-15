@@ -34,7 +34,25 @@ export interface ProjectorSettings {
   imageRefreshSeconds: number;
 }
 
-const headers = (role: "STUDENT" | "STAFF", user: string) => {
+export interface ApiUser {
+  username: string;
+  role: "STUDENT" | "STAFF";
+}
+
+export interface ApiStudentAccount {
+  id: number;
+  username: string;
+  locked: boolean;
+  manuallyLocked: boolean;
+  failedLoginAttempts: number;
+  temporaryLockUntil: string | null;
+  lastLoginAt: string | null;
+  lastLoginIp: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const headers = () => {
   const token = localStorage.getItem("token");
   return {
     "Authorization": `Bearer ${token}`
@@ -64,9 +82,9 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, role, password }),
     });
-    const data = await handle<{ token: string }>(res);
+    const data = await handle<{ token: string; username: string; role: "STUDENT" | "STAFF" }>(res);
     localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify({ username, role }));
+    localStorage.setItem("user", JSON.stringify({ username: data.username, role: data.role }));
     return data;
   },
 
@@ -78,7 +96,7 @@ export const api = {
 
   getCurrentUser() {
     const user = localStorage.getItem("user");
-    return user ? JSON.parse(user) as { username: string, role: "STUDENT" | "STAFF" } : null;
+    return user ? JSON.parse(user) as ApiUser : null;
   },
 
   imageUrl(filePath: string) {
@@ -92,110 +110,152 @@ export const api = {
     fd.append("durationSeconds", durationSeconds.toString());
     const res = await fetch(`${API_BASE}/api/student/upload`, {
       method: "POST",
-      headers: headers("STUDENT", name),
+      headers: headers(),
       body: fd,
     });
     return handle<ApiSubmission>(res);
   },
 
-  studentGetMyUploads(name: string) {
+  studentGetMyUploads(_name: string) {
     return fetch(`${API_BASE}/api/student/uploads`, {
-      headers: headers("STUDENT", name),
+      headers: headers(),
     }).then(handle<ApiSubmission[]>);
   },
 
-  studentDeleteMyUpload(id: number, name: string) {
+  studentDeleteMyUpload(id: number, _name: string) {
     return fetch(`${API_BASE}/api/student/uploads/${id}`, {
       method: "DELETE",
-      headers: headers("STUDENT", name),
+      headers: headers(),
     }).then(handle<void>);
   },
 
-  list(kind: "new" | "approved" | "rejected", staffName = "staff") {
+  list(kind: "new" | "approved" | "rejected", _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/${kind}`, {
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<ApiSubmission[]>);
   },
 
-  approve(id: number, staffName = "staff") {
+  approve(id: number, _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/approve/${id}`, {
       method: "POST",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<ApiSubmission>);
   },
 
-  reject(id: number, staffName = "staff") {
+  reject(id: number, _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/reject/${id}`, {
       method: "POST",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<ApiSubmission>);
   },
 
-  toggleDisplay(id: number, display: boolean, staffName = "staff") {
+  toggleDisplay(id: number, display: boolean, _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/toggle-display/${id}?display=${display}`, {
       method: "POST",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<ApiSubmission>);
   },
 
-  updateDisplayOrder(ids: number[], staffName = "staff") {
+  updateDisplayOrder(ids: number[], _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/order`, {
       method: "POST",
       headers: {
-        ...headers("STAFF", staffName),
+        ...headers(),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(ids),
     }).then(handle<void>);
   },
 
-  delete(id: number, staffName = "staff") {
+  delete(id: number, _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/${id}`, {
       method: "DELETE",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<void>);
   },
 
-  deleteAll(staffName = "staff") {
+  deleteAll(_staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/all`, {
       method: "DELETE",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<void>);
   },
 
-  listInfo(staffName = "staff") {
+  listInfo(_staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/info`, {
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<ApiSubmission[]>);
   },
 
-  uploadInfo(file: File, flash: boolean, staffName = "staff") {
+  uploadInfo(file: File, flash: boolean, _staffName = "staff") {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("flash", flash.toString());
     return fetch(`${API_BASE}/api/staff/info/upload`, {
       method: "POST",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
       body: fd,
     }).then(handle<ApiSubmission>);
   },
 
-  postFreeText(text: string, flash: boolean, staffName = "staff") {
+  postFreeText(text: string, flash: boolean, _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/info/free-text?flash=${flash}`, {
       method: "POST",
       headers: {
-        ...headers("STAFF", staffName),
+        ...headers(),
         "Content-Type": "text/plain",
       },
       body: text,
     }).then(handle<ApiSubmission>);
   },
 
-  toggleFlash(id: number, flash: boolean, staffName = "staff") {
+  toggleFlash(id: number, flash: boolean, _staffName = "staff") {
     return fetch(`${API_BASE}/api/staff/toggle-flash/${id}?flash=${flash}`, {
       method: "POST",
-      headers: headers("STAFF", staffName),
+      headers: headers(),
     }).then(handle<ApiSubmission>);
+  },
+
+  listStudentAccounts(_staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/students`, {
+      headers: headers(),
+    }).then(handle<ApiStudentAccount[]>);
+  },
+
+  createStudentAccount(username: string, password: string, _staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/students`, {
+      method: "POST",
+      headers: {
+        ...headers(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    }).then(handle<ApiStudentAccount>);
+  },
+
+  setStudentAccountLocked(id: number, locked: boolean, _staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/students/${id}/lock?locked=${locked}`, {
+      method: "POST",
+      headers: headers(),
+    }).then(handle<ApiStudentAccount>);
+  },
+
+  changeStudentAccountPassword(id: number, password: string, _staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/students/${id}/password`, {
+      method: "PUT",
+      headers: {
+        ...headers(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password }),
+    }).then(handle<ApiStudentAccount>);
+  },
+
+  deleteStudentAccount(id: number, _staffName = "staff") {
+    return fetch(`${API_BASE}/api/staff/students/${id}`, {
+      method: "DELETE",
+      headers: headers(),
+    }).then(handle<void>);
   },
 
   projectorImages() {
@@ -221,3 +281,11 @@ export function formatRelative(iso: string): string {
   if (d < 7) return `${d} day${d === 1 ? "" : "s"} ago`;
   return new Date(iso).toLocaleDateString();
 }
+
+export function formatDateTime(iso: string | null): string {
+  if (!iso) return "Never";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString();
+}
+

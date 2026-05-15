@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final StudentAccountService studentAccountService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -33,7 +35,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtProvider.getUsernameFromToken(token);
                 String role = jwtProvider.getRoleFromToken(token);
 
-                if (username != null && role != null) {
+                boolean activeStudent = !Roles.STUDENT.equals(role)
+                        || studentAccountService.findActiveAccount(username).isPresent();
+
+                if (username != null && role != null && activeStudent) {
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(username, null, List.of(authority));

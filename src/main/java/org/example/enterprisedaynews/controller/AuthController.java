@@ -1,10 +1,14 @@
 package org.example.enterprisedaynews.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.security.JwtProvider;
 import org.example.enterprisedaynews.security.Roles;
+import org.example.enterprisedaynews.service.StudentAccountService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -14,14 +18,9 @@ import java.util.Map;
 public class AuthController {
 
     private final JwtProvider jwtProvider;
-    
-    // Hardcoded credentials for the school event as requested.
-    // In a production app, these would be in a database with hashed passwords.
-    private static final Map<String, String> STUDENT_CREDS = Map.of(
-        "student", "ed2026",
-        "guest", "welcome"
-    );
-    
+    private final StudentAccountService studentAccountService;
+
+    // Staff credentials remain fixed for the event admin console.
     private static final Map<String, String> STAFF_CREDS = Map.of(
         "staff1", "secret123",
         "admin", "enterprise-day-2026"
@@ -31,27 +30,38 @@ public class AuthController {
      * Simple login for the school event. Verifies credentials against a hardcoded map.
      */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> request, HttpServletRequest servletRequest) {
         String username = request.get("username");
         String role = request.get("role");
         String password = request.get("password");
 
         if (username == null || username.isBlank() || role == null || password == null || (!role.equals(Roles.STUDENT) && !role.equals(Roles.STAFF))) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("Invalid login request");
         }
 
-        boolean authenticated = false;
+        String canonicalUsername = username.trim().toLowerCase();
         if (Roles.STUDENT.equals(role)) {
-            authenticated = password.equals(STUDENT_CREDS.get(username.toLowerCase()));
-        } else if (Roles.STAFF.equals(role)) {
-            authenticated = password.equals(STAFF_CREDS.get(username.toLowerCase()));
+            try {
+                canonicalUsername = studentAccountService
+                        .recordSuccessfulLogin(
+                                studentAccountService.authenticate(username, password),
+                                ControllerSupport.clientIpOf(servletRequest))
+                        .getUsername();
+            } catch (ResponseStatusException ex) {
+                return ResponseEntity.status(ex.getStatusCode()).body(ex.getReason());
+            }
+        } else {
+            boolean authenticated = password.equals(STAFF_CREDS.get(canonicalUsername));
+            if (!authenticated) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            }
         }
 
-        if (!authenticated) {
-            return ResponseEntity.status(401).build();
-        }
-
-        String token = jwtProvider.generateToken(username, role);
-        return ResponseEntity.ok(Map.of("token", token));
+        String token = jwtProvider.generateToken(canonicalUsername, role);
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "username", canonicalUsername,
+                "role", role
+        ));
     }
 }
