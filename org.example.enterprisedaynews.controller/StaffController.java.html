@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StaffController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.controller</a> &gt; <span class="el_source">StaffController.java</span></div><h1>StaffController.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.dto.CreateStudentAccountRequest;
 import org.example.enterprisedaynews.dto.ImageView;
+import org.example.enterprisedaynews.dto.StudentAccountView;
+import org.example.enterprisedaynews.dto.UpdateStudentPasswordRequest;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,91 +23,121 @@ import java.util.List;
 public class StaffController {
 
     private final ImageService imageService;
+    private final StudentAccountService studentAccountService;
 
     @GetMapping(&quot;/new&quot;)
     public List&lt;ImageView&gt; getNewImages() {
-<span class="fc" id="L25">        return imageService.getNewImages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L30">        return imageService.getNewImages().stream().map(ImageView::from).toList();</span>
     }
 
     @GetMapping(&quot;/approved&quot;)
     public List&lt;ImageView&gt; getApprovedImages() {
-<span class="fc" id="L30">        return imageService.getApprovedImages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L35">        return imageService.getApprovedImages().stream().map(ImageView::from).toList();</span>
     }
 
     @GetMapping(&quot;/rejected&quot;)
     public List&lt;ImageView&gt; getRejectedImages() {
-<span class="fc" id="L35">        return imageService.getRejectedImages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L40">        return imageService.getRejectedImages().stream().map(ImageView::from).toList();</span>
     }
 
     @PostMapping(&quot;/approve/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; approve(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L40">        return ResponseEntity.ok(ImageView.from(</span>
-<span class="fc" id="L41">                imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));</span>
+<span class="fc" id="L45">        return ResponseEntity.ok(ImageView.from(</span>
+<span class="fc" id="L46">                imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));</span>
     }
 
     @PostMapping(&quot;/reject/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; reject(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L46">        return ResponseEntity.ok(ImageView.from(</span>
-<span class="fc" id="L47">                imageService.updateStatus(id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal))));</span>
+<span class="fc" id="L51">        return ResponseEntity.ok(ImageView.from(</span>
+<span class="fc" id="L52">                imageService.updateStatus(id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal))));</span>
     }
 
     @PostMapping(&quot;/toggle-display/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; toggleDisplay(@PathVariable Long id, @RequestParam boolean display) {
-<span class="fc" id="L52">        return ResponseEntity.ok(ImageView.from(imageService.toggleDisplay(id, display)));</span>
+<span class="fc" id="L57">        return ResponseEntity.ok(ImageView.from(imageService.toggleDisplay(id, display)));</span>
     }
 
     @PostMapping(&quot;/order&quot;)
     public ResponseEntity&lt;Void&gt; updateOrder(@RequestBody List&lt;Long&gt; ids) {
-<span class="fc" id="L57">        imageService.updateDisplayOrder(ids);</span>
-<span class="fc" id="L58">        return ResponseEntity.ok().build();</span>
+<span class="fc" id="L62">        imageService.updateDisplayOrder(ids);</span>
+<span class="fc" id="L63">        return ResponseEntity.ok().build();</span>
     }
 
     @PostMapping(&quot;/upload&quot;)
     public ResponseEntity&lt;ImageView&gt; staffUpload(@RequestParam(&quot;file&quot;) MultipartFile file,
                                                  Principal principal) throws IOException {
-<span class="fc" id="L64">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L65">        ImageMetadata metadata = imageService.uploadImage(file, username);</span>
+<span class="fc" id="L69">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L70">        ImageMetadata metadata = imageService.uploadImage(file, username);</span>
         // Staff uploads are auto-approved.
-<span class="fc" id="L67">        return ResponseEntity.ok(ImageView.from(</span>
-<span class="fc" id="L68">                imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));</span>
+<span class="fc" id="L72">        return ResponseEntity.ok(ImageView.from(</span>
+<span class="fc" id="L73">                imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));</span>
     }
 
     @DeleteMapping(&quot;/{id}&quot;)
     public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id) {
-<span class="fc" id="L73">        imageService.deleteImage(id);</span>
-<span class="fc" id="L74">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L78">        imageService.deleteImage(id);</span>
+<span class="fc" id="L79">        return ResponseEntity.noContent().build();</span>
     }
 
     @DeleteMapping(&quot;/all&quot;)
     public ResponseEntity&lt;Void&gt; deleteAll() {
-<span class="fc" id="L79">        imageService.deleteAllImages();</span>
-<span class="fc" id="L80">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L84">        imageService.deleteAllImages();</span>
+<span class="fc" id="L85">        return ResponseEntity.noContent().build();</span>
     }
 
     @GetMapping(&quot;/info&quot;)
     public List&lt;ImageView&gt; getInfoMessages() {
-<span class="fc" id="L85">        return imageService.getInfoMessages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L90">        return imageService.getInfoMessages().stream().map(ImageView::from).toList();</span>
     }
 
     @PostMapping(&quot;/info/upload&quot;)
     public ResponseEntity&lt;ImageView&gt; uploadInfoMessage(@RequestParam(&quot;file&quot;) MultipartFile file,
                                                        @RequestParam(value = &quot;flash&quot;, defaultValue = &quot;false&quot;) boolean flash,
                                                        Principal principal) throws IOException {
-<span class="fc" id="L92">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L93">        return ResponseEntity.ok(ImageView.from(imageService.uploadInfoMessage(file, username, flash)));</span>
+<span class="fc" id="L97">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L98">        return ResponseEntity.ok(ImageView.from(imageService.uploadInfoMessage(file, username, flash)));</span>
     }
 
     @PostMapping(&quot;/info/free-text&quot;)
     public ResponseEntity&lt;ImageView&gt; postFreeText(@RequestBody String text,
                                                   @RequestParam(value = &quot;flash&quot;, defaultValue = &quot;true&quot;) boolean flash,
                                                   Principal principal) {
-<span class="fc" id="L100">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L101">        return ResponseEntity.ok(ImageView.from(imageService.postFreeTextMessage(text, username, flash)));</span>
+<span class="fc" id="L105">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L106">        return ResponseEntity.ok(ImageView.from(imageService.postFreeTextMessage(text, username, flash)));</span>
     }
 
     @PostMapping(&quot;/toggle-flash/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
-<span class="fc" id="L106">        return ResponseEntity.ok(ImageView.from(imageService.toggleFlashMode(id, flash)));</span>
+<span class="fc" id="L111">        return ResponseEntity.ok(ImageView.from(imageService.toggleFlashMode(id, flash)));</span>
+    }
+
+    @GetMapping(&quot;/students&quot;)
+    public List&lt;StudentAccountView&gt; getStudentAccounts() {
+<span class="fc" id="L116">        return studentAccountService.listAccounts().stream().map(StudentAccountView::from).toList();</span>
+    }
+
+    @PostMapping(&quot;/students&quot;)
+    public ResponseEntity&lt;StudentAccountView&gt; createStudentAccount(@RequestBody CreateStudentAccountRequest request) {
+<span class="fc" id="L121">        return ResponseEntity.status(201).body(StudentAccountView.from(</span>
+<span class="fc" id="L122">                studentAccountService.createAccount(request.username(), request.password())));</span>
+    }
+
+    @PostMapping(&quot;/students/{id}/lock&quot;)
+    public ResponseEntity&lt;StudentAccountView&gt; setStudentLock(@PathVariable Long id, @RequestParam boolean locked) {
+<span class="fc" id="L127">        return ResponseEntity.ok(StudentAccountView.from(studentAccountService.setLocked(id, locked)));</span>
+    }
+
+    @PutMapping(&quot;/students/{id}/password&quot;)
+    public ResponseEntity&lt;StudentAccountView&gt; updateStudentPassword(@PathVariable Long id,
+                                                                    @RequestBody UpdateStudentPasswordRequest request) {
+<span class="fc" id="L133">        return ResponseEntity.ok(StudentAccountView.from(</span>
+<span class="fc" id="L134">                studentAccountService.changePassword(id, request.password())));</span>
+    }
+
+    @DeleteMapping(&quot;/students/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteStudentAccount(@PathVariable Long id) {
+<span class="fc" id="L139">        studentAccountService.deleteAccount(id);</span>
+<span class="fc" id="L140">        return ResponseEntity.noContent().build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

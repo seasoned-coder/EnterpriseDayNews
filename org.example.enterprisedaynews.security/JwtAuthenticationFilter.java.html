@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,30 +20,34 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final StudentAccountService studentAccountService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-<span class="fc" id="L28">        String header = request.getHeader(&quot;Authorization&quot;);</span>
+<span class="fc" id="L30">        String header = request.getHeader(&quot;Authorization&quot;);</span>
 
-<span class="pc bpc" id="L30" title="1 of 4 branches missed.">        if (header != null &amp;&amp; header.startsWith(&quot;Bearer &quot;)) {</span>
-<span class="fc" id="L31">            String token = header.substring(7);</span>
-<span class="pc bpc" id="L32" title="1 of 2 branches missed.">            if (jwtProvider.validateToken(token)) {</span>
-<span class="fc" id="L33">                String username = jwtProvider.getUsernameFromToken(token);</span>
-<span class="fc" id="L34">                String role = jwtProvider.getRoleFromToken(token);</span>
+<span class="pc bpc" id="L32" title="1 of 4 branches missed.">        if (header != null &amp;&amp; header.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="fc" id="L33">            String token = header.substring(7);</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">            if (jwtProvider.validateToken(token)) {</span>
+<span class="fc" id="L35">                String username = jwtProvider.getUsernameFromToken(token);</span>
+<span class="fc" id="L36">                String role = jwtProvider.getRoleFromToken(token);</span>
 
-<span class="pc bpc" id="L36" title="2 of 4 branches missed.">                if (username != null &amp;&amp; role != null) {</span>
-<span class="fc" id="L37">                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);</span>
-<span class="fc" id="L38">                    UsernamePasswordAuthenticationToken auth =</span>
-<span class="fc" id="L39">                            new UsernamePasswordAuthenticationToken(username, null, List.of(authority));</span>
-<span class="fc" id="L40">                    SecurityContextHolder.getContext().setAuthentication(auth);</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">                boolean activeStudent = !Roles.STUDENT.equals(role)</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                        || studentAccountService.findActiveAccount(username).isPresent();</span>
+
+<span class="pc bpc" id="L41" title="2 of 6 branches missed.">                if (username != null &amp;&amp; role != null &amp;&amp; activeStudent) {</span>
+<span class="fc" id="L42">                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);</span>
+<span class="fc" id="L43">                    UsernamePasswordAuthenticationToken auth =</span>
+<span class="fc" id="L44">                            new UsernamePasswordAuthenticationToken(username, null, List.of(authority));</span>
+<span class="fc" id="L45">                    SecurityContextHolder.getContext().setAuthentication(auth);</span>
                 }
             }
         }
 
-<span class="fc" id="L45">        filterChain.doFilter(request, response);</span>
-<span class="fc" id="L46">    }</span>
+<span class="fc" id="L50">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L51">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
