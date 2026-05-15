@@ -24,6 +24,43 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { api, formatDateTime, formatRelative, type ApiStudentAccount } from "@/lib/api";
 
+const PASSWORD_POLICY_HELP = "Use at least 6 characters with at least one capital letter and one number.";
+
+function friendlyAccountError(error: unknown): string {
+  const fallback = "Something went wrong. Please try again.";
+  if (!(error instanceof Error) || !error.message) return fallback;
+
+  const raw = error.message;
+  const lower = raw.toLowerCase();
+
+  if (lower.includes("password must be at least")) {
+    return `Password is too short. ${PASSWORD_POLICY_HELP}`;
+  }
+  if (lower.includes("uppercase") || lower.includes("one number")) {
+    return "Password needs at least one capital letter and one number.";
+  }
+  if (lower.includes("please choose a stronger password")) {
+    return "That password is too common. Please pick a less obvious one.";
+  }
+  if (lower.includes("password is required")) {
+    return "Please enter a password.";
+  }
+  if (lower.includes("username is required")) {
+    return "Please enter a username.";
+  }
+  if (lower.includes("already exists")) {
+    return "That username already exists. Please choose another one.";
+  }
+  if (lower.includes("request failed [401]")) {
+    return "Your session has expired. Please sign in again.";
+  }
+  if (lower.includes("request failed [403]")) {
+    return "You do not have permission to do that right now. Try signing in again.";
+  }
+
+  return raw.replace(/^Request failed \[\d+\]:\s*/i, "");
+}
+
 const StudentAccountsDashboard = () => {
   const user = api.getCurrentUser();
   const staffName = user?.username || "staff";
@@ -63,7 +100,7 @@ const StudentAccountsDashboard = () => {
     onError: (error: Error) => {
       toast({
         title: "Could not create account",
-        description: error.message,
+        description: friendlyAccountError(error),
         variant: "destructive",
       });
     },
@@ -105,7 +142,7 @@ const StudentAccountsDashboard = () => {
     onError: (error: Error) => {
       toast({
         title: "Could not change password",
-        description: error.message,
+        description: friendlyAccountError(error),
         variant: "destructive",
       });
     },
@@ -320,7 +357,7 @@ const StudentAccountsDashboard = () => {
               New accounts appear in the list immediately and can sign in as soon as they are created.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Password policy: minimum 6 characters, including at least one uppercase letter and one number.
+              Password policy: {PASSWORD_POLICY_HELP}
             </p>
 
             <div className="mt-6 space-y-4">
@@ -376,7 +413,7 @@ const StudentAccountsDashboard = () => {
             </DialogDescription>
           </DialogHeader>
           <p className="text-xs text-muted-foreground">
-            Password policy: minimum 6 characters, including at least one uppercase letter and one number.
+            Password policy: {PASSWORD_POLICY_HELP}
           </p>
 
           <div className="space-y-4">
