@@ -1,10 +1,14 @@
 package org.example.enterprisedaynews.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.dto.CreateStudentAccountRequest;
 import org.example.enterprisedaynews.dto.ImageView;
+import org.example.enterprisedaynews.dto.StudentAccountView;
+import org.example.enterprisedaynews.dto.UpdateStudentPasswordRequest;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +23,7 @@ import java.util.List;
 public class StaffController {
 
     private final ImageService imageService;
+    private final StudentAccountService studentAccountService;
 
     @GetMapping("/new")
     public List<ImageView> getNewImages() {
@@ -104,5 +109,34 @@ public class StaffController {
     @PostMapping("/toggle-flash/{id}")
     public ResponseEntity<ImageView> toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
         return ResponseEntity.ok(ImageView.from(imageService.toggleFlashMode(id, flash)));
+    }
+
+    @GetMapping("/students")
+    public List<StudentAccountView> getStudentAccounts() {
+        return studentAccountService.listAccounts().stream().map(StudentAccountView::from).toList();
+    }
+
+    @PostMapping("/students")
+    public ResponseEntity<StudentAccountView> createStudentAccount(@RequestBody CreateStudentAccountRequest request) {
+        return ResponseEntity.status(201).body(StudentAccountView.from(
+                studentAccountService.createAccount(request.username(), request.password())));
+    }
+
+    @PostMapping("/students/{id}/lock")
+    public ResponseEntity<StudentAccountView> setStudentLock(@PathVariable Long id, @RequestParam boolean locked) {
+        return ResponseEntity.ok(StudentAccountView.from(studentAccountService.setLocked(id, locked)));
+    }
+
+    @PutMapping("/students/{id}/password")
+    public ResponseEntity<StudentAccountView> updateStudentPassword(@PathVariable Long id,
+                                                                    @RequestBody UpdateStudentPasswordRequest request) {
+        return ResponseEntity.ok(StudentAccountView.from(
+                studentAccountService.changePassword(id, request.password())));
+    }
+
+    @DeleteMapping("/students/{id}")
+    public ResponseEntity<Void> deleteStudentAccount(@PathVariable Long id) {
+        studentAccountService.deleteAccount(id);
+        return ResponseEntity.noContent().build();
     }
 }

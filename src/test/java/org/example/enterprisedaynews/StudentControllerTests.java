@@ -41,7 +41,7 @@ class StudentControllerTests {
 
     @BeforeEach
     void setUp() {
-        studentToken = "Bearer " + jwtProvider.generateToken("student1", Roles.STUDENT);
+        studentToken = "Bearer " + jwtProvider.generateToken("student", Roles.STUDENT);
         staffToken = "Bearer " + jwtProvider.generateToken("staff1", Roles.STAFF);
     }
 
@@ -51,20 +51,20 @@ class StudentControllerTests {
                 "file", "test.jpg", "image/jpeg", "content".getBytes());
         ImageMetadata metadata = new ImageMetadata();
         metadata.setId(1L);
-        metadata.setUploadedBy("student1");
+        metadata.setUploadedBy("student");
 
-        when(imageService.uploadImage(any(), eq("student1"), anyInt(), anyInt())).thenReturn(metadata);
+        when(imageService.uploadImage(any(), eq("student"), anyInt(), anyInt())).thenReturn(metadata);
 
         mockMvc.perform(multipart("/api/student/upload")
                 .file(file)
                 .header("Authorization", studentToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedBy").value("student1"));
+                .andExpect(jsonPath("$.uploadedBy").value("student"));
     }
 
     @Test
     void testGetMyUploads() throws Exception {
-        when(imageService.getUserUploads("student1")).thenReturn(Collections.emptyList());
+        when(imageService.getUserUploads("student")).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/student/uploads")
                 .header("Authorization", studentToken))
@@ -78,7 +78,7 @@ class StudentControllerTests {
                 .header("Authorization", studentToken))
                 .andExpect(status().isNoContent());
 
-        verify(imageService).deleteStudentImage(42L, "student1");
+        verify(imageService).deleteStudentImage(42L, "student");
     }
 
     @Test

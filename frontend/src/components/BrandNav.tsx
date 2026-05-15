@@ -5,9 +5,13 @@ import { api } from "@/lib/api";
 
 interface BrandNavProps {
   variant?: "light" | "dark";
+  secondaryLink?: {
+    to: string;
+    label: string;
+  };
 }
 
-export const BrandNav = ({ variant = "light" }: BrandNavProps) => {
+export const BrandNav = ({ variant = "light", secondaryLink }: BrandNavProps) => {
   const location = useLocation();
   if (location.pathname === "/projector") return null;
 
@@ -44,7 +48,20 @@ export const BrandNav = ({ variant = "light" }: BrandNavProps) => {
 
         {user && (
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end hidden sm:flex">
+            {secondaryLink && (
+              <NavLink
+                to={secondaryLink.to}
+                className={cn(
+                  "hidden rounded-full border px-3 py-2 text-sm font-medium transition-colors sm:inline-flex",
+                  isDark
+                    ? "border-student-border/70 bg-white/[0.04] text-student-ink hover:bg-white/[0.08]"
+                    : "border-border bg-card text-foreground hover:bg-muted"
+                )}
+              >
+                {secondaryLink.label}
+              </NavLink>
+            )}
+            <div className="hidden sm:flex sm:flex-col sm:items-end">
               <span className="text-xs font-medium uppercase tracking-wider opacity-60">Signed in as</span>
               <span className="text-sm font-bold">{user.username}</span>
             </div>
