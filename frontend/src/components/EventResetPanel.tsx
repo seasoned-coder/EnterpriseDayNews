@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarX, Check, Loader2, X } from "lucide-react";
 import { AsciiExplosion } from "@/components/AsciiExplosion";
@@ -32,6 +32,13 @@ export const EventResetPanel = () => {
   /** How many adverts the last reset deleted; shows the explosion until the switch is used again. */
   const [lastReset, setLastReset] = useState<number | null>(null);
 
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  // On narrow screens the result sits below the controls: bring it into view when it appears.
+  useEffect(() => {
+    if (lastReset !== null) resultRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  }, [lastReset]);
+
   const openConfirm = () => {
     setTyped("");
     setConfirming(true);
@@ -53,68 +60,79 @@ export const EventResetPanel = () => {
   });
 
   return (
-    <Card className="mx-auto max-w-2xl border-destructive/30 p-6">
-      <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-destructive/10 text-destructive">
-          <CalendarX className="h-6 w-6" />
+    // Two columns on wider screens so the explanation, the controls AND the result all fit on screen.
+    <Card className="mx-auto grid max-w-5xl gap-5 border-destructive/30 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
+            <CalendarX className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-display text-xl font-bold text-destructive">Reset the event</h3>
+            <p className="text-sm text-muted-foreground">For the end of the day, or before the next event.</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-display text-xl font-bold text-destructive">Reset the event</h3>
-          <p className="text-sm text-muted-foreground">For the end of the day, or before the next event.</p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="text-sm font-semibold">This will</p>
+            <ul className="mt-1.5 space-y-1 text-sm">
+              {WILL.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" /> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-sm font-semibold">This keeps</p>
+            <ul className="mt-1.5 space-y-1 text-sm">
+              {WONT.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <p className="text-sm font-medium text-destructive">This can't be undone.</p>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <label htmlFor="arm-reset" className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+            <Switch
+              id="arm-reset"
+              checked={armed}
+              onCheckedChange={(on) => {
+                setArmed(on);
+                if (on) setLastReset(null);
+              }}
+            />
+            ARE YOU SURE? Yes, I want to reset the event
+          </label>
+          <Button variant="destructive" disabled={!armed || reset.isPending} onClick={openConfirm}>
+            Clear Down
+          </Button>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div>
-          <p className="text-sm font-semibold">This will</p>
-          <ul className="mt-2 space-y-1.5 text-sm">
-            {WILL.map((item) => (
-              <li key={item} className="flex gap-2">
-                <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" /> {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="text-sm font-semibold">This keeps</p>
-          <ul className="mt-2 space-y-1.5 text-sm">
-            {WONT.map((item) => (
-              <li key={item} className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {item}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Result area: beside the controls on wide screens, scrolled into view on narrow ones. */}
+      <div
+        ref={resultRef}
+        className="flex min-h-[14rem] flex-col items-center justify-center rounded-xl border border-destructive/30 bg-foreground p-4 text-center text-background"
+      >
+        {lastReset === null ? (
+          <p className="text-sm opacity-60">The result of a reset will appear here.</p>
+        ) : (
+          <div role="status">
+            <AsciiExplosion className="inline-block text-left font-mono text-[10px] leading-tight text-orange-300 sm:text-xs" />
+            <p className="mt-2 font-display text-lg font-bold">Event reset complete</p>
+            <p className="text-sm opacity-80">
+              {lastReset} advert{lastReset === 1 ? "" : "s"} deleted · projector settings back to defaults
+            </p>
+          </div>
+        )}
       </div>
-
-      <p className="mt-4 text-sm font-medium text-destructive">This can't be undone.</p>
-
-      <div className="mt-6 flex flex-col gap-4 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <label htmlFor="arm-reset" className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
-          <Switch
-            id="arm-reset"
-            checked={armed}
-            onCheckedChange={(on) => {
-              setArmed(on);
-              if (on) setLastReset(null);
-            }}
-          />
-          ARE YOU SURE? Yes, I want to reset the event
-        </label>
-        <Button variant="destructive" disabled={!armed || reset.isPending} onClick={openConfirm}>
-          Clear Down
-        </Button>
-      </div>
-
-      {lastReset !== null && (
-        <div role="status" className="mt-6 rounded-xl border border-destructive/30 bg-foreground p-4 text-center text-background">
-          <AsciiExplosion className="inline-block text-left font-mono text-[11px] leading-tight text-orange-300 sm:text-xs" />
-          <p className="mt-2 font-display text-lg font-bold">Event reset complete</p>
-          <p className="text-sm opacity-80">
-            {lastReset} advert{lastReset === 1 ? "" : "s"} deleted · projector settings back to defaults
-          </p>
-        </div>
-      )}
 
       <Dialog open={confirming} onOpenChange={(open) => !open && setConfirming(false)}>
         <DialogContent>
