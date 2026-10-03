@@ -1,8 +1,10 @@
 package org.example.enterprisedaynews.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.live.LiveTopic;
 import org.example.enterprisedaynews.model.DisplaySettings;
 import org.example.enterprisedaynews.repository.DisplaySettingsRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class DisplaySettingsService {
     public static final int MIN_REFRESH_SECONDS = 2, MAX_REFRESH_SECONDS = 60;
 
     private final DisplaySettingsRepository repository;
+    private final ApplicationEventPublisher events;
 
     public DisplaySettings get() {
         return repository.findById(DisplaySettings.DEFAULT_ID).orElseGet(DisplaySettings::defaults);
@@ -33,13 +36,19 @@ public class DisplaySettingsService {
                 MIN_REFRESH_SECONDS, MAX_REFRESH_SECONDS);
         // Force singleton id; ignore any client-supplied value.
         incoming.setId(DisplaySettings.DEFAULT_ID);
-        return repository.save(incoming);
+        return changed(repository.save(incoming));
     }
 
     /** Puts the projector settings back to their defaults (part of resetting the event). */
     @Transactional
     public DisplaySettings resetToDefaults() {
-        return repository.save(DisplaySettings.defaults());
+        return changed(repository.save(DisplaySettings.defaults()));
+    }
+
+    /** The projector picks up new settings straight away (issue #43). */
+    private DisplaySettings changed(DisplaySettings settings) {
+        events.publishEvent(new LiveTopic.Changed(LiveTopic.PROJECTOR_SETTINGS));
+        return settings;
     }
 
     /** Ensures a settings row always exists (called at startup). */

@@ -351,6 +351,7 @@ The frontend automatically handles login and token management when navigating to
 -   Requests without a valid sign-in (missing, expired, or for an account that has since been locked, renamed or deleted) get `401`, and the frontend returns to the sign-in page. Signed in with the wrong role gets `403`.
 -   `GET  /api/projector/images`: Items the projector may show: FLASH items if any, otherwise approved + displayed items (student adverts and staff content) in staff order. The projector page decides what to show next; see [docs/design-notes.md](docs/design-notes.md#projector-scheduling). Public.
 -   `GET  /api/projector/settings`: Current display settings. Public.
+-   `GET  /api/events`: Live updates (#43), a Server-Sent Events stream. Events are only a topic name (`adverts`, `projector-settings`, `prices`; plus `hello` and a `ping` every 25 s), so it's public. Pages reload that data through the normal API.
 -   `POST /api/projector/plays`: The projector reporting what it showed (role: PROJECTOR, i.e. the projector key). JSON body: `[{"imageId": 1, "seconds": 20, "playedAt": "..."}]`. Implausible entries are skipped; returns `{"recorded": n}`.
 -   `POST /api/staff/projector-key`: A projector key (7 days, valid while the issuing staff account is active). The staff app's **Open the projector** uses it.
 -   `GET  /api/staff/results`: Every team's spend, plays, screen time and cost per minute, most screen time first, plus when the projector last recorded a showing.

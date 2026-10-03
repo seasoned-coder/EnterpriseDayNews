@@ -1,9 +1,11 @@
 package org.example.enterprisedaynews;
 
+import org.example.enterprisedaynews.live.LiveTopic;
 import org.example.enterprisedaynews.model.DisplaySettings;
 import org.example.enterprisedaynews.repository.DisplaySettingsRepository;
 import org.example.enterprisedaynews.service.DisplaySettingsService;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -16,7 +18,18 @@ import static org.mockito.Mockito.*;
 class DisplaySettingsServiceTests {
 
     private final DisplaySettingsRepository repository = mock(DisplaySettingsRepository.class);
-    private final DisplaySettingsService service = new DisplaySettingsService(repository);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final DisplaySettingsService service = new DisplaySettingsService(repository, events);
+
+    /** Issue #43: the projector is told straight away. */
+    @Test
+    void savingTellsOpenPagesTheSettingsChanged() {
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(settings(60, 10, 3));
+
+        verify(events).publishEvent(new LiveTopic.Changed(LiveTopic.PROJECTOR_SETTINGS));
+    }
 
     private static DisplaySettings settings(int interval, int staffItem, int refresh) {
         return DisplaySettings.builder()

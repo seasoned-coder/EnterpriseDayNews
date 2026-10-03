@@ -8,6 +8,7 @@ import org.example.enterprisedaynews.service.ImageService;
 import org.example.enterprisedaynews.service.PriceWobbleService;
 import org.example.enterprisedaynews.service.ResultsService;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +23,7 @@ class EventResetServiceTests {
     private final PriceWobbleService priceWobbleService = mock(PriceWobbleService.class);
     private final DisplaySettingsRepository settingsRepository = mock(DisplaySettingsRepository.class);
     private final EventResetService eventResetService =
-            new EventResetService(imageService, new DisplaySettingsService(settingsRepository), resultsService,
+            new EventResetService(imageService, new DisplaySettingsService(settingsRepository, mock(ApplicationEventPublisher.class)), resultsService,
                     priceWobbleService);
 
     @Test

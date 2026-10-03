@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/staff/**").hasRole(Roles.STAFF)
                 // The projector only reads; changing its settings is a staff action.
                 .requestMatchers(HttpMethod.GET, "/api/projector/**").permitAll()
+                // Live updates (issue #43): events only say which kind of data changed, nothing more.
+                .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                 // Only a projector opened from the staff app (with its key) records plays (issue #40).
                 .requestMatchers(HttpMethod.POST, "/api/projector/plays").hasRole(Roles.PROJECTOR)
                 .requestMatchers("/api/projector/**").hasRole(Roles.STAFF)

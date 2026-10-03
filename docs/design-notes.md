@@ -119,6 +119,12 @@ Sizing: up to 26 teams normally, 52 at a big event. Each team has two students, 
 -   **Polling stays cheap.**
     -   Each list is one indexed query (V9: uploader, status/display, flash, info-message, file name). The projector feed no longer loads the whole table.
     -   `open-in-view` is off, so a database connection is released when the request's work is done, not after the response has trickled out to a slow phone.
+-   **Live updates instead of polling** (#43): each page keeps one Server-Sent Events stream (`GET /api/events`, `LiveUpdates`) and is told the moment something changes, so it reloads just that data. Checked with 150 streams through nginx: every page heard a change within ~310 ms, using 59 server threads in total.
+    -   **Events carry only a topic:** `adverts`, `projector-settings` or `prices`. The data still comes from the normal, access-controlled API, so the stream is public and needs no token in the URL (EventSource can't send one).
+    -   **When events go out:** services publish `LiveTopic.Changed`, which is sent after the transaction commits, so a reload sees the change. Bursts within 250 ms are sent once.
+    -   **Keeping streams alive:** a `ping` event every 25 s keeps idle connections open. If pings stop (e.g. a silently dropped Wi-Fi link), the page reconnects. nginx doesn't buffer the stream and allows it to stay quiet for an hour.
+    -   **Polling as a fallback:** while connected, staff and student pages only poll as a safety net (60 s), and at their normal rate while the stream is down. The projector keeps its configured refresh rate: one cabled device, and its checks are how it detects offline mode (#39).
+    -   **Not evented:** a scheduled price wobble's start or end time passing, and screen time growing (#40), reach pages through the slower checks.
 -   **Small previews** (#42): cards and lists load a ~480 px JPEG preview (`ThumbnailService`), not the multi-MB original. The biggest saving on the Wi-Fi: the 2 MB load-test advert becomes 61 KB.
     -   Previews are made one at a time on a background thread, so a burst of uploads doesn't slow the server, and missing ones are made at startup (`ThumbnailBackfill`).
     -   Until a preview exists, the full picture is used.

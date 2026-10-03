@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
@@ -21,6 +21,7 @@ import {
 import { PriceChoice } from "@/components/PriceChoice";
 import { api, type ApiSubmission, type PriceOption } from "@/lib/api";
 import { checkFileSize, FILE_SIZE_LIMITS, isAllowedImageType } from "@/lib/fileSizeCheck";
+import { pollEvery, useLiveRefresh } from "@/lib/liveUpdates";
 import { useNsfwCheck } from "@/hooks/useNsfwCheck";
 
 /** What a choice costs on the price list (0 while the list is loading). */
@@ -109,8 +110,12 @@ const StudentUpload = () => {
     document.title = "Submit your advert · BT Enterprise Day News";
   }, []);
 
-  // Checked every 30s so a price wobble (issue #41) shows up, and goes away, without a reload.
-  const pricesQ = useQuery({ queryKey: ["prices"], queryFn: api.studentPrices, refetchInterval: 30_000 });
+  // Approvals, rejections and price changes arrive the moment they happen (issue #43); the polling below is
+  // a slow safety net while that's connected, and the normal rate when it isn't.
+  const live = useLiveRefresh({ adverts: [["my-uploads"]], prices: [["prices"]] });
+
+  // Prices change with a price wobble (issue #41).
+  const pricesQ = useQuery({ queryKey: ["prices"], queryFn: api.studentPrices, refetchInterval: pollEvery(live, 30_000) });
 
   const myUploadsQ = useQuery({
     queryKey: ["my-uploads", name],
@@ -118,16 +123,39 @@ const StudentUpload = () => {
       return api.studentGetMyUploads(name);
     },
     enabled: name.length > 0,
-    refetchInterval: 10_000,
+    refetchInterval: pollEvery(live, 10_000),
   });
 
-  // What the team has got for its money so far (issue #40). Changes slowly, so checked less often.
+  // What the team has got for its money so far (issue #40). Screen time grows as adverts play, so this is
+  // simply checked every 30 seconds.
   const resultsQ = useQuery({
     queryKey: ["my-results", name],
     queryFn: api.studentResults,
     enabled: name.length > 0,
     refetchInterval: 30_000,
   });
+
+  // Tell the team straight away when a teacher approves or rejects one of their adverts.
+  const lastStatuses = useRef<Map<number, string> | null>(null);
+  useEffect(() => {
+    const uploads = myUploadsQ.data;
+    if (!uploads) return;
+    const before = lastStatuses.current;
+    if (before) {
+      for (const u of uploads) {
+        if (before.get(u.id) !== "NEW") continue;
+        if (u.status === "APPROVED") {
+          toast({ title: "Approved! 🎉", description: u.display ? "It's on the big screen now." : "Publish it when you're ready." });
+        } else if (u.status === "REJECTED") {
+          toast({
+            title: "Not approved",
+            description: u.rejectionReason ? "Read the teacher's note below your advert." : "Ask a member of staff why.",
+          });
+        }
+      }
+    }
+    lastStatuses.current = new Map(uploads.map((u) => [u.id, u.status]));
+  }, [myUploadsQ.data]);
   const screenTimeOf = (id: number) => resultsQ.data?.adverts.find((a) => a.imageId === id);
 
   const upload = useMutation({

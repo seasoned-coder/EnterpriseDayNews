@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type ApiSubmission } from "@/lib/api";
+import { useLiveRefresh } from "@/lib/liveUpdates";
 import { adoptProjectorKey, queueShowing, sendShowings } from "@/lib/playRecorder";
 import { loadLastFeed, loadLastSettings, saveLastFeed, saveLastSettings, withTimeout } from "@/lib/projectorCache";
 import {
@@ -59,6 +60,10 @@ const Projector = () => {
     initialDataUpdatedAt: 0,
   });
   const settings = settingsQ.data ?? DEFAULT_SCHEDULE_SETTINGS;
+
+  // Told the moment staff change something (issue #43). It still checks at the configured refresh rate too:
+  // it's one device on a cable, and those checks are how it notices being offline (#39).
+  useLiveRefresh({ adverts: [["projector-images"]], "projector-settings": [["projector-settings"]] });
 
   const imagesQ = useQuery({
     queryKey: ["projector-images"],

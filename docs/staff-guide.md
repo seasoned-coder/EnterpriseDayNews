@@ -42,10 +42,14 @@ The Advert Dashboard (`/staff`) is where you review student uploads before they 
 | **Approved** | Approved items, in the order the projector plays them. |
 | **Rejected** | Items you have turned down. |
 | **Event Communications** | Staff information images and the urgent free-text message. |
-| **Projector** | [Projector settings](#projector-settings): how often staff content appears, how long it shows, and how often the projector refreshes. |
+| **Projector** | **Open the projector**, and the [Projector settings](#projector-settings): how often staff content appears, how long it shows, and how often the projector refreshes. |
+| **Prices** | The [price wobble](#prices-price-wobble): make screen time cheaper or dearer for a while. |
+| **Results** | [Each team's spend and screen time](#results-screen-time-and-leaderboard), and printing the leaderboard and team receipts. |
 | **End of Day** | The **Clear Down** tool. |
 
 Each tab shows a count. Use **Search by student name…** to filter the current tab by uploader.
+
+**Everything updates by itself, straight away:** new uploads appear as soon as students send them, and you see colleagues' approvals and rejections without refreshing.
 
 Each card shows the uploader, how long ago it was uploaded, and the student's chosen priority (P1–P4), duration (10/20/30s) and total cost. Click a card to open a larger preview with the same actions.
 

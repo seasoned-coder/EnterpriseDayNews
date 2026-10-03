@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import StudentUpload from "@/pages/StudentUpload";
 import { makeSubmission } from "@/test/fixtures";
@@ -67,6 +67,9 @@ const sampleUpload = makeSubmission({
   uploadedBy: "student1",
 });
 
+/** The page's query client, so a test can make it reload (as a live update would). */
+let queryClientForTests: QueryClient;
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -74,6 +77,7 @@ function renderPage() {
       mutations: { retry: false },
     },
   });
+  queryClientForTests = queryClient;
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -116,6 +120,25 @@ describe("StudentUpload wording and checks", () => {
     ]);
     mocks.imageUrl.mockImplementation((item: { filePath: string }) => `/uploads/${item.filePath}`);
     mocks.formatRelative.mockReturnValue("just now");
+  });
+
+  it("pops up 'Approved!' when a teacher approves one of their adverts (issue #43)", async () => {
+    const waiting = { ...sampleUpload, id: 300, status: "NEW" as const, display: false };
+    mocks.studentGetMyUploads.mockResolvedValue([waiting]);
+    renderPage();
+    await screen.findByText(/Waiting for approval/);
+    expect(mocks.toast).not.toHaveBeenCalledWith(expect.objectContaining({ title: "Approved! 🎉" }));
+
+    mocks.studentGetMyUploads.mockResolvedValue([{ ...waiting, status: "APPROVED", display: true }]);
+    await act(async () => {
+      await queryClientForTests.invalidateQueries({ queryKey: ["my-uploads"] });
+    });
+
+    await waitFor(() =>
+      expect(mocks.toast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Approved! 🎉", description: "It's on the big screen now." }),
+      ),
+    );
   });
 
   it("tells students when prices are up or down, and until when (issue #41)", async () => {

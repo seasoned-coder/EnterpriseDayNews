@@ -1,5 +1,6 @@
 package org.example.enterprisedaynews;
 
+import org.example.enterprisedaynews.live.LiveTopic;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.repository.ImageRepository;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -43,6 +45,9 @@ class ImageServiceTests {
     @Mock
     private ThumbnailService thumbnailService;
 
+    @Mock
+    private ApplicationEventPublisher events;
+
     @InjectMocks
     private ImageService imageService;
 
@@ -53,6 +58,21 @@ class ImageServiceTests {
     void setUp() {
         ReflectionTestUtils.setField(imageService, "uploadDir", tempDir.toAbsolutePath().toString());
         lenient().when(priceWobbleService.currentPercent()).thenReturn(PriceList.FULL_PRICE); // normal prices
+    }
+
+    /** Issue #43: changes to adverts tell open pages straight away. */
+    @Test
+    void changesTellOpenPagesThatAdvertsChanged() {
+        ImageMetadata m = new ImageMetadata();
+        m.setId(1L);
+        m.setStatus(ApprovalStatus.NEW);
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(m));
+        when(imageRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+
+        imageService.updateStatus(1L, ApprovalStatus.APPROVED, "staff1");
+        imageService.deleteImage(1L);
+
+        verify(events, times(2)).publishEvent(new LiveTopic.Changed(LiveTopic.ADVERTS));
     }
 
     /** Issue #42: each upload gets a small preview (made in the background), deleted with the picture. */

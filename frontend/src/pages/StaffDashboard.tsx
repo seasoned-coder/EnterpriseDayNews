@@ -3,6 +3,7 @@ import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, MessageSquare, M
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { RejectDialog } from "@/components/RejectDialog";
+import { pollEvery, useLiveRefresh } from "@/lib/liveUpdates";
 import { SubmissionCard } from "@/components/SubmissionCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,14 @@ const StaffDashboard = () => {
     document.title = "Advert Dashboard · BT Enterprise Day News";
   }, []);
 
+  // New uploads and colleagues' decisions show up the moment they happen (issue #43); polling is the
+  // fallback while the live stream is down.
+  const live = useLiveRefresh({
+    adverts: [["submissions"], ["projector-images"]],
+    prices: [["price-wobble"]],
+    "projector-settings": [["projector-settings"]],
+  });
+
   const queries = useQueries({
     queries: moderationTabs.map((kind) => ({
       queryKey: ["submissions", kind] as const,
@@ -74,7 +83,7 @@ const StaffDashboard = () => {
         if (kind === "comm") return api.listInfo(staffName);
         return api.list(kind as "new" | "approved" | "rejected", staffName);
       },
-      refetchInterval: 15_000,
+      refetchInterval: pollEvery(live, 15_000),
     })),
   });
   const [newQ, approvedQ, rejectedQ, commQ] = queries;

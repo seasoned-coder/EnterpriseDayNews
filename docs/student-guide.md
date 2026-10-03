@@ -119,7 +119,7 @@ A member of staff looks at every upload first. They will either **approve** it o
 
 ## 4. Checking your uploads
 
-Scroll down to **Your uploads**. It updates by itself every few seconds.
+Scroll down to **Your uploads**. It updates by itself. When a teacher approves or rejects your advert, you'll see it straight away, with a pop-up message ("Approved! 🎉" or "Not approved").
 
 **Was it worth it?** At the top, three numbers show how your team is doing:
 

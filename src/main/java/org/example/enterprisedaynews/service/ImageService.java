@@ -2,10 +2,12 @@ package org.example.enterprisedaynews.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.enterprisedaynews.live.LiveTopic;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +39,7 @@ public class ImageService {
     private final ImageRepository imageRepository;
     private final PriceWobbleService priceWobbleService;
     private final ThumbnailService thumbnailService;
+    private final ApplicationEventPublisher events;
 
     @Value("${app.upload-dir:./uploads}")
     private String uploadDir;
@@ -84,7 +87,7 @@ public class ImageService {
                 .totalCost(totalCost)
                 .build();
 
-        ImageMetadata saved = imageRepository.save(metadata);
+        ImageMetadata saved = changed(imageRepository.save(metadata));
         thumbnailService.createLater(fileName); // small preview for cards and lists (issue #42)
         return saved;
     }
@@ -146,7 +149,7 @@ public class ImageService {
         metadata.setVettedBy(username);
         metadata.setVettedAt(LocalDateTime.now());
         metadata.setDisplay(false); // Default should be HIDE
-        return imageRepository.save(metadata);
+        return changed(imageRepository.save(metadata));
     }
 
     @Transactional
@@ -165,7 +168,7 @@ public class ImageService {
             metadata.setVettedAt(LocalDateTime.now());
             metadata.setFlashMode(flashMode);
             metadata.setDisplay(true);
-            return imageRepository.save(metadata);
+            return changed(imageRepository.save(metadata));
         }
 
         ImageMetadata metadata = ImageMetadata.builder()
@@ -182,14 +185,14 @@ public class ImageService {
                 .priority(4)
                 .durationSeconds(10)
                 .build();
-        return imageRepository.save(metadata);
+        return changed(imageRepository.save(metadata));
     }
 
     @Transactional
     public ImageMetadata toggleFlashMode(Long id, boolean flashMode) {
         ImageMetadata metadata = findOrThrow(id);
         metadata.setFlashMode(flashMode);
-        return imageRepository.save(metadata);
+        return changed(imageRepository.save(metadata));
     }
 
     /** Longest rejection reason (issue #38): a sentence, shown on the student's phone. */
@@ -220,7 +223,7 @@ public class ImageService {
         metadata.setRejectionReason(status == ApprovalStatus.REJECTED ? reason : null);
         // Approving puts it on screen only if the student chose "as soon as it's approved"; rejecting hides it.
         metadata.setDisplay(status == ApprovalStatus.APPROVED && metadata.isPublishOnApproval());
-        return imageRepository.save(metadata);
+        return changed(imageRepository.save(metadata));
     }
 
     /**
@@ -237,7 +240,7 @@ public class ImageService {
             case REJECTED -> throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "This advert wasn't approved, so it can't go on screen. Ask a member of staff why.");
         }
-        return imageRepository.save(metadata);
+        return changed(imageRepository.save(metadata));
     }
 
     @Transactional
@@ -248,7 +251,7 @@ public class ImageService {
                     "Only APPROVED images can be set to display");
         }
         metadata.setDisplay(display);
-        return imageRepository.save(metadata);
+        return changed(imageRepository.save(metadata));
     }
 
     @Transactional
@@ -271,6 +274,7 @@ public class ImageService {
             m.setDisplayOrder(i);
         }
         imageRepository.saveAll(found);
+        changed();
     }
 
     @Transactional
@@ -296,6 +300,7 @@ public class ImageService {
     private void deleteImage(ImageMetadata metadata) {
         deletePhysicalFile(metadata.getFilePath());
         imageRepository.delete(metadata);
+        changed();
     }
 
     /**
@@ -324,6 +329,19 @@ public class ImageService {
             log.error("Failed to delete physical file: {}", fileName, e);
         }
         thumbnailService.delete(fileName);
+    }
+
+    /**
+     * Tells open pages that adverts changed (issue #43); sent once the transaction commits. Returns the image
+     * so it can wrap a save.
+     */
+    private ImageMetadata changed(ImageMetadata image) {
+        changed();
+        return image;
+    }
+
+    private void changed() {
+        events.publishEvent(new LiveTopic.Changed(LiveTopic.ADVERTS));
     }
 
     private ImageMetadata findOrThrow(Long id) {

@@ -3,8 +3,10 @@ package org.example.enterprisedaynews.service;
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.PriceWobbleRequest;
 import org.example.enterprisedaynews.dto.PriceWobbleView;
+import org.example.enterprisedaynews.live.LiveTopic;
 import org.example.enterprisedaynews.model.PriceWobble;
 import org.example.enterprisedaynews.repository.PriceWobbleRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class PriceWobbleService {
     public static final int MAX_MESSAGE = 120;
 
     private final PriceWobbleRepository repository;
+    private final ApplicationEventPublisher events;
 
     /** The wobble set up by staff, in force now or starting later; empty at normal prices. */
     public Optional<PriceWobbleView> current() {
@@ -67,6 +70,7 @@ public class PriceWobbleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "The end time must be after the start time (and in the future)");
         }
+        events.publishEvent(new LiveTopic.Changed(LiveTopic.PRICES)); // students see it at once (#43)
         PriceWobble saved = repository.save(new PriceWobble(PriceWobble.DEFAULT_ID, request.percent(), message,
                 startsAt != null && startsAt.isAfter(now) ? startsAt : null, endsAt));
         return PriceWobbleView.of(saved, now);
@@ -76,6 +80,7 @@ public class PriceWobbleService {
     @Transactional
     public void stop() {
         repository.deleteById(PriceWobble.DEFAULT_ID);
+        events.publishEvent(new LiveTopic.Changed(LiveTopic.PRICES));
     }
 
     private static LocalDateTime local(OffsetDateTime time) {
