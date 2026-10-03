@@ -124,6 +124,11 @@ async function seed(browser) {
     })),
   );
   await api("/api/projector/plays", { token: key, json: plays });
+
+  // One team has already paid at the bank (#48), so the balances show both.
+  const balances = await api("/api/staff/balances", { token: staff, method: "GET" });
+  const pixels = balances.find((b) => b.team === "pixel-pals");
+  await api("/api/staff/balances/pixel-pals/paid", { token: staff, json: { amount: pixels.owed } });
   return { staff, student: tokens["rocket-lemonade"] };
 }
 
@@ -224,6 +229,33 @@ async function main() {
     await staffPage.screenshot({ path: join(OUT, "staff-results.png") });
     console.log("  staff-results.png");
     await shoot(staffPage, "/staff/students", "staff-students");
+
+    // An invoice as it comes out of the till printer (#50), from the Invoices panel.
+    await staffPage.evaluate(() => {
+      window.print = () => {};
+      const panel = [...document.querySelectorAll("h2")].find((h) => h.textContent.includes("Invoices")).closest(".p-5, div.rounded-lg");
+      [...panel.querySelectorAll("button")].find((b) => b.textContent.includes("Till printer")).click();
+    });
+    await staffPage.waitForSelector('[aria-label="Invoice for rocket-lemonade"]');
+    await staffPage.emulateMediaType("print");
+    await staffPage.setViewport({ ...desktop, deviceScaleFactor: 2 });
+    await settle(staffPage, 300);
+    const invoice = await staffPage.$('[aria-label="Invoice for rocket-lemonade"]');
+    await invoice.evaluate((el) => {
+      // The strip of paper on a plain desk-coloured background, like the login slip.
+      el.parentElement.style.cssText = "display:block;background:#d6d0c4;padding:28px";
+      [...el.parentElement.children].forEach((other) => { if (other !== el) other.style.display = "none"; });
+      el.style.cssText += ";background:#fff;width:80mm;padding:4mm;box-shadow:0 2px 6px rgba(0,0,0,.25)";
+    });
+    await settle(staffPage, 300);
+    const box = await invoice.boundingBox();
+    await staffPage.screenshot({
+      path: join(OUT, "invoice.png"),
+      clip: { x: box.x - 28, y: box.y - 28, width: box.width + 56, height: box.height + 56 },
+    });
+    console.log("  invoice.png");
+    await staffPage.emulateMediaType(null);
+    await staffPage.setViewport(desktop);
 
     // A login slip as it comes out of the till printer (#37): demo Wi-Fi details, then create two teams.
     await api("/api/staff/event-details", {

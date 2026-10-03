@@ -40,6 +40,10 @@ All teams, adverts and names below are made up.
 
 <img src="docs/screenshots/login-slip.png" alt="A printed team login slip with the team name, password and two QR codes" width="300">
 
+**Team invoice**, also from the till printer, for a team to settle up at the bank:
+
+<img src="docs/screenshots/invoice.png" alt="A printed invoice listing a team's approved adverts and the amount to pay" width="300">
+
 **Projector:** the big screen playing an approved advert, and carrying on in **OFFLINE MODE** when it can't reach the server.
 
 ![Projector showing a student advert](docs/screenshots/projector.png)
