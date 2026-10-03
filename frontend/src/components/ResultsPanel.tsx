@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, Printer, Trophy } from "lucide-react";
-import { PrintArea, printPages, type PrintLayout } from "@/components/PrintArea";
+import { PrintArea, usePrintJob } from "@/components/PrintArea";
 import { LeaderboardReceipt, TeamReceipt } from "@/components/ResultsReceipts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,16 +23,13 @@ const SORTS: { key: SortKey; label: string; compare: (a: TeamResult, b: TeamResu
   },
 ];
 
-/** What's being printed: the leaderboard, or a receipt for every team. */
-type PrintJob = { what: "leaderboard" | "receipts"; layout: PrintLayout } | null;
-
 /**
  * The Results tab (issue #40): each team's spend and screen time as a leaderboard, printable on the till
  * printer or A4, with a receipt per team to hand out.
  */
 export const ResultsPanel = () => {
   const [sort, setSort] = useState<SortKey>("seconds");
-  const [job, setJob] = useState<PrintJob>(null);
+  const { job, print } = usePrintJob<"leaderboard" | "receipts">();
   const resultsQ = useQuery({ queryKey: ["results"], queryFn: api.eventResults, refetchInterval: 30_000 });
   const teams = useMemo(() => resultsQ.data?.teams ?? [], [resultsQ.data]);
   // Rankings for receipts are always by screen time (the server's order).
@@ -41,15 +38,6 @@ export const ResultsPanel = () => {
     () => [...teams].sort(SORTS.find((s) => s.key === sort)!.compare),
     [teams, sort],
   );
-
-  // Print once the chosen content is in the PrintArea.
-  useEffect(() => {
-    if (!job) return;
-    printPages(job.layout);
-    const done = () => setJob(null);
-    window.addEventListener("afterprint", done, { once: true });
-    return () => window.removeEventListener("afterprint", done);
-  }, [job]);
 
   const lastPlayAt = resultsQ.data?.lastPlayAt ?? null;
 
@@ -67,27 +55,27 @@ export const ResultsPanel = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button disabled={teams.length === 0} onClick={() => setJob({ what: "leaderboard", layout: "receipt-roll" })}>
+          <Button disabled={teams.length === 0} onClick={() => print("leaderboard", "receipt-roll")}>
             <Printer className="mr-2 h-4 w-4" /> Leaderboard: till
           </Button>
           <Button
             variant="outline"
             disabled={teams.length === 0}
-            onClick={() => setJob({ what: "leaderboard", layout: "a4-sheet" })}
+            onClick={() => print("leaderboard", "a4-sheet")}
           >
             Leaderboard: A4
           </Button>
           <Button
             variant="outline"
             disabled={teams.length === 0}
-            onClick={() => setJob({ what: "receipts", layout: "receipt" })}
+            onClick={() => print("receipts", "receipt")}
           >
             <Printer className="mr-2 h-4 w-4" /> Team receipts: till
           </Button>
           <Button
             variant="outline"
             disabled={teams.length === 0}
-            onClick={() => setJob({ what: "receipts", layout: "a4-cards" })}
+            onClick={() => print("receipts", "a4-cards")}
           >
             Team receipts: A4
           </Button>

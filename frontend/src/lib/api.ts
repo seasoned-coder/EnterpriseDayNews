@@ -484,6 +484,11 @@ export const api = {
     });
   },
 
+  /** Every team's account, for printing invoices (issue #50); by default only teams that owe. */
+  invoices(owingOnly = true) {
+    return staff<TeamAccount[]>(`/api/staff/invoices?owing=${owingOnly}`);
+  },
+
   myBalance() {
     return student<TeamAccount>("/api/student/balance");
   },

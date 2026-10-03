@@ -238,6 +238,29 @@ class TeamBalanceTests {
                 .andExpect(jsonPath("$[?(@.team == 'bank-busy')].owed").value(20));
     }
 
+    /** Issue #50: every team's account in one go, for printing invoices. */
+    @Test
+    void invoicesListEachOwingTeamsChargesRefundsAndPayments() throws Exception {
+        ImageMetadata first = advert("inv-owes", 20);
+        approve(first);
+        approve(advert("inv-owes", 15));
+        reject(first); // refunded
+        approve(advert("inv-paid", 10));
+        balances.markPaid("inv-paid", 10, "bank.staff");
+
+        mockMvc.perform(get("/api/staff/invoices").header("Authorization", staff))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.balance.team == 'inv-owes')].balance.owed").value(15))
+                .andExpect(jsonPath("$[?(@.balance.team == 'inv-owes')].entries.length()").value(3))
+                .andExpect(jsonPath("$[?(@.balance.team == 'inv-paid')]").isEmpty());
+
+        mockMvc.perform(get("/api/staff/invoices?owing=false").header("Authorization", staff))
+                .andExpect(jsonPath("$[?(@.balance.team == 'inv-paid')].entries[1].kind").value("PAYMENT"));
+
+        String team = TestAccounts.studentBearer(context, "inv-student");
+        mockMvc.perform(get("/api/staff/invoices").header("Authorization", team)).andExpect(status().isForbidden());
+    }
+
     @Test
     void renamingATeamKeepsItsBalance() {
         studentAccountService.createAccount("bank-oldname", "Sunrise7");

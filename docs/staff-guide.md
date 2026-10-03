@@ -266,6 +266,13 @@ Teams pay (in event money) for their adverts **once they're approved**, at the p
 
 **Taking payment:** go to the (virtual) bank and take the team's **whole** balance from its account. Then select the balance, check the amount, and select **Yes, mark 35 as paid**. The balance goes to 0. There are no part-payments. If the balance changed while you were at the bank (for example, another advert was approved), you'll be told the new amount and nothing is recorded: take the difference, then mark it paid again.
 
+**Invoices**, so a team can settle up at the bank itself:
+
+- **One team:** select its balance, then **Invoice: Till printer** (or **A4 paper**).
+- **Every team at once:** use the **Invoices** panel on the right of the Student Account Dashboard. Choose **Teams that owe** (or **All teams**), then **Till printer** (one invoice per team, cut apart) or **A4 paper** (several per page, with cut lines).
+
+Each invoice lists the team's approved adverts and their prices, any refunds and payments, and **TO PAY** in large print, with a space for the bank's stamp or initials. Once the money's been taken, mark the balance as paid as above.
+
 Teams see their own balance on their upload page. **End of Day** prints everyone's balances and payments, then clears them.
 
 The list refreshes every 15 seconds.

@@ -38,7 +38,7 @@ The cost is `priorityCost + durationCost` (priority 5/10/15/20, duration 5/10/15
 -   **No refund** when a team deletes its own approved advert.
 -   **Paying:** staff take the whole balance from the team's (virtual) bank and mark it paid: one `PAYMENT` of exactly the balance they saw. There are no part-payments. If the balance changed meanwhile, the server refuses with 409. Payments are serialised, so two staff can't both record one.
 -   **End of Day:** prints a report (companies, adverts, paid, owed; the reset is locked until it's printed), then clears the ledger.
--   **Not yet:** a printable invoice for teams (#50).
+-   **Invoices** (#50): printed per team (from its balance) or for every team at once (`GET /api/staff/invoices`, one request), using the shared `PrintArea`/`usePrintJob`. On till paper it uses the `receipt-long` layout: one invoice per page, cut between, with room for long ones. Each invoice lists every ledger line and the amount to pay.
 
 ## Projector scheduling
 

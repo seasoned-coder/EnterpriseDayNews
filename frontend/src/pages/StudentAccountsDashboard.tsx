@@ -1,4 +1,5 @@
 import { AccountsDashboard, type AccountsDashboardConfig } from "@/components/AccountsDashboard";
+import { InvoicesPanel } from "@/components/InvoicesPanel";
 import { TeamBalanceCell } from "@/components/TeamBalanceCell";
 import { TeamSetupPanel } from "@/components/TeamSetupPanel";
 import { useLiveRefresh } from "@/lib/liveUpdates";
@@ -13,7 +14,12 @@ const STUDENT_ACCOUNTS: AccountsDashboardConfig = {
   deleteNote: "Existing uploads will remain in the system.",
   renameNote: "Their adverts move to the new name. If they're signed in, they'll need to sign in again with it.",
   protectSelf: false,
-  sidePanel: (accounts) => <TeamSetupPanel accounts={accounts} />,
+  sidePanel: (accounts) => (
+    <>
+      <TeamSetupPanel accounts={accounts} />
+      <InvoicesPanel />
+    </>
+  ),
   extraColumn: { header: "Balance", render: (account) => <TeamBalanceCell team={account.username} /> },
 };
 

@@ -59,7 +59,8 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 ## Printing (login slips, #37)
 - Print from the browser with print CSS, not raw printer commands: it works with any driver (Epson TM-T88 via its Windows driver, or A4). Reuse `components/PrintArea.tsx`:
     - `PrintArea` renders what to print in a portal straight under `<body>`.
-    - `printPages(layout)` sets the `@page` size and `body.printing`. Layouts: `receipt` (one per page), `receipt-roll`, `a4-cards`, `a4-sheet`.
+    - `printPages(layout)` sets the `@page` size and `body.printing`. Layouts: `receipt` (one per page), `receipt-long` (one per page, longer), `receipt-roll`, `a4-cards`, `a4-sheet`.
+    - `usePrintJob()` handles printing something rendered only on demand: render `job.what` in a `PrintArea` while `job` is set.
     - `index.css` hides everything else when printing.
     - Printed items use the shared `.ticket` styles (login slips, results receipts).
 - Till paper is 80 mm wide (72 mm printable): size slips in `mm`, black only (no greys or light colours, which fade on thermal paper), no web fonts.

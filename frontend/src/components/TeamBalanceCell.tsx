@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Landmark, Loader2 } from "lucide-react";
+import { Landmark, Loader2, Printer } from "lucide-react";
+import { PrintArea, usePrintJob } from "@/components/PrintArea";
+import { TeamInvoice } from "@/components/TeamInvoice";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
@@ -22,6 +24,7 @@ export const TeamBalanceCell = ({ team }: { team: string }) => {
   const balancesQ = useQuery({ queryKey: ["balances"], queryFn: api.balances });
   const balance = balancesQ.data?.find((b) => b.team === team);
   const accountQ = useQuery({ queryKey: ["balances", team], queryFn: () => api.teamAccount(team), enabled: open });
+  const { job, print } = usePrintJob<"invoice">();
 
   const markPaid = useMutation({
     mutationFn: (amount: number) => api.markPaid(team, amount),
@@ -90,6 +93,17 @@ export const TeamBalanceCell = ({ team }: { team: string }) => {
             )}
           </div>
 
+          {/* An invoice the team can take to the bank (issue #50). */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Invoice:</span>
+            <Button size="sm" variant="outline" disabled={!accountQ.data} onClick={() => print("invoice", "receipt-long")}>
+              <Printer className="mr-2 h-4 w-4" /> Till printer
+            </Button>
+            <Button size="sm" variant="outline" disabled={!accountQ.data} onClick={() => print("invoice", "a4-sheet")}>
+              A4 paper
+            </Button>
+          </div>
+
           {owed > 0 && (
             <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-4">
               <p className="text-sm">
@@ -104,6 +118,12 @@ export const TeamBalanceCell = ({ team }: { team: string }) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {job && accountQ.data && (
+        <PrintArea>
+          <TeamInvoice account={accountQ.data} />
+        </PrintArea>
+      )}
     </div>
   );
 };

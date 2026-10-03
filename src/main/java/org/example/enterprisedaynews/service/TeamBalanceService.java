@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -141,6 +142,22 @@ public class TeamBalanceService {
     public TeamAccount account(String team) {
         return new TeamAccount(balanceOf(team),
                 ledgerRepository.findByTeamOrderByCreatedAtAscIdAsc(team).stream().map(TeamAccount.Entry::from).toList());
+    }
+
+    /**
+     * Every team's account, for printing invoices in one go (issue #50), by name.
+     *
+     * @param owingOnly only teams that owe something
+     */
+    public List<TeamAccount> accounts(boolean owingOnly) {
+        Map<String, List<TeamAccount.Entry>> entries = ledgerRepository.findAll().stream()
+                .sorted(Comparator.comparing(LedgerEntry::getCreatedAt).thenComparing(LedgerEntry::getId))
+                .collect(Collectors.groupingBy(LedgerEntry::getTeam, Collectors.mapping(TeamAccount.Entry::from,
+                        Collectors.toList())));
+        return balances().stream()
+                .filter(b -> !owingOnly || b.owed() > 0)
+                .map(b -> new TeamAccount(b, entries.getOrDefault(b.team(), List.of())))
+                .toList();
     }
 
     /** Wipes every balance and payment (part of resetting the event, after printing the report). */

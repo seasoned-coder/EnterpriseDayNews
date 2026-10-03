@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarX, Check, FileText, Loader2, Printer, X } from "lucide-react";
 import { AsciiExplosion } from "@/components/AsciiExplosion";
 import { EndOfDayReport } from "@/components/EndOfDayReport";
-import { PrintArea, printPages, type PrintLayout } from "@/components/PrintArea";
+import { PrintArea, usePrintJob, type PrintLayout } from "@/components/PrintArea";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,16 +40,12 @@ export const EventResetPanel = () => {
 
   // The End of Day report (issue #48): Clear Down only unlocks once it has been printed.
   const balancesQ = useQuery({ queryKey: ["balances"], queryFn: api.balances });
-  const [reportJob, setReportJob] = useState<PrintLayout | null>(null);
+  const { job: reportJob, print } = usePrintJob<"report">();
   const [reportPrinted, setReportPrinted] = useState(false);
-  useEffect(() => {
-    if (!reportJob) return;
-    printPages(reportJob);
+  const printReport = (layout: PrintLayout) => {
+    print("report", layout);
     setReportPrinted(true);
-    const done = () => setReportJob(null);
-    window.addEventListener("afterprint", done, { once: true });
-    return () => window.removeEventListener("afterprint", done);
-  }, [reportJob]);
+  };
 
   // On narrow screens the result sits below the controls: bring it into view when it appears.
   useEffect(() => {
@@ -126,10 +122,10 @@ export const EventResetPanel = () => {
             first.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button size="sm" disabled={!balancesQ.data} onClick={() => setReportJob("receipt-roll")}>
+            <Button size="sm" disabled={!balancesQ.data} onClick={() => printReport("receipt-roll")}>
               <Printer className="mr-2 h-4 w-4" /> Till printer
             </Button>
-            <Button size="sm" variant="outline" disabled={!balancesQ.data} onClick={() => setReportJob("a4-sheet")}>
+            <Button size="sm" variant="outline" disabled={!balancesQ.data} onClick={() => printReport("a4-sheet")}>
               A4 paper
             </Button>
             {reportPrinted && (

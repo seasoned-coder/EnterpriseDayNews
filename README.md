@@ -347,6 +347,7 @@ The frontend automatically handles login and token management when navigating to
 -   `GET  /api/staff/balances`: Every team's balance (charged, refunded, paid, owed, adverts) (#48). `GET /api/staff/balances/{team}`: one team's balance and every charge, refund and payment.
 -   `POST /api/staff/balances/{team}/paid`: Staff took the whole balance from the team's bank (JSON `{"amount": 35}`, the balance they saw). `409` if nothing is owed or the balance has changed; no part-payments.
 -   `GET  /api/student/balance`: The signed-in team's own balance and history.
+-   `GET  /api/staff/invoices?owing=true`: Every team's balance and history in one go, for printing invoices (#50); `owing=false` for all teams.
 -   `GET  /api/staff/results`: Every team's spend, plays, screen time and cost per minute, most screen time first, plus when the projector last recorded a showing.
 -   `GET  /api/student/results`: The signed-in team's totals and each advert's screen time.
 -   `POST /api/projector/settings`: Update display settings (role: STAFF). JSON body: `intervalSpeedSeconds` (staff content interval, 0-3600), `displayDurationSeconds` (staff item display time, 3-120), `imageRefreshSeconds` (projector refresh, 2-60).

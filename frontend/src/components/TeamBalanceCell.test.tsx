@@ -77,6 +77,24 @@ describe("TeamBalanceCell (issue #48)", () => {
     );
   });
 
+  it("prints the team's invoice (issue #50)", async () => {
+    window.print = vi.fn();
+    mocks.balances.mockResolvedValue([balance(35)]);
+    renderCell();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Owes 35" }));
+    const dialog = await screen.findByRole("dialog");
+    const till = within(dialog).getByRole("button", { name: /till printer/i });
+    await waitFor(() => expect(till).toBeEnabled());
+    fireEvent.click(till);
+
+    const printed = await screen.findByTestId("print-area");
+    expect(within(printed).getByLabelText("Invoice for rocket-lemonade")).toBeInTheDocument();
+    expect(window.print).toHaveBeenCalled();
+    document.body.className = "";
+    delete document.body.dataset.printLayout;
+  });
+
   it("offers nothing to pay when nothing is owed", async () => {
     mocks.balances.mockResolvedValue([balance(0, 35)]);
     renderCell();

@@ -240,6 +240,8 @@
 .receipt__line { padding: 1.2mm 0; border-bottom: 0.2mm dotted #000; break-inside: avoid; }
 .receipt__line:last-child { border-bottom: 0; }
 .receipt__small { font-size: 8pt; }
+.receipt__total { font-size: 14pt; font-weight: 900; margin-top: 1.5mm; }
+.receipt__signature { margin-top: 5mm; font-size: 8pt; }
 
 /* Printing: only what's in the PrintArea (components/PrintArea.tsx), laid out for the chosen paper. */
 .print-area { display: none; }
@@ -247,7 +249,8 @@
   body.printing { background: #fff !important; }
   body.printing > *:not(.print-area) { display: none !important; }
   body.printing .print-area { display: block; }
-  body.printing[data-print-layout="receipt"] .print-area > * { margin: 0 auto; padding: 4mm 0; break-after: page; }
+  body.printing[data-print-layout="receipt"] .print-area > *,
+  body.printing[data-print-layout="receipt-long"] .print-area > * { margin: 0 auto; padding: 4mm 0; break-after: page; }
   body.printing[data-print-layout="receipt-roll"] .print-area > * { margin: 0 auto; padding: 4mm 0; }
   body.printing[data-print-layout="a4-cards"] .print-area {
     display: grid;
