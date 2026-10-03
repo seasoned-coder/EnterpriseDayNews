@@ -50,32 +50,36 @@ public class ImageService {
                                      boolean publishOnApproval) throws IOException {
 <span class="fc" id="L51">        validateFile(file);</span>
 
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : &quot;image&quot;;</span>
-<span class="fc" id="L54">        String fileName = UUID.randomUUID() + &quot;_&quot; + originalName;</span>
+        // The name comes from the user's browser: never let it choose where the file goes.
+<span class="fc" id="L54">        String originalName = UploadFileNames.displayName(file.getOriginalFilename());</span>
+<span class="fc" id="L55">        String fileName = UUID.randomUUID() + &quot;_&quot; + UploadFileNames.storageName(originalName);</span>
 
-<span class="fc" id="L56">        Path uploadPath = Paths.get(uploadDir);</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (!Files.exists(uploadPath)) {</span>
-<span class="nc" id="L58">            Files.createDirectories(uploadPath);</span>
+<span class="fc" id="L57">        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (!Files.exists(uploadPath)) {</span>
+<span class="nc" id="L59">            Files.createDirectories(uploadPath);</span>
         }
-<span class="fc" id="L60">        Path filePath = uploadPath.resolve(fileName);</span>
-<span class="fc" id="L61">        try (InputStream in = file.getInputStream()) {</span>
-<span class="fc" id="L62">            Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="fc" id="L61">        Path filePath = uploadPath.resolve(fileName).normalize();</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (!filePath.startsWith(uploadPath)) {</span>
+<span class="nc" id="L63">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Invalid file name&quot;);</span>
+        }
+<span class="fc" id="L65">        try (InputStream in = file.getInputStream()) {</span>
+<span class="fc" id="L66">            Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);</span>
         }
 
-<span class="fc" id="L65">        ImageMetadata metadata = ImageMetadata.builder()</span>
-<span class="fc" id="L66">                .filePath(fileName)</span>
-<span class="fc" id="L67">                .originalFileName(originalName)</span>
-<span class="fc" id="L68">                .uploadedBy(username)</span>
-<span class="fc" id="L69">                .uploadedAt(LocalDateTime.now())</span>
-<span class="fc" id="L70">                .status(ApprovalStatus.NEW)</span>
-<span class="fc" id="L71">                .display(false)</span>
-<span class="fc" id="L72">                .publishOnApproval(publishOnApproval)</span>
-<span class="fc" id="L73">                .priority(priority)</span>
-<span class="fc" id="L74">                .durationSeconds(durationSeconds)</span>
-<span class="fc" id="L75">                .totalCost(calculateCost(priority, durationSeconds))</span>
-<span class="fc" id="L76">                .build();</span>
+<span class="fc" id="L69">        ImageMetadata metadata = ImageMetadata.builder()</span>
+<span class="fc" id="L70">                .filePath(fileName)</span>
+<span class="fc" id="L71">                .originalFileName(originalName)</span>
+<span class="fc" id="L72">                .uploadedBy(username)</span>
+<span class="fc" id="L73">                .uploadedAt(LocalDateTime.now())</span>
+<span class="fc" id="L74">                .status(ApprovalStatus.NEW)</span>
+<span class="fc" id="L75">                .display(false)</span>
+<span class="fc" id="L76">                .publishOnApproval(publishOnApproval)</span>
+<span class="fc" id="L77">                .priority(priority)</span>
+<span class="fc" id="L78">                .durationSeconds(durationSeconds)</span>
+<span class="fc" id="L79">                .totalCost(calculateCost(priority, durationSeconds))</span>
+<span class="fc" id="L80">                .build();</span>
 
-<span class="fc" id="L78">        return imageRepository.save(metadata);</span>
+<span class="fc" id="L82">        return imageRepository.save(metadata);</span>
     }
 
     /**
@@ -83,124 +87,124 @@ public class ImageService {
      */
     @Transactional
     public ImageMetadata uploadImage(MultipartFile file, String username) throws IOException {
-<span class="fc" id="L86">        return uploadImage(file, username, 1, 10, true);</span>
+<span class="fc" id="L90">        return uploadImage(file, username, 1, 10, true);</span>
     }
 
     private int calculateCost(int priority, int durationSeconds) {
         // Costs: priority 1=5, 2=10, 3=15, 4=20
-<span class="fc" id="L91">        int priorityCost = priority * 5;</span>
+<span class="fc" id="L95">        int priorityCost = priority * 5;</span>
         // Costs: 10s=5, 20s=10, 30s=15
-<span class="fc" id="L93">        int durationCost = (durationSeconds / 10) * 5;</span>
-<span class="fc" id="L94">        return priorityCost + durationCost;</span>
+<span class="fc" id="L97">        int durationCost = (durationSeconds / 10) * 5;</span>
+<span class="fc" id="L98">        return priorityCost + durationCost;</span>
     }
 
     public List&lt;ImageMetadata&gt; getUserUploads(String username) {
-<span class="fc" id="L98">        return imageRepository.findByUploadedByOrderByUploadedAtDesc(username);</span>
+<span class="fc" id="L102">        return imageRepository.findByUploadedByOrderByUploadedAtDesc(username);</span>
     }
 
     private void validateFile(MultipartFile file) {
-<span class="pc bpc" id="L102" title="1 of 4 branches missed.">        if (file == null || file.isEmpty()) {</span>
-<span class="fc" id="L103">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;File is empty&quot;);</span>
+<span class="pc bpc" id="L106" title="1 of 4 branches missed.">        if (file == null || file.isEmpty()) {</span>
+<span class="fc" id="L107">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;File is empty&quot;);</span>
         }
-<span class="fc" id="L105">        String contentType = file.getContentType();</span>
-<span class="pc bpc" id="L106" title="1 of 4 branches missed.">        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {</span>
-<span class="fc" id="L107">            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,</span>
+<span class="fc" id="L109">        String contentType = file.getContentType();</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {</span>
+<span class="fc" id="L111">            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,</span>
                     &quot;Unsupported content type: &quot; + contentType);
         }
-<span class="fc" id="L110">    }</span>
+<span class="fc" id="L114">    }</span>
 
     public List&lt;ImageMetadata&gt; getNewImages() {
-<span class="fc" id="L113">        return imageRepository.findByStatusOrderByUploadedAtDesc(ApprovalStatus.NEW);</span>
+<span class="fc" id="L117">        return imageRepository.findByStatusOrderByUploadedAtDesc(ApprovalStatus.NEW);</span>
     }
 
     public List&lt;ImageMetadata&gt; getApprovedImages() {
-<span class="fc" id="L117">        return imageRepository.findByStatusOrderByDisplayOrderAsc(ApprovalStatus.APPROVED);</span>
+<span class="fc" id="L121">        return imageRepository.findByStatusOrderByDisplayOrderAsc(ApprovalStatus.APPROVED);</span>
     }
 
     public List&lt;ImageMetadata&gt; getRejectedImages() {
-<span class="fc" id="L121">        return imageRepository.findByStatusOrderByUploadedAtDesc(ApprovalStatus.REJECTED);</span>
+<span class="fc" id="L125">        return imageRepository.findByStatusOrderByUploadedAtDesc(ApprovalStatus.REJECTED);</span>
     }
 
     public List&lt;ImageMetadata&gt; getDisplayImages() {
-<span class="fc" id="L125">        List&lt;ImageMetadata&gt; activeFlashes = imageRepository.findAll().stream()</span>
-<span class="fc" id="L126">                .filter(ImageMetadata::isFlashMode)</span>
-<span class="fc" id="L127">                .toList();</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (!activeFlashes.isEmpty()) {</span>
-<span class="fc" id="L129">            return activeFlashes;</span>
+<span class="fc" id="L129">        List&lt;ImageMetadata&gt; activeFlashes = imageRepository.findAll().stream()</span>
+<span class="fc" id="L130">                .filter(ImageMetadata::isFlashMode)</span>
+<span class="fc" id="L131">                .toList();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (!activeFlashes.isEmpty()) {</span>
+<span class="fc" id="L133">            return activeFlashes;</span>
         }
-<span class="fc" id="L131">        return imageRepository.findByStatusAndDisplayOrderByDisplayOrderAsc(ApprovalStatus.APPROVED, true);</span>
+<span class="fc" id="L135">        return imageRepository.findByStatusAndDisplayOrderByDisplayOrderAsc(ApprovalStatus.APPROVED, true);</span>
     }
 
     public List&lt;ImageMetadata&gt; getInfoMessages() {
-<span class="nc" id="L135">        return imageRepository.findByIsInfoMessageOrderByUploadedAtDesc(true);</span>
+<span class="nc" id="L139">        return imageRepository.findByIsInfoMessageOrderByUploadedAtDesc(true);</span>
     }
 
     @Transactional
     public ImageMetadata uploadInfoMessage(MultipartFile file, String username, boolean flashMode) throws IOException {
-<span class="nc" id="L140">        ImageMetadata metadata = uploadImage(file, username, 4, 10, true);</span>
-<span class="nc" id="L141">        metadata.setInfoMessage(true);</span>
-<span class="nc" id="L142">        metadata.setFlashMode(flashMode);</span>
-<span class="nc" id="L143">        metadata.setStatus(ApprovalStatus.APPROVED);</span>
-<span class="nc" id="L144">        metadata.setVettedBy(username);</span>
-<span class="nc" id="L145">        metadata.setVettedAt(LocalDateTime.now());</span>
-<span class="nc" id="L146">        metadata.setDisplay(false); // Default should be HIDE</span>
-<span class="nc" id="L147">        return imageRepository.save(metadata);</span>
+<span class="nc" id="L144">        ImageMetadata metadata = uploadImage(file, username, 4, 10, true);</span>
+<span class="nc" id="L145">        metadata.setInfoMessage(true);</span>
+<span class="nc" id="L146">        metadata.setFlashMode(flashMode);</span>
+<span class="nc" id="L147">        metadata.setStatus(ApprovalStatus.APPROVED);</span>
+<span class="nc" id="L148">        metadata.setVettedBy(username);</span>
+<span class="nc" id="L149">        metadata.setVettedAt(LocalDateTime.now());</span>
+<span class="nc" id="L150">        metadata.setDisplay(false); // Default should be HIDE</span>
+<span class="nc" id="L151">        return imageRepository.save(metadata);</span>
     }
 
     @Transactional
     public ImageMetadata postFreeTextMessage(String text, String username, boolean flashMode) {
         // Find existing text-based info messages
-<span class="fc" id="L153">        List&lt;ImageMetadata&gt; existingMessages = imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true);</span>
+<span class="fc" id="L157">        List&lt;ImageMetadata&gt; existingMessages = imageRepository.findByIsInfoMessageAndMessageTextIsNotNull(true);</span>
         
         // If we are posting a new text message, we want to REUSE/UPDATE the existing one if it's there
         // rather than creating multiples.
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (!existingMessages.isEmpty()) {</span>
-<span class="fc" id="L158">            ImageMetadata metadata = existingMessages.get(0);</span>
-<span class="fc" id="L159">            metadata.setMessageText(text);</span>
-<span class="fc" id="L160">            metadata.setUploadedBy(username);</span>
-<span class="fc" id="L161">            metadata.setUploadedAt(LocalDateTime.now());</span>
-<span class="fc" id="L162">            metadata.setVettedBy(username);</span>
-<span class="fc" id="L163">            metadata.setVettedAt(LocalDateTime.now());</span>
-<span class="fc" id="L164">            metadata.setFlashMode(flashMode);</span>
-<span class="fc" id="L165">            metadata.setDisplay(true);</span>
-<span class="fc" id="L166">            return imageRepository.save(metadata);</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (!existingMessages.isEmpty()) {</span>
+<span class="fc" id="L162">            ImageMetadata metadata = existingMessages.get(0);</span>
+<span class="fc" id="L163">            metadata.setMessageText(text);</span>
+<span class="fc" id="L164">            metadata.setUploadedBy(username);</span>
+<span class="fc" id="L165">            metadata.setUploadedAt(LocalDateTime.now());</span>
+<span class="fc" id="L166">            metadata.setVettedBy(username);</span>
+<span class="fc" id="L167">            metadata.setVettedAt(LocalDateTime.now());</span>
+<span class="fc" id="L168">            metadata.setFlashMode(flashMode);</span>
+<span class="fc" id="L169">            metadata.setDisplay(true);</span>
+<span class="fc" id="L170">            return imageRepository.save(metadata);</span>
         }
 
-<span class="nc" id="L169">        ImageMetadata metadata = ImageMetadata.builder()</span>
-<span class="nc" id="L170">                .messageText(text)</span>
-<span class="nc" id="L171">                .uploadedBy(username)</span>
-<span class="nc" id="L172">                .uploadedAt(LocalDateTime.now())</span>
-<span class="nc" id="L173">                .status(ApprovalStatus.APPROVED)</span>
-<span class="nc" id="L174">                .vettedBy(username)</span>
-<span class="nc" id="L175">                .vettedAt(LocalDateTime.now())</span>
-<span class="nc" id="L176">                .display(true) // Free text with FLASH MODE should probably be active immediately? </span>
+<span class="nc" id="L173">        ImageMetadata metadata = ImageMetadata.builder()</span>
+<span class="nc" id="L174">                .messageText(text)</span>
+<span class="nc" id="L175">                .uploadedBy(username)</span>
+<span class="nc" id="L176">                .uploadedAt(LocalDateTime.now())</span>
+<span class="nc" id="L177">                .status(ApprovalStatus.APPROVED)</span>
+<span class="nc" id="L178">                .vettedBy(username)</span>
+<span class="nc" id="L179">                .vettedAt(LocalDateTime.now())</span>
+<span class="nc" id="L180">                .display(true) // Free text with FLASH MODE should probably be active immediately? </span>
                 // &quot;for really urgent messages we also need a 'free text box' , that also gets 'FLASH MODE' status and when active immediately takes over the projector.&quot;
-<span class="nc" id="L178">                .isInfoMessage(true)</span>
-<span class="nc" id="L179">                .isFlashMode(flashMode)</span>
-<span class="nc" id="L180">                .priority(4)</span>
-<span class="nc" id="L181">                .durationSeconds(10)</span>
-<span class="nc" id="L182">                .build();</span>
-<span class="nc" id="L183">        return imageRepository.save(metadata);</span>
+<span class="nc" id="L182">                .isInfoMessage(true)</span>
+<span class="nc" id="L183">                .isFlashMode(flashMode)</span>
+<span class="nc" id="L184">                .priority(4)</span>
+<span class="nc" id="L185">                .durationSeconds(10)</span>
+<span class="nc" id="L186">                .build();</span>
+<span class="nc" id="L187">        return imageRepository.save(metadata);</span>
     }
 
     @Transactional
     public ImageMetadata toggleFlashMode(Long id, boolean flashMode) {
-<span class="nc" id="L188">        ImageMetadata metadata = findOrThrow(id);</span>
-<span class="nc" id="L189">        metadata.setFlashMode(flashMode);</span>
-<span class="nc" id="L190">        return imageRepository.save(metadata);</span>
+<span class="nc" id="L192">        ImageMetadata metadata = findOrThrow(id);</span>
+<span class="nc" id="L193">        metadata.setFlashMode(flashMode);</span>
+<span class="nc" id="L194">        return imageRepository.save(metadata);</span>
     }
 
     @Transactional
     public ImageMetadata updateStatus(Long id, ApprovalStatus status, String vettedBy) {
-<span class="fc" id="L195">        ImageMetadata metadata = findOrThrow(id);</span>
+<span class="fc" id="L199">        ImageMetadata metadata = findOrThrow(id);</span>
         // Enforce the approval state machine — see ImageStateMachine for allowed transitions.
-<span class="fc" id="L197">        ImageStateMachine.assertCanTransition(metadata.getStatus(), status);</span>
-<span class="fc" id="L198">        metadata.setStatus(status);</span>
-<span class="fc" id="L199">        metadata.setVettedBy(vettedBy);</span>
-<span class="fc" id="L200">        metadata.setVettedAt(LocalDateTime.now());</span>
+<span class="fc" id="L201">        ImageStateMachine.assertCanTransition(metadata.getStatus(), status);</span>
+<span class="fc" id="L202">        metadata.setStatus(status);</span>
+<span class="fc" id="L203">        metadata.setVettedBy(vettedBy);</span>
+<span class="fc" id="L204">        metadata.setVettedAt(LocalDateTime.now());</span>
         // Approving puts it on screen only if the student chose &quot;as soon as it's approved&quot;; rejecting hides it.
-<span class="fc bfc" id="L202" title="All 4 branches covered.">        metadata.setDisplay(status == ApprovalStatus.APPROVED &amp;&amp; metadata.isPublishOnApproval());</span>
-<span class="fc" id="L203">        return imageRepository.save(metadata);</span>
+<span class="fc bfc" id="L206" title="All 4 branches covered.">        metadata.setDisplay(status == ApprovalStatus.APPROVED &amp;&amp; metadata.isPublishOnApproval());</span>
+<span class="fc" id="L207">        return imageRepository.save(metadata);</span>
     }
 
     /**
@@ -210,100 +214,100 @@ public class ImageService {
      */
     @Transactional
     public ImageMetadata setPublishedByStudent(Long id, String username, boolean published) {
-<span class="fc" id="L213">        ImageMetadata metadata = findOwnedByStudent(id, username, &quot;publish&quot;);</span>
-<span class="pc bpc" id="L214" title="1 of 4 branches missed.">        switch (metadata.getStatus()) {</span>
-<span class="fc" id="L215">            case APPROVED -&gt; metadata.setDisplay(published);</span>
-<span class="fc" id="L216">            case NEW -&gt; metadata.setPublishOnApproval(published);</span>
-<span class="fc" id="L217">            case REJECTED -&gt; throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+<span class="fc" id="L217">        ImageMetadata metadata = findOwnedByStudent(id, username, &quot;publish&quot;);</span>
+<span class="pc bpc" id="L218" title="1 of 4 branches missed.">        switch (metadata.getStatus()) {</span>
+<span class="fc" id="L219">            case APPROVED -&gt; metadata.setDisplay(published);</span>
+<span class="fc" id="L220">            case NEW -&gt; metadata.setPublishOnApproval(published);</span>
+<span class="fc" id="L221">            case REJECTED -&gt; throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
                     &quot;This advert wasn't approved, so it can't go on screen. Ask a member of staff why.&quot;);
         }
-<span class="fc" id="L220">        return imageRepository.save(metadata);</span>
+<span class="fc" id="L224">        return imageRepository.save(metadata);</span>
     }
 
     @Transactional
     public ImageMetadata toggleDisplay(Long id, boolean display) {
-<span class="fc" id="L225">        ImageMetadata metadata = findOrThrow(id);</span>
-<span class="fc bfc" id="L226" title="All 4 branches covered.">        if (display &amp;&amp; metadata.getStatus() != ApprovalStatus.APPROVED) {</span>
-<span class="fc" id="L227">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+<span class="fc" id="L229">        ImageMetadata metadata = findOrThrow(id);</span>
+<span class="fc bfc" id="L230" title="All 4 branches covered.">        if (display &amp;&amp; metadata.getStatus() != ApprovalStatus.APPROVED) {</span>
+<span class="fc" id="L231">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
                     &quot;Only APPROVED images can be set to display&quot;);
         }
-<span class="fc" id="L230">        metadata.setDisplay(display);</span>
-<span class="fc" id="L231">        return imageRepository.save(metadata);</span>
+<span class="fc" id="L234">        metadata.setDisplay(display);</span>
+<span class="fc" id="L235">        return imageRepository.save(metadata);</span>
     }
 
     @Transactional
     public void updateDisplayOrder(List&lt;Long&gt; ids) {
-<span class="pc bpc" id="L236" title="1 of 4 branches missed.">        if (ids == null || ids.isEmpty()) {</span>
-<span class="fc" id="L237">            return;</span>
+<span class="pc bpc" id="L240" title="1 of 4 branches missed.">        if (ids == null || ids.isEmpty()) {</span>
+<span class="fc" id="L241">            return;</span>
         }
-<span class="fc" id="L239">        List&lt;ImageMetadata&gt; found = imageRepository.findAllById(ids);</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">        if (found.size() != ids.size()) {</span>
-<span class="fc" id="L241">            throw new ResponseStatusException(HttpStatus.NOT_FOUND,</span>
+<span class="fc" id="L243">        List&lt;ImageMetadata&gt; found = imageRepository.findAllById(ids);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        if (found.size() != ids.size()) {</span>
+<span class="fc" id="L245">            throw new ResponseStatusException(HttpStatus.NOT_FOUND,</span>
                     &quot;One or more images not found for ordering&quot;);
         }
         // Re-order according to the ids list, avoiding N+1 queries.
-<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (int i = 0; i &lt; ids.size(); i++) {</span>
-<span class="fc" id="L246">            Long id = ids.get(i);</span>
-<span class="fc" id="L247">            ImageMetadata m = found.stream()</span>
-<span class="fc" id="L248">                    .filter(x -&gt; x.getId().equals(id))</span>
-<span class="fc" id="L249">                    .findFirst()</span>
-<span class="pc" id="L250">                    .orElseThrow(() -&gt; new ImageNotFoundException(id));</span>
-<span class="fc" id="L251">            m.setDisplayOrder(i);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        for (int i = 0; i &lt; ids.size(); i++) {</span>
+<span class="fc" id="L250">            Long id = ids.get(i);</span>
+<span class="fc" id="L251">            ImageMetadata m = found.stream()</span>
+<span class="fc" id="L252">                    .filter(x -&gt; x.getId().equals(id))</span>
+<span class="fc" id="L253">                    .findFirst()</span>
+<span class="pc" id="L254">                    .orElseThrow(() -&gt; new ImageNotFoundException(id));</span>
+<span class="fc" id="L255">            m.setDisplayOrder(i);</span>
         }
-<span class="fc" id="L253">        imageRepository.saveAll(found);</span>
-<span class="fc" id="L254">    }</span>
+<span class="fc" id="L257">        imageRepository.saveAll(found);</span>
+<span class="fc" id="L258">    }</span>
 
     @Transactional
     public void deleteImage(Long id) {
-<span class="fc" id="L258">        ImageMetadata metadata = findOrThrow(id);</span>
-<span class="fc" id="L259">        deleteImage(metadata);</span>
-<span class="fc" id="L260">    }</span>
+<span class="fc" id="L262">        ImageMetadata metadata = findOrThrow(id);</span>
+<span class="fc" id="L263">        deleteImage(metadata);</span>
+<span class="fc" id="L264">    }</span>
 
     @Transactional
     public void deleteStudentImage(Long id, String username) {
-<span class="fc" id="L264">        deleteImage(findOwnedByStudent(id, username, &quot;delete&quot;));</span>
-<span class="fc" id="L265">    }</span>
+<span class="fc" id="L268">        deleteImage(findOwnedByStudent(id, username, &quot;delete&quot;));</span>
+<span class="fc" id="L269">    }</span>
 
     /** The image if it exists and was uploaded by this student (staff info items never belong to students). */
     private ImageMetadata findOwnedByStudent(Long id, String username, String action) {
-<span class="fc" id="L269">        ImageMetadata metadata = findOrThrow(id);</span>
-<span class="fc bfc" id="L270" title="All 4 branches covered.">        if (metadata.isInfoMessage() || !Objects.equals(metadata.getUploadedBy(), username)) {</span>
-<span class="fc" id="L271">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;You can only &quot; + action + &quot; your own uploads&quot;);</span>
+<span class="fc" id="L273">        ImageMetadata metadata = findOrThrow(id);</span>
+<span class="fc bfc" id="L274" title="All 4 branches covered.">        if (metadata.isInfoMessage() || !Objects.equals(metadata.getUploadedBy(), username)) {</span>
+<span class="fc" id="L275">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;You can only &quot; + action + &quot; your own uploads&quot;);</span>
         }
-<span class="fc" id="L273">        return metadata;</span>
+<span class="fc" id="L277">        return metadata;</span>
     }
 
     private void deleteImage(ImageMetadata metadata) {
-<span class="fc" id="L277">        deletePhysicalFile(metadata.getFilePath());</span>
-<span class="fc" id="L278">        imageRepository.delete(metadata);</span>
-<span class="fc" id="L279">    }</span>
+<span class="fc" id="L281">        deletePhysicalFile(metadata.getFilePath());</span>
+<span class="fc" id="L282">        imageRepository.delete(metadata);</span>
+<span class="fc" id="L283">    }</span>
 
     @Transactional
     public void deleteAllImages() {
         // Delete all images EXCEPT staff information messages (isInfoMessage = true)
-<span class="fc" id="L284">        List&lt;ImageMetadata&gt; all = imageRepository.findAll();</span>
-<span class="fc bfc" id="L285" title="All 2 branches covered.">        for (ImageMetadata metadata : all) {</span>
-<span class="fc bfc" id="L286" title="All 2 branches covered.">            if (!metadata.isInfoMessage()) {</span>
-<span class="fc" id="L287">                deletePhysicalFile(metadata.getFilePath());</span>
-<span class="fc" id="L288">                imageRepository.delete(metadata);</span>
+<span class="fc" id="L288">        List&lt;ImageMetadata&gt; all = imageRepository.findAll();</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        for (ImageMetadata metadata : all) {</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">            if (!metadata.isInfoMessage()) {</span>
+<span class="fc" id="L291">                deletePhysicalFile(metadata.getFilePath());</span>
+<span class="fc" id="L292">                imageRepository.delete(metadata);</span>
             }
-<span class="fc" id="L290">        }</span>
-<span class="fc" id="L291">    }</span>
+<span class="fc" id="L294">        }</span>
+<span class="fc" id="L295">    }</span>
 
     private void deletePhysicalFile(String fileName) {
-<span class="pc bpc" id="L294" title="1 of 4 branches missed.">        if (fileName == null || fileName.isBlank()) {</span>
-<span class="fc" id="L295">            return;</span>
+<span class="pc bpc" id="L298" title="1 of 4 branches missed.">        if (fileName == null || fileName.isBlank()) {</span>
+<span class="fc" id="L299">            return;</span>
         }
         try {
-<span class="fc" id="L298">            Path filePath = Paths.get(uploadDir).resolve(fileName);</span>
-<span class="fc" id="L299">            Files.deleteIfExists(filePath);</span>
-<span class="nc" id="L300">        } catch (IOException e) {</span>
-<span class="nc" id="L301">            log.error(&quot;Failed to delete physical file: {}&quot;, fileName, e);</span>
-<span class="fc" id="L302">        }</span>
-<span class="fc" id="L303">    }</span>
+<span class="fc" id="L302">            Path filePath = Paths.get(uploadDir).resolve(fileName);</span>
+<span class="fc" id="L303">            Files.deleteIfExists(filePath);</span>
+<span class="nc" id="L304">        } catch (IOException e) {</span>
+<span class="nc" id="L305">            log.error(&quot;Failed to delete physical file: {}&quot;, fileName, e);</span>
+<span class="fc" id="L306">        }</span>
+<span class="fc" id="L307">    }</span>
 
     private ImageMetadata findOrThrow(Long id) {
-<span class="fc" id="L306">        return imageRepository.findById(id).orElseThrow(() -&gt; new ImageNotFoundException(id));</span>
+<span class="fc" id="L310">        return imageRepository.findById(id).orElseThrow(() -&gt; new ImageNotFoundException(id));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
