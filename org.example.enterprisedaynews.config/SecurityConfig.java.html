@@ -5,10 +5,12 @@ import org.example.enterprisedaynews.security.Roles;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -24,33 +26,36 @@ public class SecurityConfig {
     private final List&lt;String&gt; allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-<span class="fc" id="L27">                          @Value(&quot;${app.cors.allowed-origins:}&quot;) List&lt;String&gt; allowedOrigins) {</span>
-<span class="fc" id="L28">        this.jwtAuthenticationFilter = jwtAuthenticationFilter;</span>
-<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        this.allowedOrigins = allowedOrigins.stream().map(String::trim).filter(o -&gt; !o.isEmpty()).toList();</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L29">                          @Value(&quot;${app.cors.allowed-origins:}&quot;) List&lt;String&gt; allowedOrigins) {</span>
+<span class="fc" id="L30">        this.jwtAuthenticationFilter = jwtAuthenticationFilter;</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        this.allowedOrigins = allowedOrigins.stream().map(String::trim).filter(o -&gt; !o.isEmpty()).toList();</span>
+<span class="fc" id="L32">    }</span>
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // CSRF disabled — stateless REST API authenticated by JWT.
-<span class="fc" id="L35">        http.csrf(csrf -&gt; csrf.disable());</span>
-<span class="fc" id="L36">        http.cors(cors -&gt; cors.configurationSource(corsConfigurationSource()));</span>
+<span class="fc" id="L37">        http.csrf(csrf -&gt; csrf.disable());</span>
+<span class="fc" id="L38">        http.cors(cors -&gt; cors.configurationSource(corsConfigurationSource()));</span>
 
-<span class="fc" id="L38">        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);</span>
+<span class="fc" id="L40">        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);</span>
+        // No valid sign-in (none, expired, or the account was locked/renamed/deleted) -&gt; 401, so the
+        // frontend sends the user back to sign in. Signed in but the wrong role stays 403.
+<span class="fc" id="L43">        http.exceptionHandling(e -&gt; e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));</span>
 
-<span class="fc" id="L40">        http.authorizeHttpRequests(auth -&gt; auth</span>
-<span class="fc" id="L41">                .requestMatchers(&quot;/api/auth/**&quot;).permitAll()</span>
-<span class="fc" id="L42">                .requestMatchers(&quot;/api/student/**&quot;).hasRole(Roles.STUDENT)</span>
-<span class="fc" id="L43">                .requestMatchers(&quot;/api/staff/**&quot;).hasRole(Roles.STAFF)</span>
+<span class="fc" id="L45">        http.authorizeHttpRequests(auth -&gt; auth</span>
+<span class="fc" id="L46">                .requestMatchers(&quot;/api/auth/**&quot;).permitAll()</span>
+<span class="fc" id="L47">                .requestMatchers(&quot;/api/student/**&quot;).hasRole(Roles.STUDENT)</span>
+<span class="fc" id="L48">                .requestMatchers(&quot;/api/staff/**&quot;).hasRole(Roles.STAFF)</span>
                 // The projector only reads; changing its settings is a staff action.
-<span class="fc" id="L45">                .requestMatchers(HttpMethod.GET, &quot;/api/projector/**&quot;).permitAll()</span>
-<span class="fc" id="L46">                .requestMatchers(&quot;/api/projector/**&quot;).hasRole(Roles.STAFF)</span>
+<span class="fc" id="L50">                .requestMatchers(HttpMethod.GET, &quot;/api/projector/**&quot;).permitAll()</span>
+<span class="fc" id="L51">                .requestMatchers(&quot;/api/projector/**&quot;).hasRole(Roles.STAFF)</span>
                 // Access to individual files is decided by UploadAccessInterceptor (public or signed link).
-<span class="fc" id="L48">                .requestMatchers(HttpMethod.GET, &quot;/uploads/**&quot;).permitAll()</span>
+<span class="fc" id="L53">                .requestMatchers(HttpMethod.GET, &quot;/uploads/**&quot;).permitAll()</span>
                 // Let error responses (e.g. the 404 for a hidden upload) through as-is instead of turning into 403.
-<span class="fc" id="L50">                .requestMatchers(&quot;/error&quot;).permitAll()</span>
-<span class="fc" id="L51">                .anyRequest().authenticated()</span>
+<span class="fc" id="L55">                .requestMatchers(&quot;/error&quot;).permitAll()</span>
+<span class="fc" id="L56">                .anyRequest().authenticated()</span>
         );
-<span class="fc" id="L53">        return http.build();</span>
+<span class="fc" id="L58">        return http.build();</span>
     }
 
     /**
@@ -60,16 +65,16 @@ public class SecurityConfig {
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-<span class="fc" id="L63">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (!allowedOrigins.isEmpty()) {</span>
-<span class="fc" id="L65">            CorsConfiguration configuration = new CorsConfiguration();</span>
-<span class="fc" id="L66">            configuration.setAllowedOrigins(allowedOrigins);</span>
-<span class="fc" id="L67">            configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
-<span class="fc" id="L68">            configuration.setAllowedHeaders(List.of(&quot;Authorization&quot;, &quot;Content-Type&quot;));</span>
-<span class="fc" id="L69">            configuration.setAllowCredentials(false);</span>
-<span class="fc" id="L70">            source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
+<span class="fc" id="L68">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (!allowedOrigins.isEmpty()) {</span>
+<span class="fc" id="L70">            CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L71">            configuration.setAllowedOrigins(allowedOrigins);</span>
+<span class="fc" id="L72">            configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L73">            configuration.setAllowedHeaders(List.of(&quot;Authorization&quot;, &quot;Content-Type&quot;));</span>
+<span class="fc" id="L74">            configuration.setAllowCredentials(false);</span>
+<span class="fc" id="L75">            source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
         }
-<span class="fc" id="L72">        return source;</span>
+<span class="fc" id="L77">        return source;</span>
     }
 
 }

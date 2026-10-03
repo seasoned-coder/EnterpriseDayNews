@@ -2,6 +2,7 @@
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.enterprisedaynews.model.StaffAccount;
+import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StaffAccountRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 
 @Service
-<span class="fc" id="L15">@Slf4j</span>
+<span class="fc" id="L16">@Slf4j</span>
 public class StaffAccountService extends AccountService&lt;StaffAccount&gt; {
 
     // First staff account, supplied at deploy time (APP_STAFF_BOOTSTRAP_USERNAME / _PASSWORD in .env).
@@ -22,14 +23,25 @@ public class StaffAccountService extends AccountService&lt;StaffAccount&gt; {
     @Value(&quot;${app.staff.bootstrap-password:}&quot;)
     private String bootstrapPassword;
 
-    public StaffAccountService(StaffAccountRepository repository, LoginGuard loginGuard) {
-<span class="fc" id="L26">        super(repository, loginGuard, PasswordPolicy.STAFF_MIN_LENGTH, &quot;staff&quot;);</span>
-<span class="fc" id="L27">    }</span>
+    private final ImageRepository imageRepository;
+
+    public StaffAccountService(StaffAccountRepository repository, LoginGuard loginGuard,
+                               ImageRepository imageRepository) {
+<span class="fc" id="L30">        super(repository, loginGuard, PasswordPolicy.STAFF_MIN_LENGTH, &quot;staff&quot;);</span>
+<span class="fc" id="L31">        this.imageRepository = imageRepository;</span>
+<span class="fc" id="L32">    }</span>
 
     @Override
     protected StaffAccount newAccount() {
-<span class="fc" id="L31">        return new StaffAccount();</span>
+<span class="fc" id="L36">        return new StaffAccount();</span>
     }
+
+    /** Staff items they uploaded and adverts they approved keep pointing at them after a rename. */
+    @Override
+    protected void onRenamed(String oldUsername, String newUsername) {
+<span class="fc" id="L42">        imageRepository.renameUploader(oldUsername, newUsername);</span>
+<span class="fc" id="L43">        imageRepository.renameVetter(oldUsername, newUsername);</span>
+<span class="fc" id="L44">    }</span>
 
     /**
      * Staff can't lock or delete their own account. That also guarantees at least one staff member
@@ -37,10 +49,10 @@ public class StaffAccountService extends AccountService&lt;StaffAccount&gt; {
      */
     @Override
     protected void checkCanLockOrDelete(StaffAccount account, String actingUsername, String action) {
-<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (account.getUsername().equals(PasswordPolicy.normalizeUsername(actingUsername))) {</span>
-<span class="fc" id="L41">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;You can't &quot; + action + &quot; your own account&quot;);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (account.getUsername().equals(PasswordPolicy.normalizeUsername(actingUsername))) {</span>
+<span class="fc" id="L53">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;You can't &quot; + action + &quot; your own account&quot;);</span>
         }
-<span class="fc" id="L43">    }</span>
+<span class="fc" id="L55">    }</span>
 
     /**
      * Creates the first staff account from deployment config, but only while there are no staff accounts.
@@ -50,22 +62,22 @@ public class StaffAccountService extends AccountService&lt;StaffAccount&gt; {
      */
     @Transactional
     public Optional&lt;StaffAccount&gt; bootstrapFirstAccount() {
-<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (repository.count() &gt; 0) {</span>
-<span class="fc" id="L54">            return Optional.empty();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (repository.count() &gt; 0) {</span>
+<span class="fc" id="L66">            return Optional.empty();</span>
         }
-<span class="fc bfc" id="L56" title="All 4 branches covered.">        if (isBlank(bootstrapUsername) || isBlank(bootstrapPassword)) {</span>
-<span class="fc" id="L57">            log.warn(&quot;No staff accounts exist, so nobody can sign in to the staff app. Set &quot;</span>
+<span class="fc bfc" id="L68" title="All 4 branches covered.">        if (isBlank(bootstrapUsername) || isBlank(bootstrapPassword)) {</span>
+<span class="fc" id="L69">            log.warn(&quot;No staff accounts exist, so nobody can sign in to the staff app. Set &quot;</span>
                     + &quot;APP_STAFF_BOOTSTRAP_USERNAME and APP_STAFF_BOOTSTRAP_PASSWORD (see .env.example) and restart.&quot;);
-<span class="fc" id="L59">            return Optional.empty();</span>
+<span class="fc" id="L71">            return Optional.empty();</span>
         }
-<span class="fc" id="L61">        StaffAccount created = createAccount(bootstrapUsername, bootstrapPassword);</span>
-<span class="fc" id="L62">        log.info(&quot;Created first staff account '{}' from deployment config. &quot;</span>
-<span class="fc" id="L63">                + &quot;You can now remove APP_STAFF_BOOTSTRAP_PASSWORD from .env.&quot;, created.getUsername());</span>
-<span class="fc" id="L64">        return Optional.of(created);</span>
+<span class="fc" id="L73">        StaffAccount created = createAccount(bootstrapUsername, bootstrapPassword);</span>
+<span class="fc" id="L74">        log.info(&quot;Created first staff account '{}' from deployment config. &quot;</span>
+<span class="fc" id="L75">                + &quot;You can now remove APP_STAFF_BOOTSTRAP_PASSWORD from .env.&quot;, created.getUsername());</span>
+<span class="fc" id="L76">        return Optional.of(created);</span>
     }
 
     private static boolean isBlank(String value) {
-<span class="pc bpc" id="L68" title="1 of 4 branches missed.">        return value == null || value.isBlank();</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">        return value == null || value.isBlank();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

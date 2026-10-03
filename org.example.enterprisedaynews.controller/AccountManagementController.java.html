@@ -2,6 +2,7 @@
 
 import org.example.enterprisedaynews.dto.AccountView;
 import org.example.enterprisedaynews.dto.CreateAccountRequest;
+import org.example.enterprisedaynews.dto.RenameAccountRequest;
 import org.example.enterprisedaynews.dto.UpdatePasswordRequest;
 import org.example.enterprisedaynews.model.LoginAccount;
 import org.example.enterprisedaynews.service.AccountService;
@@ -19,35 +20,40 @@ public abstract class AccountManagementController&lt;T extends LoginAccount&gt; 
 
     private final AccountService&lt;T&gt; accountService;
 
-<span class="fc" id="L22">    protected AccountManagementController(AccountService&lt;T&gt; accountService) {</span>
-<span class="fc" id="L23">        this.accountService = accountService;</span>
-<span class="fc" id="L24">    }</span>
+<span class="fc" id="L23">    protected AccountManagementController(AccountService&lt;T&gt; accountService) {</span>
+<span class="fc" id="L24">        this.accountService = accountService;</span>
+<span class="fc" id="L25">    }</span>
 
     @GetMapping
     public List&lt;AccountView&gt; list() {
-<span class="fc" id="L28">        return accountService.listAccounts().stream().map(AccountView::from).toList();</span>
+<span class="fc" id="L29">        return accountService.listAccounts().stream().map(AccountView::from).toList();</span>
     }
 
     @PostMapping
     public ResponseEntity&lt;AccountView&gt; create(@RequestBody CreateAccountRequest request) {
-<span class="fc" id="L33">        return ResponseEntity.status(201).body(AccountView.from(</span>
-<span class="fc" id="L34">                accountService.createAccount(request.username(), request.password())));</span>
+<span class="fc" id="L34">        return ResponseEntity.status(201).body(AccountView.from(</span>
+<span class="fc" id="L35">                accountService.createAccount(request.username(), request.password())));</span>
     }
 
     @PostMapping(&quot;/{id}/lock&quot;)
     public AccountView setLocked(@PathVariable Long id, @RequestParam boolean locked, Principal principal) {
-<span class="fc" id="L39">        return AccountView.from(accountService.setLocked(id, locked, ControllerSupport.usernameOf(principal)));</span>
+<span class="fc" id="L40">        return AccountView.from(accountService.setLocked(id, locked, ControllerSupport.usernameOf(principal)));</span>
     }
 
     @PutMapping(&quot;/{id}/password&quot;)
     public AccountView changePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest request) {
-<span class="fc" id="L44">        return AccountView.from(accountService.changePassword(id, request.password()));</span>
+<span class="fc" id="L45">        return AccountView.from(accountService.changePassword(id, request.password()));</span>
+    }
+
+    @PutMapping(&quot;/{id}/username&quot;)
+    public AccountView rename(@PathVariable Long id, @RequestBody RenameAccountRequest request) {
+<span class="fc" id="L50">        return AccountView.from(accountService.renameAccount(id, request.username()));</span>
     }
 
     @DeleteMapping(&quot;/{id}&quot;)
     public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L49">        accountService.deleteAccount(id, ControllerSupport.usernameOf(principal));</span>
-<span class="fc" id="L50">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L55">        accountService.deleteAccount(id, ControllerSupport.usernameOf(principal));</span>
+<span class="fc" id="L56">        return ResponseEntity.noContent().build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

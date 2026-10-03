@@ -95,7 +95,7 @@ public class ImageService {
     }
 
     public List&lt;ImageMetadata&gt; getUserUploads(String username) {
-<span class="nc" id="L98">        return imageRepository.findByUploadedByOrderByUploadedAtDesc(username);</span>
+<span class="fc" id="L98">        return imageRepository.findByUploadedByOrderByUploadedAtDesc(username);</span>
     }
 
     private void validateFile(MultipartFile file) {
