@@ -40,6 +40,15 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - jsdom doesn't navigate on `window.location.href = …`. Go through `navigation.go()` in `lib/api.ts` and spy on it.
 - `npx tsc --noEmit -p tsconfig.json` reports pre-existing TS5097 errors (`.tsx` import extensions in `App.tsx`/`main.tsx`); treat any *other* error as new.
 
+## Releases (Docker images)
+- **Images are published by GitHub Actions, not from a laptop** (`.github/workflows/release-images.yml`, issue #46).
+    - **How:** create a GitHub Release (or push a tag) named `v*`, e.g. `v2026.10.04`.
+    - **What it does:** runs backend and frontend tests, then pushes `ghcr.io/seasoned-coder/news-backend` and `news-frontend` as `latest` and the tag. The app shows the tag as its version (home page, staff footer).
+    - **Never on `main`:** pushes to `main` don't publish.
+    - **Dry run:** a manual run with "push" unticked tests and builds without publishing.
+- `build-and-push.ps1`/`.sh` are a fallback only.
+- Check workflow files with `docker run --rm -v "<repo>:/repo" --workdir /repo rhysd/actionlint:latest`.
+
 ## Local testing
 - `docker compose up --build -d db backend frontend` (always `--build`; skip `caddy`). A fresh database needs the staff bootstrap login in `.env`.
 - Chrome autofill on the login pages can overwrite typed values; set fields directly or use the API to get a token.

@@ -2,9 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { GraduationCap, Briefcase, MonitorPlay, Newspaper, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/lib/version";
 
 const Landing = () => {
-  const appVersion = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? "dev";
+  const appVersion = APP_VERSION;
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-white selection:bg-primary/30">

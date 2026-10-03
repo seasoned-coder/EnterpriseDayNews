@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# FALLBACK ONLY. Images are normally published by GitHub Actions when a release tag (v*) is created; see
+# .github/workflows/release-images.yml and the README (issue #46). Use this only if Actions is unavailable.
+#
 # Build backend/frontend images with a stamped APP_VERSION, then push latest+version tags.
 # Usage:
 #   ./build-and-push.sh

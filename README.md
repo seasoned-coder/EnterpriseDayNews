@@ -211,62 +211,29 @@ Docker Compose reads optional settings from an untracked `.env` file next to `do
 Changing or removing the signing secret signs everyone out; they just sign in again.
 #### Starting the stack
 
-The easiest way to run the entire stack is using Docker Compose:
+To build and run the stack from this checkout (skip Caddy locally):
 
 ```bash
-export CR_PAT=your_github_pat_here  # Set this if you want to pull the latest frontend image from GitHub Packages
-echo $CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-docker-compose up --build
-```
-```powershell
-# Set your token as a variable in the current session
-$env:CR_PAT = "YOUR_GITHUB_TOKEN_HERE"
-
-# Pipe the token into docker login
-$env:CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-
-# Build both the frontend and backend images
-docker compose build
-
-# Push them both to GitHub Container Registry
-docker compose push
+docker compose up --build -d db backend frontend
 ```
 
-### 2.1 Versioned Local Build + Push (Recommended)
+### 2.1 Releasing new images (GitHub Actions)
 
-If you build from your laptop, use the helper scripts in the repo root. They:
-- stamp `APP_VERSION` as `YYYY.MM.DD-HHMMSS-<git-sha>`
-- run `docker compose build`
-- tag backend/frontend images with both `latest` and the stamped version
-- push only if build succeeds
+The images the event server pulls (`ghcr.io/seasoned-coder/news-backend` and `news-frontend`) are built and published by GitHub Actions, not from a laptop (`.github/workflows/release-images.yml`, issue #46):
 
-```powershell
-# Windows PowerShell
-cd C:\code\EnterpriseDayNews
-.\build-and-push.ps1
-```
+1. Make sure `main` has everything for the release.
+2. On GitHub, go to **Releases > Draft a new release**, create a new tag such as `v2026.10.04` (any name starting with `v`) and publish the release. Or from a terminal: `git tag v2026.10.04 && git push origin v2026.10.04`.
+3. The **Release images** workflow runs all backend and frontend tests, then builds and pushes both images tagged `latest` and `v2026.10.04`. If any test fails, nothing is published.
+4. On the event server (while online): `docker compose pull db backend frontend` and `docker compose up -d db backend frontend`.
 
-```bash
-# macOS / Linux
-cd /path/to/EnterpriseDayNews
-./build-and-push.sh
-```
+The version (the tag) is shown on the home page and in the footer of the staff pages, so you can check which release is running.
 
-Optional flags:
+Pushes to `main` never publish images, so unfinished work can't become `latest` just before an event. To check the pipeline without publishing, use **Actions > Release images > Run workflow** with "Push the images?" unticked (a dry run).
 
-```powershell
-.\build-and-push.ps1 -BuildOnly
-.\build-and-push.ps1 -Version 2026.05.14-120000-ab12cd3
-.\build-and-push.ps1 -DryRun
-```
+**First time only:** if the images were first pushed from a laptop, the packages must allow this repository's workflows to write to them. On GitHub, open each package (`news-backend`, `news-frontend`) > **Package settings > Manage Actions access > Add repository** > `EnterpriseDayNews`, role **Write**.
 
-```bash
-./build-and-push.sh --build-only
-./build-and-push.sh --version 2026.05.14-120000-ab12cd3
-./build-and-push.sh --dry-run
-```
-
-This will start:
+**Fallback (no GitHub Actions):** `build-and-push.ps1` / `build-and-push.sh` still build and push from a machine signed in to `ghcr.io` (`docker login ghcr.io`); `-BuildOnly` / `--build-only` and `-DryRun` / `--dry-run` are available.
+`docker compose up` starts:
 -   **PostgreSQL**: Database for image metadata, student accounts and settings.
 -   **Backend (Java)**: REST API at `http://localhost:8080`, reachable from this machine only. The PostgreSQL port (`5432`) is too. Everyone else goes through the frontend.
 -   **Frontend (Nginx Prod)**: Accessible at `http://localhost:3000` (built bundle).

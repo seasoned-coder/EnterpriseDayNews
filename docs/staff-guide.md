@@ -380,7 +380,9 @@ It works like the Student Account Dashboard: the same totals, table, **Lock** / 
 
 ## Quick links
 
-At the bottom of every staff page, **Student portal** and **Projector** open those pages in a new tab, so you can see what students and the big screen see.
+At the bottom of every staff page, **Student portal** and **Projector** open those pages in a new tab, so you can see what students and the big screen see. (The **Projector** link also sets the projector up to record screen time.)
+
+On the right, **Version** shows which release of the app is running (e.g. `v2026.10.04`). Handy for checking the event server has the latest one.
 
 ---
 

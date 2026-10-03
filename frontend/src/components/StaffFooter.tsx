@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { ExternalLink } from "lucide-react";
 import { openProjectorWithKey } from "@/lib/results";
+import { APP_VERSION } from "@/lib/version";
 
 const LINKS = [
   { href: "/student", label: "Student portal" },
@@ -35,6 +36,10 @@ export const StaffFooter = () => (
           <ExternalLink className="h-3 w-3" aria-hidden="true" />
         </a>
       ))}
+      {/* Which release is running (issue #46), e.g. to check the event server got the latest one. */}
+      <span className="ml-auto font-mono" title="The version of the app that's running">
+        Version {APP_VERSION}
+      </span>
     </nav>
   </footer>
 );
