@@ -17,7 +17,7 @@ enterprise-day-news,org.example.enterprisedaynews.controller,ApiExceptionHandler
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentController,0,38,0,0,0,7,0,3,0,3
 enterprise-day-news,org.example.enterprisedaynews.controller,AuthController,0,89,3,11,0,16,3,5,0,1
 enterprise-day-news,org.example.enterprisedaynews.controller,ProjectorController,0,17,0,0,0,3,0,3,0,3
-enterprise-day-news,org.example.enterprisedaynews.controller,StaffController,0,185,0,0,0,32,0,19,0,19
+enterprise-day-news,org.example.enterprisedaynews.controller,StaffController,0,164,0,0,0,28,0,18,0,18
 enterprise-day-news,org.example.enterprisedaynews.controller,ControllerSupport,2,29,2,10,0,7,2,6,0,2
 enterprise-day-news,org.example.enterprisedaynews,EnterpriseDayNewsApplication,5,3,0,0,2,1,1,1,1,1
 enterprise-day-news,org.example.enterprisedaynews.service,LoginGuard,9,205,7,25,3,47,7,21,0,12
@@ -26,7 +26,7 @@ enterprise-day-news,org.example.enterprisedaynews.service,ImageNotFoundException
 enterprise-day-news,org.example.enterprisedaynews.service,ImageStateMachine,0,54,0,6,0,11,0,6,0,3
 enterprise-day-news,org.example.enterprisedaynews.service,StudentAccountService,7,235,2,14,2,51,3,18,1,12
 enterprise-day-news,org.example.enterprisedaynews.service,ImageService,102,420,7,33,30,103,12,34,5,21
-enterprise-day-news,org.example.enterprisedaynews.service,DisplaySettingsService,17,15,0,0,3,2,2,2,2,2
+enterprise-day-news,org.example.enterprisedaynews.service,DisplaySettingsService,0,66,0,4,0,11,0,7,0,5
 enterprise-day-news,org.example.enterprisedaynews.service,PasswordPolicy,14,158,5,15,3,21,5,10,0,5
 enterprise-day-news,org.example.enterprisedaynews.model,DisplaySettings,0,11,0,0,0,6,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.model,ImageMetadata.ApprovalStatus,0,21,0,0,0,2,0,1,0,1

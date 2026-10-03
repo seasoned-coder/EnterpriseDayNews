@@ -65,81 +65,71 @@ public class StaffController {
 <span class="fc" id="L65">        return ResponseEntity.ok().build();</span>
     }
 
-    @PostMapping(&quot;/upload&quot;)
-    public ResponseEntity&lt;ImageView&gt; staffUpload(@RequestParam(&quot;file&quot;) MultipartFile file,
-                                                 Principal principal) throws IOException {
-<span class="fc" id="L71">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L72">        ImageMetadata metadata = imageService.uploadImage(file, username);</span>
-        // Staff uploads are auto-approved.
-<span class="fc" id="L74">        return ResponseEntity.ok(imageViews.of(</span>
-<span class="fc" id="L75">                imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));</span>
-    }
-
     @DeleteMapping(&quot;/{id}&quot;)
     public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id) {
-<span class="fc" id="L80">        imageService.deleteImage(id);</span>
-<span class="fc" id="L81">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L70">        imageService.deleteImage(id);</span>
+<span class="fc" id="L71">        return ResponseEntity.noContent().build();</span>
     }
 
     @DeleteMapping(&quot;/all&quot;)
     public ResponseEntity&lt;Void&gt; deleteAll() {
-<span class="fc" id="L86">        imageService.deleteAllImages();</span>
-<span class="fc" id="L87">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L76">        imageService.deleteAllImages();</span>
+<span class="fc" id="L77">        return ResponseEntity.noContent().build();</span>
     }
 
     @GetMapping(&quot;/info&quot;)
     public List&lt;ImageView&gt; getInfoMessages() {
-<span class="fc" id="L92">        return imageViews.of(imageService.getInfoMessages());</span>
+<span class="fc" id="L82">        return imageViews.of(imageService.getInfoMessages());</span>
     }
 
     @PostMapping(&quot;/info/upload&quot;)
     public ResponseEntity&lt;ImageView&gt; uploadInfoMessage(@RequestParam(&quot;file&quot;) MultipartFile file,
                                                        @RequestParam(value = &quot;flash&quot;, defaultValue = &quot;false&quot;) boolean flash,
                                                        Principal principal) throws IOException {
-<span class="fc" id="L99">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L100">        return ResponseEntity.ok(imageViews.of(imageService.uploadInfoMessage(file, username, flash)));</span>
+<span class="fc" id="L89">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L90">        return ResponseEntity.ok(imageViews.of(imageService.uploadInfoMessage(file, username, flash)));</span>
     }
 
     @PostMapping(&quot;/info/free-text&quot;)
     public ResponseEntity&lt;ImageView&gt; postFreeText(@RequestBody String text,
                                                   @RequestParam(value = &quot;flash&quot;, defaultValue = &quot;true&quot;) boolean flash,
                                                   Principal principal) {
-<span class="fc" id="L107">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L108">        return ResponseEntity.ok(imageViews.of(imageService.postFreeTextMessage(text, username, flash)));</span>
+<span class="fc" id="L97">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L98">        return ResponseEntity.ok(imageViews.of(imageService.postFreeTextMessage(text, username, flash)));</span>
     }
 
     @PostMapping(&quot;/toggle-flash/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
-<span class="fc" id="L113">        return ResponseEntity.ok(imageViews.of(imageService.toggleFlashMode(id, flash)));</span>
+<span class="fc" id="L103">        return ResponseEntity.ok(imageViews.of(imageService.toggleFlashMode(id, flash)));</span>
     }
 
     @GetMapping(&quot;/students&quot;)
     public List&lt;StudentAccountView&gt; getStudentAccounts() {
-<span class="fc" id="L118">        return studentAccountService.listAccounts().stream().map(StudentAccountView::from).toList();</span>
+<span class="fc" id="L108">        return studentAccountService.listAccounts().stream().map(StudentAccountView::from).toList();</span>
     }
 
     @PostMapping(&quot;/students&quot;)
     public ResponseEntity&lt;StudentAccountView&gt; createStudentAccount(@RequestBody CreateStudentAccountRequest request) {
-<span class="fc" id="L123">        return ResponseEntity.status(201).body(StudentAccountView.from(</span>
-<span class="fc" id="L124">                studentAccountService.createAccount(request.username(), request.password())));</span>
+<span class="fc" id="L113">        return ResponseEntity.status(201).body(StudentAccountView.from(</span>
+<span class="fc" id="L114">                studentAccountService.createAccount(request.username(), request.password())));</span>
     }
 
     @PostMapping(&quot;/students/{id}/lock&quot;)
     public ResponseEntity&lt;StudentAccountView&gt; setStudentLock(@PathVariable Long id, @RequestParam boolean locked) {
-<span class="fc" id="L129">        return ResponseEntity.ok(StudentAccountView.from(studentAccountService.setLocked(id, locked)));</span>
+<span class="fc" id="L119">        return ResponseEntity.ok(StudentAccountView.from(studentAccountService.setLocked(id, locked)));</span>
     }
 
     @PutMapping(&quot;/students/{id}/password&quot;)
     public ResponseEntity&lt;StudentAccountView&gt; updateStudentPassword(@PathVariable Long id,
                                                                     @RequestBody UpdateStudentPasswordRequest request) {
-<span class="fc" id="L135">        return ResponseEntity.ok(StudentAccountView.from(</span>
-<span class="fc" id="L136">                studentAccountService.changePassword(id, request.password())));</span>
+<span class="fc" id="L125">        return ResponseEntity.ok(StudentAccountView.from(</span>
+<span class="fc" id="L126">                studentAccountService.changePassword(id, request.password())));</span>
     }
 
     @DeleteMapping(&quot;/students/{id}&quot;)
     public ResponseEntity&lt;Void&gt; deleteStudentAccount(@PathVariable Long id) {
-<span class="fc" id="L141">        studentAccountService.deleteAccount(id);</span>
-<span class="fc" id="L142">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L131">        studentAccountService.deleteAccount(id);</span>
+<span class="fc" id="L132">        return ResponseEntity.noContent().build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

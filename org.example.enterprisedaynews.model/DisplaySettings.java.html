@@ -20,24 +20,32 @@ public class DisplaySettings {
 
     /** Singleton id for the single settings row. */
     public static final String DEFAULT_ID = &quot;DEFAULT&quot;;
-    public static final int DEFAULT_INTERVAL_SECONDS = 5;
+    public static final int DEFAULT_INTERVAL_SECONDS = 60;
     public static final int DEFAULT_DURATION_SECONDS = 10;
     public static final int DEFAULT_REFRESH_SECONDS = 3;
 
     @Id
     private String id = DEFAULT_ID;
 
+    /**
+     * Staff content interval: a staff item (Event Communications) slips in between student adverts once at
+     * least this many seconds of student adverts have played since the last one. 0 = after every advert.
+     */
     private int intervalSpeedSeconds;
+
+    /** How long each staff item stays on screen. Student adverts use the duration the student paid for. */
     private int displayDurationSeconds;
+
+    /** How often the projector checks for newly approved, hidden or removed items. */
     private int imageRefreshSeconds;
 
     public static DisplaySettings defaults() {
-<span class="fc" id="L35">        return DisplaySettings.builder()</span>
-<span class="fc" id="L36">                .id(DEFAULT_ID)</span>
-<span class="fc" id="L37">                .intervalSpeedSeconds(DEFAULT_INTERVAL_SECONDS)</span>
-<span class="fc" id="L38">                .displayDurationSeconds(DEFAULT_DURATION_SECONDS)</span>
-<span class="fc" id="L39">                .imageRefreshSeconds(DEFAULT_REFRESH_SECONDS)</span>
-<span class="fc" id="L40">                .build();</span>
+<span class="fc" id="L43">        return DisplaySettings.builder()</span>
+<span class="fc" id="L44">                .id(DEFAULT_ID)</span>
+<span class="fc" id="L45">                .intervalSpeedSeconds(DEFAULT_INTERVAL_SECONDS)</span>
+<span class="fc" id="L46">                .displayDurationSeconds(DEFAULT_DURATION_SECONDS)</span>
+<span class="fc" id="L47">                .imageRefreshSeconds(DEFAULT_REFRESH_SECONDS)</span>
+<span class="fc" id="L48">                .build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

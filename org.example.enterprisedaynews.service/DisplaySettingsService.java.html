@@ -3,31 +3,51 @@
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.model.DisplaySettings;
 import org.example.enterprisedaynews.repository.DisplaySettingsRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class DisplaySettingsService {
 
+    /** Allowed ranges, so a typo can't freeze or flood the projector. */
+    public static final int MIN_STAFF_INTERVAL_SECONDS = 0, MAX_STAFF_INTERVAL_SECONDS = 3600;
+    public static final int MIN_STAFF_ITEM_SECONDS = 3, MAX_STAFF_ITEM_SECONDS = 120;
+    public static final int MIN_REFRESH_SECONDS = 2, MAX_REFRESH_SECONDS = 60;
+
     private final DisplaySettingsRepository repository;
 
     public DisplaySettings get() {
-<span class="nc" id="L16">        return repository.findById(DisplaySettings.DEFAULT_ID).orElseGet(DisplaySettings::defaults);</span>
+<span class="fc" id="L23">        return repository.findById(DisplaySettings.DEFAULT_ID).orElseGet(DisplaySettings::defaults);</span>
     }
 
     @Transactional
     public DisplaySettings update(DisplaySettings incoming) {
+<span class="fc" id="L28">        requireInRange(&quot;Staff content interval&quot;, incoming.getIntervalSpeedSeconds(),</span>
+                MIN_STAFF_INTERVAL_SECONDS, MAX_STAFF_INTERVAL_SECONDS);
+<span class="fc" id="L30">        requireInRange(&quot;Staff item display time&quot;, incoming.getDisplayDurationSeconds(),</span>
+                MIN_STAFF_ITEM_SECONDS, MAX_STAFF_ITEM_SECONDS);
+<span class="fc" id="L32">        requireInRange(&quot;Projector refresh&quot;, incoming.getImageRefreshSeconds(),</span>
+                MIN_REFRESH_SECONDS, MAX_REFRESH_SECONDS);
         // Force singleton id; ignore any client-supplied value.
-<span class="nc" id="L22">        incoming.setId(DisplaySettings.DEFAULT_ID);</span>
-<span class="nc" id="L23">        return repository.save(incoming);</span>
+<span class="fc" id="L35">        incoming.setId(DisplaySettings.DEFAULT_ID);</span>
+<span class="fc" id="L36">        return repository.save(incoming);</span>
     }
 
     /** Ensures a settings row always exists (called at startup). */
     @Transactional
     public DisplaySettings ensureSeeded() {
-<span class="fc" id="L29">        return repository.findById(DisplaySettings.DEFAULT_ID)</span>
-<span class="fc" id="L30">                .orElseGet(() -&gt; repository.save(DisplaySettings.defaults()));</span>
+<span class="fc" id="L42">        return repository.findById(DisplaySettings.DEFAULT_ID)</span>
+<span class="fc" id="L43">                .orElseGet(() -&gt; repository.save(DisplaySettings.defaults()));</span>
     }
+
+    private static void requireInRange(String name, int value, int min, int max) {
+<span class="fc bfc" id="L47" title="All 4 branches covered.">        if (value &lt; min || value &gt; max) {</span>
+<span class="fc" id="L48">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                    name + &quot; must be between &quot; + min + &quot; and &quot; + max + &quot; seconds&quot;);
+        }
+<span class="fc" id="L51">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
