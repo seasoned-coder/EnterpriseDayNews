@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceWobbleService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">PriceWobbleService.java</span></div><h1>PriceWobbleService.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
+
+import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.dto.PriceWobbleRequest;
+import org.example.enterprisedaynews.dto.PriceWobbleView;
+import org.example.enterprisedaynews.model.PriceWobble;
+import org.example.enterprisedaynews.repository.PriceWobbleRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Optional;
+
+/**
+ * The &quot;price wobble&quot; (issue #41): staff make every price go up or down for a while. The price is locked in
+ * when an advert is uploaded (stored as its totalCost), so a later wobble never changes what a team paid.
+ */
+@Service
+@RequiredArgsConstructor
+public class PriceWobbleService {
+
+    /** From quarter price to triple price. */
+    public static final int MIN_PERCENT = 25, MAX_PERCENT = 300;
+    public static final int MAX_MESSAGE = 120;
+
+    private final PriceWobbleRepository repository;
+
+    /** The wobble set up by staff, in force now or starting later; empty at normal prices. */
+    public Optional&lt;PriceWobbleView&gt; current() {
+<span class="fc" id="L34">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L35">        return repository.findById(PriceWobble.DEFAULT_ID)</span>
+<span class="fc bfc" id="L36" title="All 4 branches covered.">                .filter(w -&gt; w.getEndsAt() == null || now.isBefore(w.getEndsAt()))</span>
+<span class="fc" id="L37">                .map(w -&gt; PriceWobbleView.of(w, now));</span>
+    }
+
+    /** Prices as a percentage of normal right now (100 when there's no wobble). */
+    public int currentPercent() {
+<span class="fc" id="L42">        return current().filter(PriceWobbleView::activeNow).map(PriceWobbleView::percent).orElse(PriceList.FULL_PRICE);</span>
+    }
+
+    /** The price list as students see it now, with the wobble (if any) applied and described. */
+    public PriceList.Prices studentPrices() {
+<span class="fc" id="L47">        return current().filter(PriceWobbleView::activeNow)</span>
+<span class="fc" id="L48">                .map(w -&gt; PriceList.prices(w.percent(), w))</span>
+<span class="fc" id="L49">                .orElseGet(PriceList::prices);</span>
+    }
+
+    @Transactional
+    public PriceWobbleView set(PriceWobbleRequest request) {
+<span class="fc bfc" id="L54" title="All 4 branches covered.">        if (request.percent() &lt; MIN_PERCENT || request.percent() &gt; MAX_PERCENT) {</span>
+<span class="fc" id="L55">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                    &quot;Prices can go from &quot; + MIN_PERCENT + &quot;% to &quot; + MAX_PERCENT + &quot;% of normal&quot;);
+        }
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">        String message = request.message() == null || request.message().isBlank() ? null : request.message().trim();</span>
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">        if (message != null &amp;&amp; message.length() &gt; MAX_MESSAGE) {</span>
+<span class="fc" id="L60">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                    &quot;Keep the message under &quot; + MAX_MESSAGE + &quot; characters&quot;);
+        }
+<span class="fc" id="L63">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L64">        LocalDateTime startsAt = local(request.startsAt());</span>
+<span class="fc" id="L65">        LocalDateTime endsAt = local(request.endsAt());</span>
+<span class="pc bpc" id="L66" title="1 of 6 branches missed.">        if (endsAt != null &amp;&amp; !endsAt.isAfter(startsAt == null ? now : startsAt)) {</span>
+<span class="fc" id="L67">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                    &quot;The end time must be after the start time (and in the future)&quot;);
+        }
+<span class="fc" id="L70">        PriceWobble saved = repository.save(new PriceWobble(PriceWobble.DEFAULT_ID, request.percent(), message,</span>
+<span class="pc bpc" id="L71" title="1 of 4 branches missed.">                startsAt != null &amp;&amp; startsAt.isAfter(now) ? startsAt : null, endsAt));</span>
+<span class="fc" id="L72">        return PriceWobbleView.of(saved, now);</span>
+    }
+
+    /** Back to normal prices straight away (also part of resetting the event). */
+    @Transactional
+    public void stop() {
+<span class="fc" id="L78">        repository.deleteById(PriceWobble.DEFAULT_ID);</span>
+<span class="fc" id="L79">    }</span>
+
+    private static LocalDateTime local(OffsetDateTime time) {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        return time == null ? null : time.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

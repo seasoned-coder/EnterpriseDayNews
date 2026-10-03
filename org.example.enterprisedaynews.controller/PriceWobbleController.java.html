@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceWobbleController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.controller</a> &gt; <span class="el_source">PriceWobbleController.java</span></div><h1>PriceWobbleController.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.dto.PriceWobbleRequest;
+import org.example.enterprisedaynews.dto.PriceWobbleView;
+import org.example.enterprisedaynews.service.PriceList;
+import org.example.enterprisedaynews.service.PriceWobbleService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+/** Staff controlling the price wobble (issue #41). Staff-only (SecurityConfig: /api/staff/**). */
+@RestController
+@RequestMapping(&quot;/api/staff&quot;)
+@RequiredArgsConstructor
+public class PriceWobbleController {
+
+    private final PriceWobbleService priceWobbleService;
+
+    /** The wobble in force or scheduled; 204 at normal prices. */
+    @GetMapping(&quot;/price-wobble&quot;)
+    public ResponseEntity&lt;PriceWobbleView&gt; current() {
+<span class="fc" id="L30">        return priceWobbleService.current().map(ResponseEntity::ok).orElseGet(() -&gt; ResponseEntity.noContent().build());</span>
+    }
+
+    @PutMapping(&quot;/price-wobble&quot;)
+    public PriceWobbleView set(@RequestBody PriceWobbleRequest request) {
+<span class="fc" id="L35">        return priceWobbleService.set(request);</span>
+    }
+
+    /** Back to normal prices now. */
+    @DeleteMapping(&quot;/price-wobble&quot;)
+    public ResponseEntity&lt;Void&gt; stop() {
+<span class="fc" id="L41">        priceWobbleService.stop();</span>
+<span class="fc" id="L42">        return ResponseEntity.noContent().build();</span>
+    }
+
+    /** The price list at {@code percent} of normal, to preview a wobble before setting it. */
+    @GetMapping(&quot;/prices&quot;)
+    public PriceList.Prices prices(@RequestParam(defaultValue = &quot;100&quot;) int percent) {
+<span class="pc bpc" id="L48" title="1 of 4 branches missed.">        if (percent &lt; PriceWobbleService.MIN_PERCENT || percent &gt; PriceWobbleService.MAX_PERCENT) {</span>
+<span class="fc" id="L49">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Percent must be &quot;</span>
+                    + PriceWobbleService.MIN_PERCENT + &quot; to &quot; + PriceWobbleService.MAX_PERCENT);
+        }
+<span class="fc" id="L52">        return PriceList.prices(percent, null);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

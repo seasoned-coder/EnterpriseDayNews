@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceWobble.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.model</a> &gt; <span class="el_source">PriceWobble.java</span></div><h1>PriceWobble.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.model;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+/**
+ * A &quot;price wobble&quot; (issue #41): for a while, every price is {@code percent} of normal, e.g. 200 for a
+ * lunchtime rush or 50 for a quiet-time sale. At most one; no row means normal prices.
+ */
+@Entity
+@Table(name = &quot;price_wobble&quot;)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PriceWobble {
+
+    public static final String DEFAULT_ID = &quot;DEFAULT&quot;;
+
+    @Id
+    @Builder.Default
+    private String id = DEFAULT_ID;
+
+    @Column(nullable = false)
+    private int percent;
+
+    /** Shown to students, e.g. &quot;Lunchtime rush!&quot;. */
+    @Column(length = 120)
+    private String message;
+
+    /** Null: straight away. */
+    private LocalDateTime startsAt;
+
+    /** Null: until staff end it. */
+    private LocalDateTime endsAt;
+
+    public boolean isActiveAt(LocalDateTime time) {
+<span class="pc bpc" id="L48" title="2 of 8 branches missed.">        return (startsAt == null || !time.isBefore(startsAt)) &amp;&amp; (endsAt == null || time.isBefore(endsAt));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
