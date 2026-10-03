@@ -34,6 +34,19 @@ Along the bottom you'll see **Enterprise Day · Live** and, for student adverts,
 | **Loading the feed…** | The page is fetching items. This should only last a moment. |
 | **Waiting for approved adverts…** | Nothing is currently approved and set to display. |
 | Text with **Urgent Announcement** | An urgent FLASH message from staff (see below). |
+| Adverts with a small **OFFLINE MODE** label at the top | The projector can't reach the server. It keeps playing the adverts it already has, and carries on normally once the connection is back (see below). |
+| **Back shortly** (with **OFFLINE MODE**) | The projector can't reach the server and has nothing saved to play yet. |
+
+### If the server or Wi-Fi drops out
+
+The projector is built to keep going on its own:
+
+- **It keeps playing** the adverts it already had, with their pictures, so the room still sees adverts rather than an error.
+- **OFFLINE MODE** appears, small, at the top middle, after a couple of failed checks (about 10 seconds). It's there so staff know: new approvals and changes won't appear until the connection is back.
+- **It keeps trying** every few seconds. When the server answers again, the label disappears and new items appear. You don't need to do anything.
+- **Reloading is safe.** If someone refreshes the page during an outage, it carries on with the adverts it last had.
+
+If OFFLINE MODE stays up for more than a minute or two, check the projector computer's cable or Wi-Fi, and that the server is still running.
 
 ---
 
@@ -96,7 +109,7 @@ If the rotation seems stuck on one item, check it hasn't been paused. Press **Sp
 
 - Check the projector computer's network or Wi-Fi connection.
 - Open the address in another browser tab. If the home page won't load either, the problem is the network or the server. Contact whoever is running the system.
-- If the connection drops briefly, the page keeps showing what it already had and catches up once it's back.
+- If the connection drops, the page keeps playing what it already had, shows **OFFLINE MODE**, and catches up by itself once it's back (see [If the server or Wi-Fi drops out](#if-the-server-or-wi-fi-drops-out)).
 
 **Only one message shows and adverts have stopped**
 

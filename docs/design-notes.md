@@ -47,6 +47,16 @@ Implemented in `frontend/src/lib/projectorSchedule.ts` (pure functions, unit-tes
 
 Settings are validated server-side (`DisplaySettingsService`: interval 0–3600, staff item 3–120, refresh 2–60) and the same ranges are used in the staff UI. Fresh installs default to 60 / 10 / 3. Existing databases keep their stored values.
 
+### When the connection drops (#39)
+
+The projector runs unattended, so it never shows an error to the room:
+
+-   **Keeps playing:** it carries on with its last feed. The query keeps its data on failure, and the last good feed and settings are also saved in `localStorage` (`lib/projectorCache.ts`), so a reload during an outage carries on too.
+-   **Pictures ready in advance:** every slide's picture is preloaded when the feed changes, so it's already in the browser cache (`/uploads` is cacheable, #36). A picture that still won't load is skipped, not shown broken. Skipped pictures are retried once the server answers again.
+-   **Failures are noticed quickly:** each feed check gives up after 5 s (`withTimeout`), and nginx's `proxy_connect_timeout` is 5 s. Otherwise a dead link or a stopped backend leaves the request hanging for a minute or more, and no new check starts meanwhile. The library's own retries are off for the feed: its back-off is longer than one refresh interval, so retries would restart forever. The refresh interval is the retry.
+-   **Staff can tell:** a subtle **OFFLINE MODE** label shows at the top middle after 2 failed checks in a row (1 if there's nothing to play, with a calm "Back shortly" screen). The projector keeps polling even when its window isn't in front (`refetchIntervalInBackground`).
+-   **Limit:** if the server is down and the page has never been loaded in that browser, there's nothing to show ("Back shortly"). There's no service worker. The page itself is served by the frontend container, so it still loads if only the backend is down.
+
 ## Moderation and visibility
 
 -   Student uploads start as **NEW** and are invisible to everyone except staff and the uploader. The student chooses at upload whether it goes **on screen as soon as it's approved** (`publishOnApproval`, the default) or **waits for them to publish it** (#9, e.g. for timed offers). Approving sets `display = publishOnApproval`.

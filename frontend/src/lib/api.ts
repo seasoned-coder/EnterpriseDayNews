@@ -336,12 +336,13 @@ export const api = {
     return staff<ApiSubmission>(`/api/staff/toggle-flash/${id}?flash=${flash}`, { method: "POST" });
   },
 
-  projectorImages() {
-    return fetch(`${API_BASE}/api/projector/images`).then((res) => handle<ApiSubmission[]>(res));
+  /** The signal lets the projector give up on a request that hangs (issue #39). */
+  projectorImages(signal?: AbortSignal) {
+    return fetch(`${API_BASE}/api/projector/images`, { signal }).then((res) => handle<ApiSubmission[]>(res));
   },
 
-  projectorSettings() {
-    return fetch(`${API_BASE}/api/projector/settings`).then((res) => handle<ProjectorSettings>(res));
+  projectorSettings(signal?: AbortSignal) {
+    return fetch(`${API_BASE}/api/projector/settings`, { signal }).then((res) => handle<ProjectorSettings>(res));
   },
 
   updateProjectorSettings(settings: Omit<ProjectorSettings, "id">) {

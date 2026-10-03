@@ -1,5 +1,6 @@
 // Fills the demo stack with made-up teams and adverts, then captures the README screenshots (issue #44).
 // Run through make-screenshots.ps1, which starts and removes the demo stack.
+import { execSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -49,7 +50,7 @@ async function api(path, { token, json, form, method = "POST" } = {}) {
 const login = (username, password, role) => api("/api/auth/login", { json: { username, password, role } });
 
 async function waitForStack() {
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 45; i++) {
     try {
       const res = await fetch(`${BASE}/api/projector/settings`);
       if (res.ok) return;
@@ -233,10 +234,20 @@ async function main() {
     console.log("  login-slip.png");
 
     const projector = await signedInPage(browser, { width: 1280, height: 720, deviceScaleFactor: 1 }, {});
+    await projector.bringToFront();
     await projector.goto(`${BASE}/projector`, { waitUntil: "networkidle0" });
     await settle(projector, 4000);
     await projector.screenshot({ path: join(OUT, "projector.png") });
     console.log("  projector.png");
+
+    // Last, because it stops the demo backend: the projector carries on in OFFLINE MODE (#39).
+    execSync(`docker compose -p newsdemo -f "${join(import.meta.dirname, "docker-compose.yml")}" stop backend`, {
+      stdio: "ignore",
+    });
+    await projector.waitForSelector('[role="status"]', { timeout: 60_000 });
+    await settle(projector, 1500);
+    await projector.screenshot({ path: join(OUT, "projector-offline.png") });
+    console.log("  projector-offline.png");
   } finally {
     await browser.close();
   }

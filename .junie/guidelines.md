@@ -14,6 +14,7 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - Use PowerShell syntax (`;` to chain; `&&`/`||` are not available). Prefer direct tool output over `Select-String` where possible.
 - Native commands lose embedded double quotes and empty-string arguments. Pass SQL/JSON via stdin or files rather than inline.
 - Write multi-line commit messages to a file and use `git commit -F <file>`.
+- **Never edit source files with `Get-Content`/`Set-Content`** in Windows PowerShell 5.1: it reads UTF-8 as the ANSI code page and writes a BOM, so "…" becomes "â€¦" on screen. Use an editor or `[IO.File]::ReadAllText`/`WriteAllText` with `UTF8Encoding($false)`. `frontend/src/test/encoding.test.ts` catches garbled characters.
 - Large outputs are truncated; filter them. Delete temporary files (tokens, test images) when done.
 
 ## Java 25 / Spring Boot 3.4
@@ -35,7 +36,7 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - Stack (Oct 2026): Vite 8, Vitest 4, React Router 7 (still imported from `react-router-dom`), ESLint 10. Vitest 4 counts coverage more strictly than v3, so compare against its own baseline (49% statements / 54% branches at the upgrade), not older numbers.
 - Tailwind is still v3 on purpose: v4 changes the config model. `npm audit` flags its build-time file-watching deps (`braces`, `chokidar`, `micromatch`, `fast-glob`) and the dev-only `lovable-tagger`; none of these ship in the built app.
 - Mock `@/lib/api` (and `@/hooks/use-toast`) per test with `vi.mock`, and keep pure logic (e.g. `lib/projectorSchedule.ts`) in plain functions so it can be unit-tested.
-- Use `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` inside `act` for timer-driven pages like the projector.
+- Use `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` inside `act` for timer-driven pages like the projector. React renders once per `act`, so advance in small steps when each intermediate state matters (e.g. counting failed refreshes). Clear `localStorage` in `beforeEach`: the projector saves its last feed there.
 - jsdom doesn't navigate on `window.location.href = …`. Go through `navigation.go()` in `lib/api.ts` and spy on it.
 - `npx tsc --noEmit -p tsconfig.json` reports pre-existing TS5097 errors (`.tsx` import extensions in `App.tsx`/`main.tsx`); treat any *other* error as new.
 

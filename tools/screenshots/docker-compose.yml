@@ -8,9 +8,16 @@ services:
       POSTGRES_DB: enterpriseday
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+    # The backend gives up if the database isn't accepting connections yet, so it waits for this.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d enterpriseday"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
   backend:
     image: ghcr.io/seasoned-coder/news-backend:latest
+    restart: on-failure
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/enterpriseday
       SPRING_DATASOURCE_USERNAME: user
@@ -19,7 +26,8 @@ services:
       APP_STAFF_BOOTSTRAP_USERNAME: ms.okafor
       APP_STAFF_BOOTSTRAP_PASSWORD: ${DEMO_STAFF_PASSWORD:?run make-screenshots.ps1}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     image: ghcr.io/seasoned-coder/news-frontend:latest

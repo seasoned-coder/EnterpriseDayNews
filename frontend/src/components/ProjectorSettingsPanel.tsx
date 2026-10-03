@@ -38,7 +38,7 @@ const FIELDS: { key: keyof Editable; label: string; help: string; min: number; m
 
 export const ProjectorSettingsPanel = () => {
   const qc = useQueryClient();
-  const settingsQ = useQuery({ queryKey: ["projector-settings"], queryFn: api.projectorSettings });
+  const settingsQ = useQuery({ queryKey: ["projector-settings"], queryFn: () => api.projectorSettings() });
   const [form, setForm] = useState<Record<keyof Editable, string> | null>(null);
 
   useEffect(() => {
