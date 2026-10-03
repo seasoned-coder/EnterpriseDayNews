@@ -5,6 +5,7 @@ import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.service.ImageNotFoundException;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.UploadFileNames;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +67,35 @@ class ImageServiceTests {
             assertTrue(savedFile.getFileName().toString().contains("test.png"));
             assertEquals("some-image-data", Files.readString(savedFile));
         }
+    }
+
+    @Test
+    void testUploadNameCannotEscapeTheUploadsFolder() throws IOException {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "../../../etc/evil name?.png", "image/png", "data".getBytes());
+        when(imageRepository.save(any(ImageMetadata.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        ImageMetadata result = imageService.uploadImage(file, "year10");
+
+        assertEquals("evil name?.png", result.getOriginalFileName(), "shown name keeps no folders");
+        assertTrue(result.getFilePath().endsWith("_evil_name_.png"), result.getFilePath());
+        try (var stream = Files.list(tempDir)) {
+            List<Path> stored = stream.toList();
+            assertEquals(1, stored.size(), "file was written inside the uploads folder");
+            assertEquals(result.getFilePath(), stored.get(0).getFileName().toString());
+        }
+    }
+
+    @Test
+    void testUploadNamesAreTidiedForDisplayAndStorage() {
+        assertEquals("photo.jpg", UploadFileNames.displayName("C:\\Users\\kid\\Pictures\\photo.jpg"));
+        assertEquals("image", UploadFileNames.displayName(null));
+        assertEquals("image", UploadFileNames.displayName("folder/"));
+        assertEquals(120, UploadFileNames.displayName("x".repeat(300) + ".jpg").length());
+
+        assertEquals("my_advert__1_.jpg", UploadFileNames.storageName("my advert (1).jpg"));
+        assertEquals("htaccess", UploadFileNames.storageName(".htaccess"));
+        assertEquals("image", UploadFileNames.storageName("..."));
     }
 
     @Test

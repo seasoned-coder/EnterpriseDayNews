@@ -50,14 +50,18 @@ public class ImageService {
                                      boolean publishOnApproval) throws IOException {
         validateFile(file);
 
-        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image";
-        String fileName = UUID.randomUUID() + "_" + originalName;
+        // The name comes from the user's browser: never let it choose where the file goes.
+        String originalName = UploadFileNames.displayName(file.getOriginalFilename());
+        String fileName = UUID.randomUUID() + "_" + UploadFileNames.storageName(originalName);
 
-        Path uploadPath = Paths.get(uploadDir);
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
-        Path filePath = uploadPath.resolve(fileName);
+        Path filePath = uploadPath.resolve(fileName).normalize();
+        if (!filePath.startsWith(uploadPath)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file name");
+        }
         try (InputStream in = file.getInputStream()) {
             Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);
         }
