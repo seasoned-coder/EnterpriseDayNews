@@ -30,6 +30,8 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 ## Frontend Testing (React + Vite)
 - **Vitest + Testing Library + jsdom.** Tests sit next to the code as `*.test.ts(x)`; setup is in `src/test/setup.ts`.
 - `npm test` runs once; `npm run test:coverage` prints coverage and writes `frontend/coverage/`.
+- Stack (Oct 2026): Vite 8, Vitest 4, React Router 7 (still imported from `react-router-dom`), ESLint 10. Vitest 4 counts coverage more strictly than v3, so compare against its own baseline (49% statements / 54% branches at the upgrade), not older numbers.
+- Tailwind is still v3 on purpose: v4 changes the config model. `npm audit` flags its build-time file-watching deps (`braces`, `chokidar`, `micromatch`, `fast-glob`) and the dev-only `lovable-tagger`; none of these ship in the built app.
 - Mock `@/lib/api` (and `@/hooks/use-toast`) per test with `vi.mock`, and keep pure logic (e.g. `lib/projectorSchedule.ts`) in plain functions so it can be unit-tested.
 - Use `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` inside `act` for timer-driven pages like the projector.
 - jsdom doesn't navigate on `window.location.href = …`. Go through `navigation.go()` in `lib/api.ts` and spy on it.
