@@ -14,15 +14,69 @@ The system consists of three main components, each with a different audience:
 2.  **Staff App** (`/staff`) — used by adult staff to vet and check student uploads and to add their own content. It has two dashboards, switched from the top banner:
     -   **Advert Dashboard**: review, approve, or reject uploaded images, manage display order, and add staff images and information messages.
     -   **Student Account Dashboard**: list the company/student accounts, add or delete accounts, lock/unlock them, reset passwords, and see when (and from which IP address) each account last signed in.
-3.  **Projector App** (`/projector`) — runs unattended on a machine plugged into the event's screen projector. A full-screen slideshow of approved images on a rotating basis with configurable intervals.
+3.  **Projector App** (`/projector`) — runs unattended on a machine plugged into the event's screen projector. A full-screen rotation of approved student adverts (in staff order, with paid priority and duration) and staff content, with staff-configurable timing.
+
+Students run companies with virtual event money: they **pay for priority** (how often their advert appears) and **duration** (how long it stays up). How that turns into screen time is described in [docs/design-notes.md](docs/design-notes.md).
 
 ### User Guides
 
 -   [Student Guide](docs/student-guide.md): for students uploading adverts.
--   [Staff Guide](docs/staff-guide.md): the Advert Dashboard, Event Communications, End of Day and the Student Account Dashboard.
+-   [Staff Guide](docs/staff-guide.md): the Advert Dashboard, Event Communications, Projector settings, End of Day and the Student Account Dashboard.
 -   [Projector Guide](docs/projector-guide.md): setting up and running the big screen.
+-   [Design notes](docs/design-notes.md): audiences, advert economics, projector scheduling, security and offline operation (for developers).
 
 Keep these guides up to date whenever a change affects what users see or do.
+
+## Event Setup
+
+The event runs on a **private Wi-Fi network with no internet connection**. One machine (the *server*) runs all three apps in Docker; every other device just uses a web browser. Nothing in the apps needs the internet at run time: there are no external fonts or CDNs, and the image checker's model is bundled into the app.
+
+### Equipment
+
+| Item | Notes |
+|---|---|
+| **Server**: a laptop or mini-PC | Runs Docker (Linux recommended; Windows/Mac with Docker Desktop also works). At least 4 GB RAM and a few GB of free disk. Mains power, with sleep/hibernate turned **off**. |
+| **Wi-Fi router / access point** | Creates the private network (WPA2/WPA3 password; no internet uplink needed). Enough capacity for every student company's device plus staff and the projector; 5 GHz preferred. DHCP on, with a **reserved (fixed) IP for the server**, e.g. `192.168.1.10`. |
+| **Projector computer** | Any laptop with a browser (Chrome or Edge) and the right video cable (HDMI, etc.) for the projector. Screen saver and sleep turned off. |
+| **Staff devices** | Laptops or tablets with a browser, on the event Wi-Fi. |
+| **Student devices** | Phones or tablets (school or own), on the event Wi-Fi. |
+| **Cables and power** | Network cables for the server (and ideally the projector computer) to the router, the projector video cable, extension leads. |
+| **Signs** | Printed Wi-Fi name, Wi-Fi password and the app address (e.g. `http://192.168.1.10/student`), ideally as a QR code. Hand student login slips out separately. |
+
+Plug the server, and ideally the projector computer, into the router with **cables**. That keeps the Wi-Fi free for phones and is more reliable.
+
+### Before the event (server briefly online)
+
+Do this a day or more ahead, on the server, while it **is** connected to the internet:
+
+1. Get the latest project files: `git pull` (or copy the repo, including `docker-compose.yml`).
+2. First time only: copy `.env.example` to `.env` and fill it in (see [Secrets](#secrets-env-required)). For the event set **`FRONTEND_PORT=80`**, so the address has no port number.
+3. If the images on GitHub Container Registry are private, sign in: `docker login ghcr.io`.
+4. Download the images: `docker compose pull db backend frontend`.
+5. Start it once to check: `docker compose up -d db backend frontend`. Sign in as staff, create the student accounts, and check the **Projector** settings.
+6. Make sure the server's **clock is correct** before going offline. Sign-in sessions, image links and login times rely on it.
+
+You don't need Caddy at the event. It provides HTTPS for the public hosted domain and can't get certificates without the internet, so it's left out.
+
+### At the event (offline)
+
+1. Connect the server to the event router and check it has its reserved IP.
+2. Start the apps: `docker compose up -d db backend frontend`. Don't run `auto-deploy-docker.sh` or `docker compose pull`; they need the internet.
+3. From a phone on the event Wi-Fi, open `http://<server-ip>/` and check the home page loads.
+4. **Projector computer:** open `http://<server-ip>/projector` and press **F11** for full screen (see the [Projector Guide](docs/projector-guide.md)).
+5. **Staff:** `http://<server-ip>/staff`. **Students:** `http://<server-ip>/student`.
+
+Tips:
+
+-   **Phones and "no internet":** phones may warn that the Wi-Fi has no internet, or quietly switch to mobile data. Ask students to choose **stay connected** / **use this network anyway**, or turn mobile data off while they use the app.
+-   **"Not secure" in the address bar** is expected: the private network uses plain `http://`. Nobody should reuse a real password from another site.
+-   **Recorded login IPs** on the Student Account Dashboard are the devices' addresses on the event Wi-Fi.
+-   If the event network uses `172.16.x.x`–`172.31.x.x` addresses, see the note in `frontend/nginx.conf` (it clashes with Docker's own range).
+
+### After the event
+
+-   Use **End of Day → Clear Down** in the staff app to delete student uploads, or `docker compose down` to stop everything while keeping the data. `docker compose down -v` deletes **all** data, including accounts.
+-   Back online, `git pull` and `docker compose pull` again before the next event.
 
 ## Tech Stack
 
@@ -254,7 +308,6 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/reject/{id}`: Reject an image (auto-hidden).
 -   `POST /api/staff/toggle-display/{id}?display=true|false`: Show/hide an approved image.
 -   `POST /api/staff/order`: Reorder approved images (JSON body: `[id1, id2, ...]`).
--   `POST /api/staff/upload`: Staff upload (auto-approved).
 -   `GET  /api/staff/info`: List information messages.
 -   `POST /api/staff/info/upload?flash=true|false`: Staff upload of an information message (image).
 -   `POST /api/staff/info/free-text?flash=true|false`: Post a free-text urgent message.
@@ -266,9 +319,9 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/students/{id}/lock?locked=true|false`: Lock or unlock a student account.
 -   `PUT  /api/staff/students/{id}/password`: Reset a student's password (JSON body: `{"password": "..."}`).
 -   `DELETE /api/staff/students/{id}`: Delete a student account.
--   `GET  /api/projector/images`: List images to display (FLASH items if any, otherwise status=APPROVED & display=true, ordered). Public.
+-   `GET  /api/projector/images`: Items the projector may show: FLASH items if any, otherwise approved + displayed items (student adverts and staff content) in staff order. The projector page decides what to show next; see [docs/design-notes.md](docs/design-notes.md#projector-scheduling). Public.
 -   `GET  /api/projector/settings`: Current display settings. Public.
--   `POST /api/projector/settings`: Update display settings (role: STAFF).
+-   `POST /api/projector/settings`: Update display settings (role: STAFF). JSON body: `intervalSpeedSeconds` (staff content interval, 0-3600), `displayDurationSeconds` (staff item display time, 3-120), `imageRefreshSeconds` (projector refresh, 2-60).
 -   `GET  /uploads/{file}`: An image file. Public only for items on the projector; otherwise use the signed `imageUrl` from the API.
 
 **Errors:** when the API refuses a request on purpose (validation, conflicts, lockouts), the response body is a plain-text message written for users, e.g. `Student account is locked`. The frontend shows it as-is, and otherwise falls back to a plain-English message based on the status code, so users never see raw status codes or HTML error pages.

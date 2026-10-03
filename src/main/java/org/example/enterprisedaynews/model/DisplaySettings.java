@@ -20,15 +20,23 @@ public class DisplaySettings {
 
     /** Singleton id for the single settings row. */
     public static final String DEFAULT_ID = "DEFAULT";
-    public static final int DEFAULT_INTERVAL_SECONDS = 5;
+    public static final int DEFAULT_INTERVAL_SECONDS = 60;
     public static final int DEFAULT_DURATION_SECONDS = 10;
     public static final int DEFAULT_REFRESH_SECONDS = 3;
 
     @Id
     private String id = DEFAULT_ID;
 
+    /**
+     * Staff content interval: a staff item (Event Communications) slips in between student adverts once at
+     * least this many seconds of student adverts have played since the last one. 0 = after every advert.
+     */
     private int intervalSpeedSeconds;
+
+    /** How long each staff item stays on screen. Student adverts use the duration the student paid for. */
     private int displayDurationSeconds;
+
+    /** How often the projector checks for newly approved, hidden or removed items. */
     private int imageRefreshSeconds;
 
     public static DisplaySettings defaults() {

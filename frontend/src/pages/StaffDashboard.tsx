@@ -18,11 +18,29 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { ProjectorSettingsPanel } from "@/components/ProjectorSettingsPanel";
 
-type Tab = "new" | "approved" | "rejected" | "comm" | "eod";
+type Tab = "new" | "approved" | "rejected" | "comm" | "projector" | "eod";
+
+const TAB_LABELS: Record<Tab, string> = {
+  new: "New",
+  approved: "Approved",
+  rejected: "Rejected",
+  comm: "Event Communications",
+  projector: "Projector",
+  eod: "End of Day",
+};
+
+/** Shown when a moderation tab is empty. */
+const EMPTY_STATES: Record<"new" | "approved" | "rejected" | "comm", { title: string; body: string }> = {
+  new: { title: "No new submissions", body: "When students upload, they'll appear here." },
+  approved: { title: "Nothing approved yet", body: "Approved adverts appear here, in projector order." },
+  rejected: { title: "Nothing rejected", body: "Rejected adverts appear here." },
+  comm: { title: "No staff messages yet", body: "Upload an information image or send a message above." },
+};
 
 const StaffDashboard = () => {
-  const moderationTabs: Exclude<Tab, "eod">[] = ["new", "approved", "rejected", "comm"];
+  const moderationTabs: ("new" | "approved" | "rejected" | "comm")[] = ["new", "approved", "rejected", "comm"];
   const [tab, setTab] = useState<Tab>("new");
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<ApiSubmission | null>(null);
@@ -30,12 +48,13 @@ const StaffDashboard = () => {
   const [clearDownOpen, setClearDownOpen] = useState(false);
   const [clearDownConfirm, setClearDownConfirm] = useState("");
   const [freeText, setFreeText] = useState("");
-  const [isFlash, setIsFlash] = useState(true);
+  // Off by default: a FLASH item takes over the projector immediately, even when hidden.
+  const [isFlash, setIsFlash] = useState(false);
   const [infoFile, setInfoFile] = useState<File | null>(null);
 
   const qc = useQueryClient();
 
-  const user = api.getCurrentUser();
+  const user = api.getCurrentUser("STAFF");
   const staffName = user?.username || "staff";
 
   useEffect(() => {
@@ -59,6 +78,7 @@ const StaffDashboard = () => {
     approved: approvedQ.data?.length ?? 0,
     rejected: rejectedQ.data?.length ?? 0,
     comm: commQ.data?.length ?? 0,
+    projector: 0,
     eod: 0,
   };
 
@@ -134,6 +154,8 @@ const StaffDashboard = () => {
       return api.toggleDisplay(id, display, staffName);
     },
     onSuccess: (data) => {
+      // Keep the open preview in step with the change (its button label reads from it).
+      setActive((a) => (a && a.id === data.id ? data : a));
       toast({
         title: data.display ? "Displayed" : "Hidden",
         description: data.display ? "Image will appear on projector." : "Image hidden from projector.",
@@ -177,7 +199,7 @@ const StaffDashboard = () => {
       return api.deleteAll(staffName);
     },
     onSuccess: () => {
-      toast({ title: "Cleared", description: "All submissions and files have been cleared." });
+      toast({ title: "Cleared", description: "All student submissions and their files have been deleted." });
       refreshAll();
       refreshProjector();
       setClearDownOpen(false);
@@ -289,14 +311,14 @@ const StaffDashboard = () => {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-8">
           <TabsList className="h-12 rounded-full bg-secondary p-1">
-            {(["new", "approved", "rejected", "comm", "eod"] as Tab[]).map((k) => (
+            {(["new", "approved", "rejected", "comm", "projector", "eod"] as Tab[]).map((k) => (
               <TabsTrigger
                 key={k}
                 value={k}
                 className="gap-2 rounded-full px-4 capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
               >
-                {k === "eod" ? "End of Day" : k === "comm" ? "Event Communications" : k}
-                {k !== "eod" && (
+                {TAB_LABELS[k]}
+                {k !== "eod" && k !== "projector" && (
                   <Badge
                     variant="secondary"
                     className="h-5 min-w-[1.25rem] justify-center rounded-full bg-foreground/10 px-1.5 text-[10px] font-semibold"
@@ -340,9 +362,11 @@ const StaffDashboard = () => {
                             className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => {
                               const flashMsg = commQ.data?.find(m => m.isFlashMode && m.messageText);
-                              if (flashMsg) deleteSub.mutate(flashMsg.id);
+                              if (flashMsg) setDeleteId(flashMsg.id); // confirm first, like every other delete
                             }}
                             disabled={deleteSub.isPending}
+                            aria-label="Delete urgent message"
+                            title="Delete urgent message"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -356,7 +380,7 @@ const StaffDashboard = () => {
                       <MessageSquare className="h-5 w-5 text-primary" /> Upload Information
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Add to the info library (images). Default hidden.
+                      Add an image to the info library. It stays hidden until you select Display, unless you tick Flash Mode (which takes over the projector straight away).
                     </p>
                     <div className="mt-4 space-y-4">
                        <Input 
@@ -397,12 +421,8 @@ const StaffDashboard = () => {
                   <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-secondary text-muted-foreground">
                     <Inbox className="h-6 w-6" />
                   </div>
-                  <p className="font-display text-lg font-semibold">No {k} submissions</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {k === "new"
-                      ? "When students upload, they'll appear here."
-                      : `Nothing ${k} yet.`}
-                  </p>
+                  <p className="font-display text-lg font-semibold">{EMPTY_STATES[k].title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{EMPTY_STATES[k].body}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -437,15 +457,20 @@ const StaffDashboard = () => {
             </TabsContent>
           ))}
 
+          <TabsContent value="projector" className="mt-6">
+            <ProjectorSettingsPanel />
+          </TabsContent>
+
           <TabsContent value="eod" className="mt-6">
             <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/50 px-6 py-20 text-center">
               <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-destructive/10 text-destructive">
                 <CalendarX className="h-6 w-6" />
               </div>
-              <p className="font-display text-lg font-semibold text-destructive">Clear All Submissions</p>
+              <p className="font-display text-lg font-semibold text-destructive">Clear All Student Submissions</p>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                This will permanently delete ALL database records and ALL physical images from the storage.
-                This action is irreversible.
+                Permanently deletes every student upload (new, approved and rejected) and its image file.
+                Staff items in Event Communications and all student accounts are kept.
+                This cannot be undone.
               </p>
               <Button
                 variant="destructive"
@@ -463,11 +488,17 @@ const StaffDashboard = () => {
          <DialogContent className="max-w-2xl overflow-hidden p-0">
            {active && (
              <>
-               <img
-                 src={api.imageUrl(active)}
-                 alt={`Submission by ${active.uploadedBy}`}
-                 className="max-h-[60vh] w-full object-cover"
-               />
+               {active.messageText ? (
+                 <div className="flex min-h-[16rem] w-full items-center justify-center bg-indigo-900 p-8 text-center text-white">
+                   <p className="font-display text-2xl font-bold">{active.messageText}</p>
+                 </div>
+               ) : (
+                 <img
+                   src={api.imageUrl(active)}
+                   alt={`Submission by ${active.uploadedBy}`}
+                   className="max-h-[60vh] w-full object-cover"
+                 />
+               )}
                <DialogHeader className="space-y-4 p-6">
                  <div>
                    <DialogTitle className="font-display text-2xl">{active.uploadedBy}</DialogTitle>
@@ -594,8 +625,8 @@ const StaffDashboard = () => {
            <DialogHeader>
              <DialogTitle className="text-destructive">Are you absolutely sure?</DialogTitle>
              <DialogDescription>
-               This will wipe ALL submissions and images from the entire system.
-               To confirm, please type <span className="font-bold text-foreground">clear down</span> below.
+               This deletes every student upload and its image. Event Communications items and student
+               accounts are kept. To confirm, please type <span className="font-bold text-foreground">clear down</span> below.
              </DialogDescription>
            </DialogHeader>
            <div className="space-y-4 mt-4">

@@ -44,8 +44,9 @@ services:
       target: production
       args:
         APP_VERSION: ${APP_VERSION:-dev}
+    # Set FRONTEND_PORT=80 in .env at the event so phones can use http://<server-ip>/ with no port.
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     # Uploads are deliberately NOT mounted here: nginx proxies /uploads to the backend, which decides
     # who may see each file.
     depends_on:

@@ -65,16 +65,6 @@ public class StaffController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<ImageView> staffUpload(@RequestParam("file") MultipartFile file,
-                                                 Principal principal) throws IOException {
-        String username = ControllerSupport.usernameOf(principal);
-        ImageMetadata metadata = imageService.uploadImage(file, username);
-        // Staff uploads are auto-approved.
-        return ResponseEntity.ok(imageViews.of(
-                imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         imageService.deleteImage(id);

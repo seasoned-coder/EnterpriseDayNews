@@ -162,5 +162,7 @@
   }
 
   .fade-in { animation: fadeIn 600ms ease-out both; }
+  .crossfade-in { animation: crossfadeIn 1000ms ease-in-out both; }
+  @keyframes crossfadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 }

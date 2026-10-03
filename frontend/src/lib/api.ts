@@ -4,12 +4,15 @@
 
 import { FILE_SIZE_LIMITS } from "@/lib/fileSizeCheck";
 
-const RAW_BASE =(import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 export const UPLOADS_BASE = `${API_BASE}/uploads`;
 
+export type Role = "STUDENT" | "STAFF";
+
 interface HandleOptions {
-  redirectOnAuthFailure?: boolean;
+  /** Whose session a 401 ends. Omit for public endpoints and for sign-in itself. */
+  role?: Role;
 }
 
 export type SubmissionStatusApi = "NEW" | "APPROVED" | "REJECTED";
@@ -37,14 +40,17 @@ export interface ApiSubmission {
 
 export interface ProjectorSettings {
   id: string;
+  /** Staff content interval: seconds of student adverts between staff items (0 = after every advert). */
   intervalSpeedSeconds: number;
+  /** How long each staff item stays on screen. Student adverts use their paid duration. */
   displayDurationSeconds: number;
+  /** How often the projector checks for changes. */
   imageRefreshSeconds: number;
 }
 
 export interface ApiUser {
   username: string;
-  role: "STUDENT" | "STAFF";
+  role: Role;
 }
 
 export interface ApiStudentAccount {
@@ -60,11 +66,55 @@ export interface ApiStudentAccount {
   updatedAt: string;
 }
 
-const headers = () => {
+// ── Sessions ────────────────────────────────────────────────────────────────
+// Students and staff each have their own stored session, so signing in to one app in this browser
+// doesn't sign you out of the other (handy when testing both on one machine).
+
+interface Session extends ApiUser {
+  token: string;
+}
+
+const sessionKey = (role: Role) => `session.${role}`;
+const LOGIN_PAGE: Record<Role, string> = { STUDENT: "/student/login", STAFF: "/staff/login" };
+
+/** Full-page navigation (an object so tests can observe it; jsdom doesn't navigate). */
+export const navigation = {
+  go(path: string) {
+    window.location.href = path;
+  },
+};
+
+/** Moves a session saved by older versions (single "token"/"user" pair) to its per-role slot. */
+function migrateLegacySession() {
   const token = localStorage.getItem("token");
-  return {
-    "Authorization": `Bearer ${token}`
-  };
+  const user = localStorage.getItem("user");
+  if (!token || !user) return;
+  try {
+    const parsed = JSON.parse(user) as ApiUser;
+    if ((parsed.role === "STUDENT" || parsed.role === "STAFF") && !localStorage.getItem(sessionKey(parsed.role))) {
+      localStorage.setItem(sessionKey(parsed.role), JSON.stringify({ ...parsed, token }));
+    }
+  } catch {
+    // Unreadable legacy data: just drop it.
+  }
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+function readSession(role: Role): Session | null {
+  migrateLegacySession();
+  const raw = localStorage.getItem(sessionKey(role));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Session;
+  } catch {
+    return null;
+  }
+}
+
+const authHeaders = (role: Role): Record<string, string> => {
+  const session = readSession(role);
+  return session ? { Authorization: `Bearer ${session.token}` } : {};
 };
 
 /** An API failure. `message` is safe to show to users (including students); `status` is the HTTP status. */
@@ -102,12 +152,10 @@ async function friendlyErrorMessage(res: Response): Promise<string> {
 }
 
 async function handle<T>(res: Response, options: HandleOptions = {}): Promise<T> {
-  const { redirectOnAuthFailure = true } = options;
-
-  if (redirectOnAuthFailure && res.status === 401) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "/";
+  if (options.role && res.status === 401) {
+    // That role's session has expired or is no longer valid: sign in again.
+    localStorage.removeItem(sessionKey(options.role));
+    navigation.go(LOGIN_PAGE[options.role]);
   }
   if (!res.ok) {
     throw new ApiError(await friendlyErrorMessage(res), res.status);
@@ -118,30 +166,47 @@ async function handle<T>(res: Response, options: HandleOptions = {}): Promise<T>
   return undefined as T;
 }
 
+/** Authenticated request as `role`. A JSON `body` is serialised; FormData and strings are sent as-is. */
+function request<T>(role: Role, path: string, init: { method?: string; body?: unknown; contentType?: string } = {}) {
+  const headers: Record<string, string> = { ...authHeaders(role) };
+  let body: BodyInit | undefined;
+  if (init.body instanceof FormData || typeof init.body === "string") {
+    body = init.body;
+    if (init.contentType) headers["Content-Type"] = init.contentType;
+  } else if (init.body !== undefined) {
+    body = JSON.stringify(init.body);
+    headers["Content-Type"] = "application/json";
+  }
+  return fetch(`${API_BASE}${path}`, { method: init.method ?? "GET", headers, body }).then((res) =>
+    handle<T>(res, { role }),
+  );
+}
+
+const staff = <T>(path: string, init?: Parameters<typeof request>[2]) => request<T>("STAFF", path, init);
+const student = <T>(path: string, init?: Parameters<typeof request>[2]) => request<T>("STUDENT", path, init);
+
 export const api = {
-  async login(username: string, role: "STUDENT" | "STAFF", password?: string) {
+  async login(username: string, role: Role, password?: string) {
     const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, role, password }),
     });
-    const data = await handle<{ token: string; username: string; role: "STUDENT" | "STAFF" }>(res, {
-      redirectOnAuthFailure: false,
-    });
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify({ username: data.username, role: data.role }));
+    const data = await handle<{ token: string; username: string; role: Role }>(res);
+    const session: Session = { token: data.token, username: data.username, role: data.role };
+    localStorage.setItem(sessionKey(data.role), JSON.stringify(session));
     return data;
   },
 
-  logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "/";
+  logout(role: Role) {
+    localStorage.removeItem(sessionKey(role));
+    navigation.go("/");
   },
 
-  getCurrentUser() {
-    const user = localStorage.getItem("user");
-    return user ? JSON.parse(user) as ApiUser : null;
+  /** The signed-in user for `role`, or null. */
+  getCurrentUser(role: Role): ApiUser | null {
+    const session = readSession(role);
+    return session ? { username: session.username, role: session.role } : null;
   },
 
   /**
@@ -153,167 +218,103 @@ export const api = {
     return `${UPLOADS_BASE}/${encodeURIComponent(item.filePath)}`;
   },
 
-  async studentUpload(name: string, file: File, priority: number = 1, durationSeconds: number = 10) {
+  studentUpload(_name: string, file: File, priority: number = 1, durationSeconds: number = 10) {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("priority", priority.toString());
     fd.append("durationSeconds", durationSeconds.toString());
-    const res = await fetch(`${API_BASE}/api/student/upload`, {
-      method: "POST",
-      headers: headers(),
-      body: fd,
-    });
-    return handle<ApiSubmission>(res);
+    return student<ApiSubmission>("/api/student/upload", { method: "POST", body: fd });
   },
 
   studentGetMyUploads(_name: string) {
-    return fetch(`${API_BASE}/api/student/uploads`, {
-      headers: headers(),
-    }).then(handle<ApiSubmission[]>);
+    return student<ApiSubmission[]>("/api/student/uploads");
   },
 
   studentDeleteMyUpload(id: number, _name: string) {
-    return fetch(`${API_BASE}/api/student/uploads/${id}`, {
-      method: "DELETE",
-      headers: headers(),
-    }).then(handle<void>);
+    return student<void>(`/api/student/uploads/${id}`, { method: "DELETE" });
   },
 
   list(kind: "new" | "approved" | "rejected", _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/${kind}`, {
-      headers: headers(),
-    }).then(handle<ApiSubmission[]>);
+    return staff<ApiSubmission[]>(`/api/staff/${kind}`);
   },
 
   approve(id: number, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/approve/${id}`, {
-      method: "POST",
-      headers: headers(),
-    }).then(handle<ApiSubmission>);
+    return staff<ApiSubmission>(`/api/staff/approve/${id}`, { method: "POST" });
   },
 
   reject(id: number, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/reject/${id}`, {
-      method: "POST",
-      headers: headers(),
-    }).then(handle<ApiSubmission>);
+    return staff<ApiSubmission>(`/api/staff/reject/${id}`, { method: "POST" });
   },
 
   toggleDisplay(id: number, display: boolean, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/toggle-display/${id}?display=${display}`, {
-      method: "POST",
-      headers: headers(),
-    }).then(handle<ApiSubmission>);
+    return staff<ApiSubmission>(`/api/staff/toggle-display/${id}?display=${display}`, { method: "POST" });
   },
 
   updateDisplayOrder(ids: number[], _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/order`, {
-      method: "POST",
-      headers: {
-        ...headers(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(ids),
-    }).then(handle<void>);
+    return staff<void>("/api/staff/order", { method: "POST", body: ids });
   },
 
   delete(id: number, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/${id}`, {
-      method: "DELETE",
-      headers: headers(),
-    }).then(handle<void>);
+    return staff<void>(`/api/staff/${id}`, { method: "DELETE" });
   },
 
   deleteAll(_staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/all`, {
-      method: "DELETE",
-      headers: headers(),
-    }).then(handle<void>);
+    return staff<void>("/api/staff/all", { method: "DELETE" });
   },
 
   listInfo(_staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/info`, {
-      headers: headers(),
-    }).then(handle<ApiSubmission[]>);
+    return staff<ApiSubmission[]>("/api/staff/info");
   },
 
   uploadInfo(file: File, flash: boolean, _staffName = "staff") {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("flash", flash.toString());
-    return fetch(`${API_BASE}/api/staff/info/upload`, {
-      method: "POST",
-      headers: headers(),
-      body: fd,
-    }).then(handle<ApiSubmission>);
+    return staff<ApiSubmission>("/api/staff/info/upload", { method: "POST", body: fd });
   },
 
   postFreeText(text: string, flash: boolean, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/info/free-text?flash=${flash}`, {
+    return staff<ApiSubmission>(`/api/staff/info/free-text?flash=${flash}`, {
       method: "POST",
-      headers: {
-        ...headers(),
-        "Content-Type": "text/plain",
-      },
       body: text,
-    }).then(handle<ApiSubmission>);
+      contentType: "text/plain",
+    });
   },
 
   toggleFlash(id: number, flash: boolean, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/toggle-flash/${id}?flash=${flash}`, {
-      method: "POST",
-      headers: headers(),
-    }).then(handle<ApiSubmission>);
+    return staff<ApiSubmission>(`/api/staff/toggle-flash/${id}?flash=${flash}`, { method: "POST" });
   },
 
   listStudentAccounts(_staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/students`, {
-      headers: headers(),
-    }).then(handle<ApiStudentAccount[]>);
+    return staff<ApiStudentAccount[]>("/api/staff/students");
   },
 
   createStudentAccount(username: string, password: string, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/students`, {
-      method: "POST",
-      headers: {
-        ...headers(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    }).then(handle<ApiStudentAccount>);
+    return staff<ApiStudentAccount>("/api/staff/students", { method: "POST", body: { username, password } });
   },
 
   setStudentAccountLocked(id: number, locked: boolean, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/students/${id}/lock?locked=${locked}`, {
-      method: "POST",
-      headers: headers(),
-    }).then(handle<ApiStudentAccount>);
+    return staff<ApiStudentAccount>(`/api/staff/students/${id}/lock?locked=${locked}`, { method: "POST" });
   },
 
   changeStudentAccountPassword(id: number, password: string, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/students/${id}/password`, {
-      method: "PUT",
-      headers: {
-        ...headers(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ password }),
-    }).then(handle<ApiStudentAccount>);
+    return staff<ApiStudentAccount>(`/api/staff/students/${id}/password`, { method: "PUT", body: { password } });
   },
 
   deleteStudentAccount(id: number, _staffName = "staff") {
-    return fetch(`${API_BASE}/api/staff/students/${id}`, {
-      method: "DELETE",
-      headers: headers(),
-    }).then(handle<void>);
+    return staff<void>(`/api/staff/students/${id}`, { method: "DELETE" });
   },
 
   projectorImages() {
-    return fetch(`${API_BASE}/api/projector/images`).then(handle<ApiSubmission[]>);
+    return fetch(`${API_BASE}/api/projector/images`).then((res) => handle<ApiSubmission[]>(res));
   },
 
   projectorSettings() {
-    return fetch(`${API_BASE}/api/projector/settings`).then(handle<ProjectorSettings>);
+    return fetch(`${API_BASE}/api/projector/settings`).then((res) => handle<ProjectorSettings>(res));
+  },
+
+  updateProjectorSettings(settings: Omit<ProjectorSettings, "id">) {
+    return staff<ProjectorSettings>("/api/projector/settings", { method: "POST", body: settings });
   },
 };
 
@@ -338,4 +339,3 @@ export function formatDateTime(iso: string | null): string {
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString();
 }
-

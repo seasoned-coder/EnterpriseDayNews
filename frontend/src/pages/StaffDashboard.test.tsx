@@ -1,0 +1,155 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ApiSubmission } from "@/lib/api";
+import StaffDashboard from "@/pages/StaffDashboard";
+
+const mocks = vi.hoisted(() => ({
+  getCurrentUser: vi.fn(),
+  list: vi.fn(),
+  listInfo: vi.fn(),
+  delete: vi.fn(),
+  toggleDisplay: vi.fn(),
+  projectorSettings: vi.fn(),
+  toast: vi.fn(),
+}));
+
+vi.mock("@/lib/api", () => ({
+  api: {
+    getCurrentUser: mocks.getCurrentUser,
+    list: mocks.list,
+    listInfo: mocks.listInfo,
+    delete: mocks.delete,
+    toggleDisplay: mocks.toggleDisplay,
+    projectorSettings: mocks.projectorSettings,
+    imageUrl: (item: { filePath: string }) => `/uploads/${item.filePath}`,
+  },
+  formatRelative: () => "just now",
+}));
+vi.mock("@/hooks/use-toast", () => ({ toast: mocks.toast }));
+vi.mock("@/components/BrandNav", () => ({ BrandNav: () => <nav /> }));
+
+const base: ApiSubmission = {
+  id: 1,
+  filePath: "a.jpg",
+  originalFileName: "a.jpg",
+  uploadedBy: "year10-team1",
+  uploadedAt: "2026-10-03T10:00:00Z",
+  status: "APPROVED",
+  vettedBy: "staff",
+  vettedAt: null,
+  display: true,
+  displayOrder: 0,
+  priority: 1,
+  durationSeconds: 10,
+  totalCost: 10,
+  isInfoMessage: false,
+  isFlashMode: false,
+  messageText: null,
+};
+
+const urgent: ApiSubmission = {
+  ...base,
+  id: 7,
+  filePath: "",
+  uploadedBy: "staff",
+  isInfoMessage: true,
+  isFlashMode: true,
+  messageText: "Fire drill at 11",
+};
+
+function renderPage() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <StaffDashboard />
+    </QueryClientProvider>,
+  );
+}
+
+async function openTab(name: RegExp) {
+  const tab = screen.getByRole("tab", { name });
+  fireEvent.mouseDown(tab);
+  fireEvent.click(tab);
+}
+
+describe("StaffDashboard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getCurrentUser.mockReturnValue({ username: "head.teacher", role: "STAFF" });
+    mocks.list.mockImplementation(async (kind: string) => (kind === "approved" ? [base] : []));
+    mocks.listInfo.mockResolvedValue([urgent]);
+    mocks.projectorSettings.mockResolvedValue({
+      id: "DEFAULT",
+      intervalSpeedSeconds: 60,
+      displayDurationSeconds: 10,
+      imageRefreshSeconds: 3,
+    });
+  });
+
+  it("leaves Flash Mode unticked for new information uploads", async () => {
+    renderPage();
+    await openTab(/event communications/i);
+
+    expect(await screen.findByLabelText("Flash Mode")).not.toBeChecked();
+  });
+
+  it("asks before deleting the urgent message", async () => {
+    renderPage();
+    await openTab(/event communications/i);
+
+    fireEvent.click(await screen.findByRole("button", { name: /delete urgent message/i }));
+
+    expect(mocks.delete).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /yes, delete permanently/i }));
+    await waitFor(() => expect(mocks.delete).toHaveBeenCalledWith(7, "head.teacher"));
+  });
+
+  it("previews a text message as text, not a broken image", async () => {
+    renderPage();
+    await openTab(/event communications/i);
+
+    const cards = await screen.findAllByText(/Fire drill at 11/);
+    fireEvent.click(cards[0]);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Fire drill at 11")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("updates the preview's Hide/Display button straight away", async () => {
+    mocks.toggleDisplay.mockResolvedValue({ ...base, display: false });
+    renderPage();
+    await openTab(/approved/i);
+
+    fireEvent.click(await screen.findByAltText("Submission by year10-team1"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /hide from projector/i }));
+
+    expect(await within(dialog).findByRole("button", { name: /display on projector/i })).toBeInTheDocument();
+  });
+
+  it("describes what End of Day keeps", async () => {
+    renderPage();
+    await openTab(/end of day/i);
+
+    expect(await screen.findByText(/Staff items in Event Communications and all student accounts are kept/)).toBeInTheDocument();
+    expect(screen.queryByText(/ALL database records/)).not.toBeInTheDocument();
+  });
+
+  it("has a Projector tab with the settings", async () => {
+    renderPage();
+    await openTab(/^projector$/i);
+
+    expect(await screen.findByLabelText(/staff content interval/i)).toHaveValue(60);
+  });
+
+  it("uses friendly empty-state text", async () => {
+    renderPage();
+
+    expect(await screen.findByText("No new submissions")).toBeInTheDocument();
+    await openTab(/rejected/i);
+    expect(await screen.findByText("Nothing rejected")).toBeInTheDocument();
+  });
+});

@@ -1,33 +1,44 @@
 # Project Learnings and Guidelines
 
-## Environment - Windows PowerShell
-- Always use PowerShell syntax (e.g., `;` for command chaining, `Test-Path` for file checks).
-- Avoid `grep`, use `Select-String` if necessary, but prefer direct tool outputs.
-- Large command outputs are truncated; redirect to files and search them if needed, but be mindful of the display limit.
-- **Cleanup**: Always delete temporary files (like `test_output.txt`) created during execution to keep the workspace clean.
+See also `docs/design-notes.md` for how the product is meant to behave (audiences, advert economics, projector scheduling, security model, offline event).
+
+## Ground rules
+- **The repository is PUBLIC.** Never commit secrets, real passwords, hostnames, IPs or personal data. All secrets come from an untracked `.env` (see `.env.example`).
+- **Audiences:** students are 13–14 and mostly on phones; keep their UI simple, friendly and touch-friendly. Staff are adults. The projector runs unattended.
+- **The event is offline** (private Wi-Fi, no internet). Don't add runtime dependencies on external URLs (CDNs, web fonts, remote models).
+- With every change: add tests, check coverage (JaCoCo + Vitest), and update the README and the user guides in `docs/`.
+
+## Environment - Windows PowerShell 5.1
+- Use PowerShell syntax (`;` to chain; `&&`/`||` are not available). Prefer direct tool output over `Select-String` where possible.
+- Native commands lose embedded double quotes and empty-string arguments. Pass SQL/JSON via stdin or files rather than inline.
+- Write multi-line commit messages to a file and use `git commit -F <file>`.
+- Large outputs are truncated; filter them. Delete temporary files (tokens, test images) when done.
 
 ## Java 25 / Spring Boot 3.4
-- Use `MockitoBean` instead of `MockBean` as it is deprecated in Spring Boot 3.4+.
-- **JaCoCo**: Use 0.8.14+ for official Java 25 support (0.8.12 fails with `Unsupported class file major version 69`).
-- **Spring Boot**: Use 3.4.13+ (or 3.5.x) for Java 25 — earlier 3.4.0 ships an older ASM that fails to parse Java 25 class files with `Incompatible class format` / `ClassFormatException`.
-- **Lombok**: Use 1.18.42+ for JDK 25.0.1 (older versions fail with `ExceptionInInitializerError: com.sun.tools.javac.code.TypeTag :: UNKNOWN`). Mandatory: declare Lombok as an `annotationProcessorPath` in `maven-compiler-plugin` (required since JDK 23). Exclude Lombok from the Spring Boot fat jar via `spring-boot-maven-plugin` `<excludes>`.
-- **Byte Buddy**: Mockito on JDK 25 requires Byte Buddy 1.17.8+ to mock interfaces/classes (class file v69). Pin `net.bytebuddy:byte-buddy` and `byte-buddy-agent` at 1.17.8 (test scope) to override Spring Boot's transitive version.
-- Implicitly declared classes/IO features might cause issues; stick to standard Java unless specifically asked.
+- The default `java` on PATH may be Java 8. Run Maven with `JAVA_HOME` pointing at a JDK 25 (e.g. Amazon Corretto 25).
+- Use `MockitoBean` instead of `MockBean` (deprecated in Spring Boot 3.4+).
+- **JaCoCo** 0.8.14+ for Java 25. **Spring Boot** 3.4.13+. **Lombok** 1.18.42+ as an `annotationProcessorPath`. **Byte Buddy** pinned to 1.17.8+ for Mockito on JDK 25.
+- Schema changes need a Flyway migration (`src/main/resources/db/migration/V<n>__*.sql`); Hibernate only validates.
+- `src/test/resources/application.properties` **replaces** the main one in tests, so repeat any security-relevant settings there (e.g. `server.forward-headers-strategy`, a test-only `app.jwt.secret`).
+- Tests share one in-memory H2 database per Spring context, so use unique usernames per test.
+- MockMvc doesn't run Tomcat valves. Test forwarded-header/IP behaviour with `@SpringBootTest(webEnvironment = RANDOM_PORT)`.
 
 ## Testing Strategy
-- To reach high code coverage (>90%):
-    - Use `MockMvc` for controller testing to cover endpoints and security filters.
-    - Use `@TempDir` for service tests involving file I/O.
-    - Test both success and error paths (e.g., `Optional.orElseThrow()`).
-    - Audit all branches (if/else) in services and controllers.
+- Backend: aim for >90% instruction coverage. Use `MockMvc` for controllers and security rules, and service tests for business rules; cover success and error paths.
+- Report coverage from `target/site/jacoco/jacoco.csv` after `mvn test`.
 
-## Frontend Testing (React)
-- Use Jest + React Testing Library (bundled with `react-scripts`).
-- Place test files alongside components as `*.test.js`; a global `src/setupTests.js` imports `@testing-library/jest-dom`.
-- Mock `axios` with `jest.mock('axios')` to avoid hitting the backend.
-- Use `jest.useFakeTimers()` + `jest.advanceTimersByTime(ms)` (wrapped in `act`) for `setInterval`-driven components like the projector slideshow.
-- Run once with `npm test` (configured with `--watchAll=false`); use `npm run test:watch` for interactive mode.
-- Note: Node.js/npm are NOT installed in the agent environment — frontend tests must be executed by the user locally or inside the frontend Docker image.
+## Frontend Testing (React + Vite)
+- **Vitest + Testing Library + jsdom.** Tests sit next to the code as `*.test.ts(x)`; setup is in `src/test/setup.ts`.
+- `npm test` runs once; `npm run test:coverage` prints coverage and writes `frontend/coverage/`.
+- Mock `@/lib/api` (and `@/hooks/use-toast`) per test with `vi.mock`, and keep pure logic (e.g. `lib/projectorSchedule.ts`) in plain functions so it can be unit-tested.
+- Use `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` inside `act` for timer-driven pages like the projector.
+- jsdom doesn't navigate on `window.location.href = …`. Go through `navigation.go()` in `lib/api.ts` and spy on it.
+- `npx tsc --noEmit -p tsconfig.json` reports pre-existing TS5097 errors (`.tsx` import extensions in `App.tsx`/`main.tsx`); treat any *other* error as new.
+
+## Local testing
+- `docker compose up --build -d db backend frontend` (always `--build`; skip `caddy`). Needs a `.env`.
+- Chrome autofill on the login pages can overwrite typed values; set fields directly or use the API to get a token.
 
 ## Known Issues
-- None at the moment.
+- ESLint has no flat config (`eslint.config.js`), so `npm run lint` doesn't run.
+- Locally (Docker Desktop) the browser appears to come from a Docker address, so recorded login IPs can be faked. This doesn't apply on a Linux server.

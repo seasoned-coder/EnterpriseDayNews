@@ -124,19 +124,14 @@ class StaffControllerTests {
     }
 
     @Test
-    void testStaffUpload() throws Exception {
+    void testUnusedStaffAutoApproveUploadIsGone() throws Exception {
+        // Removed in #33: nothing used it, and staff content goes through Event Communications instead.
         MockMultipartFile file = new MockMultipartFile("file", "staff.jpg", "image/jpeg", "content".getBytes());
-        ImageMetadata m = sampleImage(10L, ApprovalStatus.NEW);
-
-        when(imageService.uploadImage(any(), eq("staff1"))).thenReturn(m);
-        when(imageService.updateStatus(eq(10L), eq(ApprovalStatus.APPROVED), eq("staff1")))
-                .thenReturn(sampleImage(10L, ApprovalStatus.APPROVED));
 
         mockMvc.perform(multipart("/api/staff/upload")
                 .file(file)
                 .header("Authorization", staffToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("APPROVED"));
+                .andExpect(status().is4xxClientError());
     }
 
     @Test

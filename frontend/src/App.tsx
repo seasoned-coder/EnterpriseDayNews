@@ -17,7 +17,7 @@ import { api } from "@/lib/api";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role: "STUDENT" | "STAFF" }) => {
-  const user = api.getCurrentUser();
+  const user = api.getCurrentUser(role);
   if (!user || user.role !== role) {
     return <Navigate to={role === "STUDENT" ? "/student/login" : "/staff/login"} replace />;
   }

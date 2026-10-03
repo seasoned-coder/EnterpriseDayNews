@@ -1,5 +1,80 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, navigation, type Role } from "@/lib/api";
+
+function signIn(role: Role, token: string, username: string) {
+  localStorage.setItem(`session.${role}`, JSON.stringify({ token, username, role }));
+}
+
+describe("sessions per role", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+    window.history.pushState({}, "", "/");
+  });
+
+  it("keeps student and staff sessions separate", async () => {
+    signIn("STAFF", "staff-token", "head.teacher");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ token: "student-token", username: "year10", role: "STUDENT" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await api.login("year10", "STUDENT", "Sunrise7");
+
+    expect(api.getCurrentUser("STAFF")).toEqual({ username: "head.teacher", role: "STAFF" });
+    expect(api.getCurrentUser("STUDENT")).toEqual({ username: "year10", role: "STUDENT" });
+  });
+
+  it("sends each role's own token", async () => {
+    signIn("STAFF", "staff-token", "head.teacher");
+    signIn("STUDENT", "student-token", "year10");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("[]", {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+
+    await api.list("new");
+    await api.studentGetMyUploads("year10");
+
+    const auth = fetchMock.mock.calls.map(([, init]) => (init?.headers as Record<string, string>).Authorization);
+    expect(auth).toEqual(["Bearer staff-token", "Bearer student-token"]);
+  });
+
+  it("moves a session saved by the old version into its role's slot", () => {
+    localStorage.setItem("token", "old-token");
+    localStorage.setItem("user", JSON.stringify({ username: "head.teacher", role: "STAFF" }));
+
+    expect(api.getCurrentUser("STAFF")).toEqual({ username: "head.teacher", role: "STAFF" });
+    expect(api.getCurrentUser("STUDENT")).toBeNull();
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("an expired session signs out only that role and opens its sign-in page", async () => {
+    signIn("STAFF", "staff-token", "head.teacher");
+    signIn("STUDENT", "student-token", "year10");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("", { status: 401 }));
+    const go = vi.spyOn(navigation, "go").mockImplementation(() => {});
+
+    await expect(api.list("new")).rejects.toBeInstanceOf(ApiError);
+
+    expect(api.getCurrentUser("STAFF")).toBeNull();
+    expect(api.getCurrentUser("STUDENT")).not.toBeNull();
+    expect(go).toHaveBeenCalledWith("/staff/login");
+  });
+
+  it("logout clears only that role", () => {
+    signIn("STAFF", "staff-token", "head.teacher");
+    signIn("STUDENT", "student-token", "year10");
+
+    vi.spyOn(navigation, "go").mockImplementation(() => {});
+    api.logout("STUDENT");
+
+    expect(api.getCurrentUser("STUDENT")).toBeNull();
+    expect(api.getCurrentUser("STAFF")).not.toBeNull();
+  });
+});
 
 describe("api.studentDeleteMyUpload", () => {
   afterEach(() => {
@@ -8,7 +83,7 @@ describe("api.studentDeleteMyUpload", () => {
   });
 
   it("sends DELETE to the student upload endpoint with auth header", async () => {
-    localStorage.setItem("token", "test-token");
+    signIn("STUDENT", "test-token", "student1");
 
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
@@ -106,8 +181,7 @@ describe("api.login", () => {
 
   it("does not redirect to the landing page on invalid credentials", async () => {
     window.history.pushState({}, "", "/student/login");
-    localStorage.setItem("token", "existing-token");
-    localStorage.setItem("user", JSON.stringify({ username: "student", role: "STUDENT" }));
+    signIn("STUDENT", "existing-token", "student");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("Invalid username or password", { status: 401, statusText: "Unauthorized" }),
@@ -118,8 +192,7 @@ describe("api.login", () => {
     );
 
     expect(window.location.pathname).toBe("/student/login");
-    expect(localStorage.getItem("token")).toBe("existing-token");
-    expect(localStorage.getItem("user")).toBe(JSON.stringify({ username: "student", role: "STUDENT" }));
+    expect(api.getCurrentUser("STUDENT")).toEqual({ username: "student", role: "STUDENT" });
   });
 });
 
@@ -132,18 +205,16 @@ describe("api.createStudentAccount", () => {
 
   it("does not redirect to landing on a forbidden response", async () => {
     window.history.pushState({}, "", "/staff/students");
-    localStorage.setItem("token", "staff-token");
-    localStorage.setItem("user", JSON.stringify({ username: "staff1", role: "STAFF" }));
+    signIn("STAFF", "staff-token", "head.teacher");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("Forbidden", { status: 403, statusText: "Forbidden" }),
     );
 
-    await expect(api.createStudentAccount("year10", "fred", "staff1")).rejects.toThrow(/^Forbidden$/);
+    await expect(api.createStudentAccount("year10", "fred")).rejects.toThrow(/^Forbidden$/);
 
     expect(window.location.pathname).toBe("/staff/students");
-    expect(localStorage.getItem("token")).toBe("staff-token");
-    expect(localStorage.getItem("user")).toBe(JSON.stringify({ username: "staff1", role: "STAFF" }));
+    expect(api.getCurrentUser("STAFF")).toEqual({ username: "head.teacher", role: "STAFF" });
   });
 });
 

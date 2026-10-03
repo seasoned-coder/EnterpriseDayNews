@@ -73,11 +73,11 @@ class ProjectorControllerTests {
                 .id(DisplaySettings.DEFAULT_ID)
                 .intervalSpeedSeconds(20)
                 .displayDurationSeconds(40)
-                .imageRefreshSeconds(90)
+                .imageRefreshSeconds(30)
                 .build();
         when(settingsService.update(any())).thenReturn(saved);
 
-        String json = "{\"intervalSpeedSeconds\":20,\"displayDurationSeconds\":40,\"imageRefreshSeconds\":90}";
+        String json = "{\"intervalSpeedSeconds\":20,\"displayDurationSeconds\":40,\"imageRefreshSeconds\":30}";
 
         mockMvc.perform(post("/api/projector/settings")
                 .header("Authorization", "Bearer " + jwtProvider.generateToken("staff.member", Roles.STAFF))
@@ -86,7 +86,7 @@ class ProjectorControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.intervalSpeedSeconds").value(20))
                 .andExpect(jsonPath("$.displayDurationSeconds").value(40))
-                .andExpect(jsonPath("$.imageRefreshSeconds").value(90));
+                .andExpect(jsonPath("$.imageRefreshSeconds").value(30));
     }
 
     @Test

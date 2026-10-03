@@ -1,5 +1,7 @@
 # BT Enterprise Day News — Visual Redesign
 
+> **Historical document.** This is the original visual-redesign brief. Behaviour has moved on since (e.g. "advert" wording instead of "story", the projector follows staff order with paid priority/duration, auth and accounts exist). For how the system works now, see [`docs/design-notes.md`](../docs/design-notes.md).
+
 Restyle all three pages while keeping current functionality and routes intact. Two distinct moods sit on top of one shared design system so the app feels coherent.
 
 ## Design system (shared foundation)

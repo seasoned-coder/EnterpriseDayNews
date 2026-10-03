@@ -62,7 +62,7 @@ function friendlyAccountError(error: unknown): string {
 }
 
 const StudentAccountsDashboard = () => {
-  const user = api.getCurrentUser();
+  const user = api.getCurrentUser("STAFF");
   const staffName = user?.username || "staff";
   const queryClient = useQueryClient();
 

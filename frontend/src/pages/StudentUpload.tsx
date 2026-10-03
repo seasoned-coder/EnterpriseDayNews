@@ -31,7 +31,7 @@ const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
 const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
 
 const StudentUpload = () => {
-  const user = api.getCurrentUser();
+  const user = api.getCurrentUser("STUDENT");
   const name = user?.username || "";
   const [file, setFile] = useState<File | null>(null);
   const [priority, setPriority] = useState(1);

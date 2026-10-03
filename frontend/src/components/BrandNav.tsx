@@ -18,10 +18,12 @@ export const BrandNav = ({ variant = "light", secondaryLink }: BrandNavProps) =>
   if (location.pathname === "/projector") return null;
 
   const isDark = variant === "dark";
-  const user = api.getCurrentUser();
+  // The dark (student) and light (staff) banners each show their own role's session.
+  const role = isDark ? "STUDENT" : "STAFF";
+  const user = api.getCurrentUser(role);
 
   const handleLogout = () => {
-    api.logout();
+    api.logout(role);
   };
 
   return (

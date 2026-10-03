@@ -5,6 +5,7 @@ This guide is for adult staff running the event. It covers:
 - [Signing in](#signing-in)
 - [Advert Dashboard](#advert-dashboard) (reviewing uploads and controlling the projector)
 - [Event Communications](#event-communications-staff-images-and-messages) (staff images, urgent messages, FLASH)
+- [Projector settings](#projector-settings)
 - [End of Day](#end-of-day-clear-down)
 - [Student Account Dashboard](#student-account-dashboard)
 - [Safeguarding](#safeguarding)
@@ -22,7 +23,8 @@ You'll see **Staff Access Granted** and land on the **Advert Dashboard**. A fail
 - The username is not case-sensitive. The password is.
 - After **5 wrong passwords in a row**, your staff account is locked for **15 minutes**.
 - Staff passwords must be at least 10 characters, with a capital letter and a number. Don't share your staff login with students.
-- Your session lasts about an hour. When it expires you are sent back to the home page; sign in again.
+- Your session lasts about an hour. When it expires you are taken back to the staff sign-in page.
+- Signing in to the student portal in the same browser (e.g. to test it) doesn't sign you out of the staff app.
 - To sign out, use the **Logout** icon at the top right.
 
 ---
@@ -36,9 +38,10 @@ The Advert Dashboard (`/staff`) is where you review student uploads before they 
 | Tab | What's in it |
 |---|---|
 | **New** | Uploads waiting for review. |
-| **Approved** | Approved items. This is the projector's pool. |
+| **Approved** | Approved items, in the order the projector plays them. |
 | **Rejected** | Items you have turned down. |
 | **Event Communications** | Staff information images and the urgent free-text message. |
+| **Projector** | [Projector settings](#projector-settings): how often staff content appears, how long it shows, and how often the projector refreshes. |
 | **End of Day** | The **Clear Down** tool. |
 
 Each tab shows a count. Use **Search by student name…** to filter the current tab by uploader.
@@ -76,9 +79,9 @@ On the **Approved** tab you can change the order of items:
 - Use the **Up** and **Down** buttons on each card, or
 - Drag a card and drop it onto another card (on a computer).
 
-You'll see **Order updated**.
+You'll see **Order updated**. The projector plays student adverts in this order.
 
-**Note:** The projector currently shuffles items and shows higher-priority items more often, so the on-screen order will not exactly follow this list. See the [Projector Guide](projector-guide.md).
+**Priority (what students paid for):** an advert appears once per priority point in each rotation. A priority-4 advert appears four times as often as a priority-1 advert, with its repeats spread out. Each appearance lasts the 10, 20 or 30 seconds the student chose. See the [Projector Guide](projector-guide.md#how-rotation-works).
 
 ### Deleting an item
 
@@ -106,8 +109,8 @@ Use this for urgent announcements. It **immediately takes over the projector** i
 The projector shows the text with an **Urgent Announcement** label.
 
 - There is only ever **one** free-text message. Sending a new one replaces the old text.
-- To remove it, select the bin icon next to **Send Urgent Message** (this deletes the message), or
-- Select **Flash** on its card to switch FLASH off. The message then stays in the normal rotation until you **Hide** or **Delete** it.
+- To remove it, select the bin icon next to **Send Urgent Message** and confirm with **Yes, Delete Permanently**, or
+- Select **Flash** on its card to switch FLASH off. The message then becomes normal staff content: it slips in between student adverts (see [Projector settings](#projector-settings)) until you **Hide** or **Delete** it.
 
 ### Upload Information (staff images)
 
@@ -117,9 +120,9 @@ Use this to add your own images (for example, a schedule or a sponsor slide).
 2. Decide on **Flash Mode** (see warning below).
 3. Select **Upload Info Image**.
 
-Without Flash Mode, the image is added **hidden**. Select **Display** on its card when you want it on the projector.
+Without Flash Mode (the default), the image is added **hidden**. Select **Display** on its card when you want it on the projector. Displayed staff content slips in between student adverts. See [Projector settings](#projector-settings).
 
-> **Warning:** The **Flash Mode** box is **ticked by default**. A FLASH item takes over the projector straight away, even if it is marked hidden. Untick **Flash Mode** before uploading unless you want an immediate takeover.
+> **Careful:** if you tick **Flash Mode**, the image takes over the projector straight away, even though it's marked hidden.
 
 Staff images follow the same file rules as student uploads: JPEG, PNG, GIF or WebP, up to 10 MB.
 
@@ -130,6 +133,20 @@ Staff images follow the same file rules as student uploads: JPEG, PNG, GIF or We
 - When the last FLASH item is switched off or deleted, normal rotation resumes.
 
 Info items can be deleted at any time with **Delete** on their card, and confirmed with **Yes, Delete Permanently**.
+
+---
+
+## Projector settings
+
+Open the **Projector** tab on the Advert Dashboard. Changes reach the projector within a minute.
+
+| Setting | What it does | Allowed |
+|---|---|---|
+| **Staff content interval** | Displayed **Event Communications** items slip in between student adverts once this many seconds of adverts have played. `0` = after every advert. | 0 to 3600 seconds |
+| **Staff item display time** | How long each staff item stays on screen. (Student adverts always get the time the student paid for.) | 3 to 120 seconds |
+| **Projector refresh** | How often the projector checks for newly approved, hidden or removed items. | 2 to 60 seconds |
+
+Staff items take turns, so with several displayed, each slot shows the next one.
 
 ---
 

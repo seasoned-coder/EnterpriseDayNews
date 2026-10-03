@@ -6,7 +6,7 @@ This guide is for whoever sets up the screen at the event. The projector page (`
 
 ## Setting up
 
-1. On the computer connected to the projector, open a web browser.
+1. On the computer connected to the projector, open a web browser. (At the event this computer joins the private event Wi-Fi, or better, plugs into the router with a cable. See **Setup** in the README.)
 2. Go to the address you've been given, followed by `/projector`. Or open the home page and choose **Live Projector**.
 3. Make the browser full screen. On most Windows browsers press **F11**. Press it again to exit.
 4. Move the mouse pointer to the edge of the screen so it isn't over the picture.
@@ -18,14 +18,14 @@ The page updates by itself. You don't need to refresh it when staff approve new 
 
 ## What it shows
 
-The projector shows every item that is:
+The projector shows:
 
-- **Approved** by staff, **and**
-- set to **Display** on the Advert Dashboard.
+- **Student adverts** that staff have **approved** and set to **Display**, and
+- **Staff content**: **Event Communications** items (information images and messages) set to **Display**, which slip in between the adverts.
 
 Each item fills the screen. Wide (landscape) images fit best, and tall images are cropped. Images slowly zoom, and items fade from one to the next.
 
-Along the bottom you'll see **Enterprise Day · Live** and the username of whoever uploaded the item. Small bars in the bottom-right corner show your place in the current rotation.
+Along the bottom you'll see **Enterprise Day · Live** and, for student adverts, the username of the student company that uploaded it.
 
 ### Screens you might see
 
@@ -39,12 +39,15 @@ Along the bottom you'll see **Enterprise Day · Live** and the username of whoev
 
 ## How rotation works
 
-- **Checking for changes:** the page checks for new, hidden or removed items every **3 seconds**. Changes made on the Advert Dashboard reach the screen within a few seconds.
-- **Time on screen:** each item stays up for its own duration, which the student chose when uploading: **10, 20 or 30 seconds**. Staff information items use 10 seconds.
-- **Order:** the page builds a playlist covering about 10 minutes. Every item appears at least once. Higher-priority items (priority 1 to 4, set by the student) get extra appearances. The playlist is shuffled, so the order is not fixed, and the Up/Down order on the dashboard is not followed exactly.
-- **Single item:** if only one item is live, it stays on screen.
+Students pay (in event money) for **priority** and **duration**, and the rotation is built around that:
 
-There are no timing settings to adjust on the projector page. Timing comes from each item's duration and priority.
+- **Order:** student adverts play in the order staff set on the **Approved** tab.
+- **Priority = appearances:** in each rotation an advert appears once per priority point. Priority 1 appears once and priority 4 appears four times, with repeats spread out so the same advert doesn't show twice in a row.
+- **Duration:** each appearance lasts what the student paid for: **10, 20 or 30 seconds**.
+- **Staff content:** once enough student advert time has played (the **staff content interval**, 60 seconds by default), the next displayed staff item slips in for the **staff item display time** (10 seconds by default). Staff items take turns.
+- **Checking for changes:** every few seconds (the **projector refresh**, 3 seconds by default). If staff hide or reject what's on screen, the projector moves on straight away.
+
+Staff change these three settings on the **Projector** tab of the Advert Dashboard. There are no settings on the projector page itself.
 
 ---
 
@@ -53,7 +56,7 @@ There are no timing settings to adjust on the projector page. Timing comes from 
 Staff can use FLASH for urgent messages or key slides.
 
 - While anything is in FLASH, the projector shows **only** FLASH items, and normal adverts pause.
-- The switch happens within a few seconds and starts from the first FLASH item.
+- The switch happens within a few seconds (at the next refresh).
 - An urgent text message appears large on a dark background under a flashing red **Urgent Announcement** label.
 - When staff switch FLASH off or delete the item, normal rotation resumes automatically.
 
