@@ -3,62 +3,92 @@
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Set;
 
 @Component
-<span class="fc" id="L14">public class JwtProvider {</span>
+<span class="fc" id="L16">public class JwtProvider {</span>
 
-    @Value(&quot;${app.jwt.secret:defaultSecretKeyThatIsAtLeast32CharactersLong}&quot;)
+    /** HS256 needs a key of at least 256 bits. */
+    static final int MIN_SECRET_BYTES = 32;
+
+    /** Values that have been published in this (public) repository and must never sign real tokens. */
+<span class="fc" id="L22">    private static final Set&lt;String&gt; KNOWN_PUBLIC_SECRETS = Set.of(</span>
+            &quot;defaultSecretKeyThatIsAtLeast32CharactersLong&quot;
+    );
+
+    // Deliberately no default: the secret must come from deployment config (APP_JWT_SECRET).
+    @Value(&quot;${app.jwt.secret:}&quot;)
     private String secret;
 
     @Value(&quot;${app.jwt.expiration-ms:3600000}&quot;) // 1 hour
     private long expirationMs;
 
-    public String generateToken(String username, String role) {
-<span class="fc" id="L23">        Date now = new Date();</span>
-<span class="fc" id="L24">        Date expiryDate = new Date(now.getTime() + expirationMs);</span>
+    private SecretKey secretKey;
 
-<span class="fc" id="L26">        return Jwts.builder()</span>
-<span class="fc" id="L27">                .subject(username)</span>
-<span class="fc" id="L28">                .claim(&quot;role&quot;, role)</span>
-<span class="fc" id="L29">                .issuedAt(now)</span>
-<span class="fc" id="L30">                .expiration(expiryDate)</span>
-<span class="fc" id="L31">                .signWith(getSecretKey())</span>
-<span class="fc" id="L32">                .compact();</span>
+    @PostConstruct
+    void init() {
+<span class="fc" id="L37">        secretKey = Keys.hmacShaKeyFor(validateSecret(secret).getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L38">    }</span>
+
+    static String validateSecret(String secret) {
+<span class="fc bfc" id="L41" title="All 4 branches covered.">        if (secret == null || secret.isBlank()) {</span>
+<span class="fc" id="L42">            throw new IllegalStateException(</span>
+                    &quot;No JWT signing secret configured. Set APP_JWT_SECRET (see .env.example).&quot;);
+        }
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (KNOWN_PUBLIC_SECRETS.contains(secret)) {</span>
+<span class="fc" id="L46">            throw new IllegalStateException(</span>
+                    &quot;APP_JWT_SECRET is a value published in the source code. Generate a new random secret.&quot;);
+        }
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (secret.getBytes(StandardCharsets.UTF_8).length &lt; MIN_SECRET_BYTES) {</span>
+<span class="fc" id="L50">            throw new IllegalStateException(</span>
+                    &quot;APP_JWT_SECRET must be at least &quot; + MIN_SECRET_BYTES + &quot; bytes long.&quot;);
+        }
+<span class="fc" id="L53">        return secret;</span>
+    }
+
+    public String generateToken(String username, String role) {
+<span class="fc" id="L57">        Date now = new Date();</span>
+<span class="fc" id="L58">        Date expiryDate = new Date(now.getTime() + expirationMs);</span>
+
+<span class="fc" id="L60">        return Jwts.builder()</span>
+<span class="fc" id="L61">                .subject(username)</span>
+<span class="fc" id="L62">                .claim(&quot;role&quot;, role)</span>
+<span class="fc" id="L63">                .issuedAt(now)</span>
+<span class="fc" id="L64">                .expiration(expiryDate)</span>
+<span class="fc" id="L65">                .signWith(secretKey)</span>
+<span class="fc" id="L66">                .compact();</span>
     }
 
     public String getUsernameFromToken(String token) {
-<span class="fc" id="L36">        return getClaims(token).getSubject();</span>
+<span class="fc" id="L70">        return getClaims(token).getSubject();</span>
     }
 
     public String getRoleFromToken(String token) {
-<span class="fc" id="L40">        return getClaims(token).get(&quot;role&quot;, String.class);</span>
+<span class="fc" id="L74">        return getClaims(token).get(&quot;role&quot;, String.class);</span>
     }
 
     public boolean validateToken(String token) {
         try {
-<span class="fc" id="L45">            getClaims(token);</span>
-<span class="fc" id="L46">            return true;</span>
-<span class="nc" id="L47">        } catch (Exception e) {</span>
-<span class="nc" id="L48">            return false;</span>
+<span class="fc" id="L79">            getClaims(token);</span>
+<span class="fc" id="L80">            return true;</span>
+<span class="fc" id="L81">        } catch (Exception e) {</span>
+<span class="fc" id="L82">            return false;</span>
         }
     }
 
     private Claims getClaims(String token) {
-<span class="fc" id="L53">        return Jwts.parser()</span>
-<span class="fc" id="L54">                .verifyWith(getSecretKey())</span>
-<span class="fc" id="L55">                .build()</span>
-<span class="fc" id="L56">                .parseSignedClaims(token)</span>
-<span class="fc" id="L57">                .getPayload();</span>
-    }
-
-    private SecretKey getSecretKey() {
-<span class="fc" id="L61">        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L87">        return Jwts.parser()</span>
+<span class="fc" id="L88">                .verifyWith(secretKey)</span>
+<span class="fc" id="L89">                .build()</span>
+<span class="fc" id="L90">                .parseSignedClaims(token)</span>
+<span class="fc" id="L91">                .getPayload();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
