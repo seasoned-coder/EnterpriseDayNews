@@ -63,6 +63,26 @@ describe("StudentUploadCard", () => {
     expect(screen.queryByText(/Ask a member of staff/)).not.toBeInTheDocument();
   });
 
+  it("shows how often and how long an approved advert has been on screen (issue #40)", () => {
+    render(
+      <StudentUploadCard
+        upload={upload({ status: "APPROVED", display: true })}
+        screenTime={{ plays: 3, seconds: 90 }}
+        busy={false}
+        onSetPublished={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Shown 3 times · 1 min 30 s on screen")).toBeInTheDocument();
+  });
+
+  it("says an approved advert hasn't been shown yet", () => {
+    render(<StudentUploadCard upload={upload({ status: "APPROVED" })} busy={false} onSetPublished={vi.fn()} onDelete={vi.fn()} />);
+
+    expect(screen.getByText("Not shown yet")).toBeInTheDocument();
+  });
+
   it("says to ask staff when no reason was given", () => {
     render(<StudentUploadCard upload={upload({ status: "REJECTED" })} busy={false} onSetPublished={vi.fn()} onDelete={vi.fn()} />);
 

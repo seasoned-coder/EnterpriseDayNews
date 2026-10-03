@@ -12,7 +12,7 @@ A suite of three web applications designed for school students to upload news ar
 The system consists of three main components, each with a different audience:
 1.  **Student App** (`/student`) — used by 13/14-year-old students, mostly on phones and tablets. A simple, mobile-friendly interface for each student company to upload images of its adverts/news articles. Nothing a student uploads is shown until an adult has approved it.
 2.  **Staff App** (`/staff`) — used by adult staff to vet and check student uploads and to add their own content. It has three sections, switched from the top banner (Adverts / Students / Staff):
-    -   **Advert Dashboard**: review, approve, or reject uploaded images, manage display order, and add staff images and information messages.
+    -   **Advert Dashboard**: review, approve, or reject uploaded images (with a reason for the team), manage display order, add staff images and information messages, set up the projector, and see the **Results**: each team's spend and screen time, as a leaderboard and team receipts to print (till printer or A4).
     -   **Student Account Dashboard**: list the company/student accounts, add or delete accounts, lock/unlock them, reset passwords, and see when (and from which IP address) each account last signed in.
     -   **Staff Account Dashboard**: the same for staff logins, so staff can add colleagues, reset passwords, and lock or remove accounts (but not their own).
 3.  **Projector App** (`/projector`) — runs unattended on a machine plugged into the event's screen projector. A full-screen rotation of approved student adverts (in staff order, with paid priority and duration) and staff content, with staff-configurable timing.
@@ -349,6 +349,10 @@ The frontend automatically handles login and token management when navigating to
 -   Requests without a valid sign-in (missing, expired, or for an account that has since been locked, renamed or deleted) get `401`, and the frontend returns to the sign-in page. Signed in with the wrong role gets `403`.
 -   `GET  /api/projector/images`: Items the projector may show: FLASH items if any, otherwise approved + displayed items (student adverts and staff content) in staff order. The projector page decides what to show next; see [docs/design-notes.md](docs/design-notes.md#projector-scheduling). Public.
 -   `GET  /api/projector/settings`: Current display settings. Public.
+-   `POST /api/projector/plays`: The projector reporting what it showed (role: PROJECTOR, i.e. the projector key). JSON body: `[{"imageId": 1, "seconds": 20, "playedAt": "..."}]`. Implausible entries are skipped; returns `{"recorded": n}`.
+-   `POST /api/staff/projector-key`: A projector key (7 days, valid while the issuing staff account is active). The staff app's **Open the projector** uses it.
+-   `GET  /api/staff/results`: Every team's spend, plays, screen time and cost per minute, most screen time first, plus when the projector last recorded a showing.
+-   `GET  /api/student/results`: The signed-in team's totals and each advert's screen time.
 -   `POST /api/projector/settings`: Update display settings (role: STAFF). JSON body: `intervalSpeedSeconds` (staff content interval, 0-3600), `displayDurationSeconds` (staff item display time, 3-120), `imageRefreshSeconds` (projector refresh, 2-60).
 -   `GET  /uploads/{file}`: An image file. Public only for items on the projector; otherwise use the signed `imageUrl` from the API.
 

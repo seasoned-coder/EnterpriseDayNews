@@ -27,4 +27,13 @@ public interface ImageRepository extends JpaRepository<ImageMetadata, Long> {
     List<ImageMetadata> findByIsInfoMessageOrderByUploadedAtDesc(boolean isInfoMessage);
     List<ImageMetadata> findByIsInfoMessageAndMessageTextIsNotNull(boolean isInfoMessage);
     List<ImageMetadata> findByIsFlashModeTrue();
+
+    /** Each team's approved adverts and their cost: what they spent on screen time (issue #40). */
+    @Query("select new org.example.enterprisedaynews.repository.TeamSpend(m.uploadedBy, count(m), sum(m.totalCost)) "
+            + "from ImageMetadata m where m.isInfoMessage = false and m.status = :status group by m.uploadedBy")
+    List<TeamSpend> spendByTeam(@Param("status") ImageMetadata.ApprovalStatus status);
+
+    /** Every team that has uploaded an advert (issue #40). */
+    @Query("select distinct m.uploadedBy from ImageMetadata m where m.isInfoMessage = false and m.uploadedBy is not null")
+    List<String> studentUploaders();
 }

@@ -1,9 +1,18 @@
+import type { MouseEvent } from "react";
 import { ExternalLink } from "lucide-react";
+import { openProjectorWithKey } from "@/lib/results";
 
 const LINKS = [
   { href: "/student", label: "Student portal" },
   { href: "/projector", label: "Projector" },
 ];
+
+/** The projector link also gives the projector its key, so it records screen time (issue #40). */
+const openProjector = (event: MouseEvent<HTMLAnchorElement>) => {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) return; // let the browser handle it
+  event.preventDefault();
+  void openProjectorWithKey().catch(() => undefined); // it still opens, just without recording
+};
 
 /** Quiet footer on staff pages: quick links to see what students and the big screen see. */
 export const StaffFooter = () => (
@@ -19,6 +28,7 @@ export const StaffFooter = () => (
           href={link.href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={link.href === "/projector" ? openProjector : undefined}
           className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline"
         >
           {link.label}

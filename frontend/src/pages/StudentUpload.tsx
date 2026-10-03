@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { StudentUploadCard } from "@/components/StudentUploadCard";
+import { TeamResultsSummary } from "@/components/TeamResultsSummary";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -117,6 +118,15 @@ const StudentUpload = () => {
     enabled: name.length > 0,
     refetchInterval: 10_000,
   });
+
+  // What the team has got for its money so far (issue #40). Changes slowly, so checked less often.
+  const resultsQ = useQuery({
+    queryKey: ["my-results", name],
+    queryFn: api.studentResults,
+    enabled: name.length > 0,
+    refetchInterval: 30_000,
+  });
+  const screenTimeOf = (id: number) => resultsQ.data?.adverts.find((a) => a.imageId === id);
 
   const upload = useMutation({
     mutationFn: async () => {
@@ -302,6 +312,8 @@ const StudentUpload = () => {
             <div className="mt-16 space-y-4 fade-in" style={{ animationDelay: "240ms" }}>
               <h2 className="font-display text-2xl font-bold">Your uploads</h2>
 
+              {resultsQ.data && <TeamResultsSummary result={resultsQ.data.team} />}
+
               {myUploadsQ.isLoading ? (
                 <div className="flex items-center justify-center py-8 text-student-muted">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
@@ -312,6 +324,7 @@ const StudentUpload = () => {
                     <StudentUploadCard
                       key={upload.id}
                       upload={upload}
+                      screenTime={screenTimeOf(upload.id)}
                       busy={deleteUpload.isPending || (setPublished.isPending && setPublished.variables?.upload.id === upload.id)}
                       onSetPublished={(target, published) => setPublished.mutate({ upload: target, published })}
                       onDelete={setDeleteTarget}

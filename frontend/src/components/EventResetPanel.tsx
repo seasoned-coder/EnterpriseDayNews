@@ -16,6 +16,7 @@ const CONFIRM_PHRASE = "clear down";
 
 const WILL = [
   "Delete every student advert (new, approved and rejected) and its picture",
+  "Delete the recorded screen time (print the Results first)",
   "Put the projector settings back to their defaults",
 ];
 const WONT = ["Event Communications items (staff images and messages)", "Student and staff accounts"];

@@ -57,6 +57,21 @@ The projector runs unattended, so it never shows an error to the room:
 -   **Staff can tell:** a subtle **OFFLINE MODE** label shows at the top middle after 2 failed checks in a row (1 if there's nothing to play, with a calm "Back shortly" screen). The projector keeps polling even when its window isn't in front (`refetchIntervalInBackground`).
 -   **Limit:** if the server is down and the page has never been loaded in that browser, there's nothing to show ("Back shortly"). There's no service worker. The page itself is served by the frontend container, so it still loads if only the backend is down.
 
+### Screen time and results (#40)
+
+-   **What's recorded:** the projector records each student advert it shows and for how long: what was actually on screen, at most what the team paid for (pausing doesn't inflate it). It sends them every 30 s (`lib/playRecorder.ts`). While offline it keeps them, across reloads too, and sends them later.
+-   **Who can record:** only a projector with a **projector key** can record (`POST /api/projector/plays`, role `PROJECTOR`). Otherwise anyone on the Wi-Fi could add plays and climb the leaderboard.
+    -   Staff get the key (`POST /api/staff/projector-key`) when they open the projector from the staff app, and it's passed in the URL fragment (`/projector#key=…`), which is never sent to the server or logged.
+    -   The projector keeps it in `localStorage` and removes it from the address bar.
+    -   It's valid for 7 days, and only while the staff member who issued it is active. It can do nothing else.
+-   **The server double-checks** each reported showing: a known student advert, at least 1 s, capped at the longest paid duration (30 s), not in the future and not over 24 h old. Bad entries are skipped, not fatal, so one bad entry can't make the projector resend forever.
+-   **Kept with the team:** plays copy the team name, so screen time survives the advert being deleted, and moves with a renamed team. End of Day wipes them.
+-   **Results:**
+    -   **Spent:** the cost of the team's approved adverts. Rejected and pending adverts don't count; deleting an approved advert removes its cost.
+    -   **Screen time:** the sum of recorded plays.
+    -   **Per minute:** spent ÷ minutes on screen. Lower is better value.
+-   **Printing:** the leaderboard and per-team receipts print through the shared `PrintArea`/`printPages` (also used by the login slips): till receipt or roll, A4 cards or sheet.
+
 ## Moderation and visibility
 
 -   Student uploads start as **NEW** and are invisible to everyone except staff and the uploader. The student chooses at upload whether it goes **on screen as soon as it's approved** (`publishOnApproval`, the default) or **waits for them to publish it** (#9, e.g. for timed offers). Approving sets `display = publishOnApproval`.

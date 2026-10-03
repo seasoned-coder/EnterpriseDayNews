@@ -50,6 +50,10 @@ vi.mock("@/lib/api", () => ({
     studentDeleteMyUpload: mocks.studentDeleteMyUpload,
     studentSetPublished: mocks.studentSetPublished,
     studentPrices: mocks.studentPrices,
+    studentResults: async () => ({
+      team: { team: "year10-team1", adverts: 1, spent: 25, plays: 4, seconds: 80, costPerMinute: 18.8 },
+      adverts: [{ imageId: 101, plays: 4, seconds: 80 }],
+    }),
     imageUrl: mocks.imageUrl,
   },
   formatRelative: mocks.formatRelative,
@@ -111,6 +115,15 @@ describe("StudentUpload wording and checks", () => {
     ]);
     mocks.imageUrl.mockImplementation((item: { filePath: string }) => `/uploads/${item.filePath}`);
     mocks.formatRelative.mockReturnValue("just now");
+  });
+
+  it("shows the team's spend and screen time above their uploads (issue #40)", async () => {
+    renderPage();
+
+    const summary = await screen.findByLabelText("Your results");
+    expect(within(summary).getByText("25")).toBeInTheDocument();
+    expect(within(summary).getByText("1 min 20 s")).toBeInTheDocument();
+    expect(within(summary).getByText("18.8")).toBeInTheDocument();
   });
 
   it("shows friendly status labels instead of NEW / APPROVED / REJECTED", async () => {

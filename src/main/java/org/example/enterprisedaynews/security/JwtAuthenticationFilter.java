@@ -39,9 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Tokens only count while their account still exists and isn't locked, so locking or
                 // deleting an account takes effect immediately rather than when the token expires.
-                boolean activeAccount = Roles.STUDENT.equals(role)
-                        ? studentAccountService.findActiveAccount(username).isPresent()
-                        : Roles.STAFF.equals(role) && staffAccountService.findActiveAccount(username).isPresent();
+                // A projector key counts while the staff member who issued it is active (issue #40).
+                boolean activeAccount = switch (role == null ? "" : role) {
+                    case Roles.STUDENT -> studentAccountService.findActiveAccount(username).isPresent();
+                    case Roles.STAFF, Roles.PROJECTOR -> staffAccountService.findActiveAccount(username).isPresent();
+                    default -> false;
+                };
 
                 if (username != null && activeAccount) {
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);

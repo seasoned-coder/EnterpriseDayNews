@@ -112,6 +112,18 @@ async function seed(browser) {
   );
   const info = await api("/api/staff/info/upload", { token: staff, form: notice });
   await api(`/api/staff/toggle-display/${info.id}?display=true`, { token: staff });
+
+  // Some screen time for the Results tab (#40), recorded the way the projector does it, with its key.
+  const { key } = await api("/api/staff/projector-key", { token: staff });
+  const live = (await (await fetch(`${BASE}/api/projector/images`)).json()).filter((i) => !i.isInfoMessage);
+  const plays = live.flatMap((item, n) =>
+    Array.from({ length: 4 + item.priority * 3 + n }, () => ({
+      imageId: item.id,
+      seconds: item.durationSeconds,
+      playedAt: new Date().toISOString(),
+    })),
+  );
+  await api("/api/projector/plays", { token: key, json: plays });
   return { staff, student: tokens["rocket-lemonade"] };
 }
 
@@ -207,6 +219,9 @@ async function main() {
     await clickTab(staffPage, "Approved");
     await staffPage.screenshot({ path: join(OUT, "staff-approved.png") });
     console.log("  staff-approved.png");
+    await clickTab(staffPage, "Results");
+    await staffPage.screenshot({ path: join(OUT, "staff-results.png") });
+    console.log("  staff-results.png");
     await shoot(staffPage, "/staff/students", "staff-students");
 
     // A login slip as it comes out of the till printer (#37): demo Wi-Fi details, then create two teams.

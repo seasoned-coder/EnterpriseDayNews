@@ -170,10 +170,10 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 }
 
-/* ── Team login slips (issue #37) ─────────────────────────────────────────────────────────────────────
+/* ── Printed tickets: login slips (#37), results receipts (#40) ──────────────────────────────────────────
    Sized for 80 mm till paper (72 mm printable, e.g. Epson TM-T88). Black only: thermal printers fade greys.
    No web fonts (the event is offline): system sans-serif and monospace. */
-.login-slip {
+.ticket {
   box-sizing: border-box;
   width: 72mm;
   padding: 2mm 0 3mm;
@@ -183,7 +183,7 @@
   font-size: 9.5pt;
   line-height: 1.3;
 }
-.login-slip__brand {
+.ticket__brand {
   border-bottom: 0.6mm solid #000;
   padding-bottom: 1.5mm;
   margin-bottom: 2.5mm;
@@ -235,23 +235,36 @@
   mask-composite: intersect;
 }
 
-/* Printing: only the slips. */
-.print-slips { display: none; }
+/* Results receipts (#40): label on the left, value on the right; leaderboard lines. */
+.receipt__title { font-size: 11pt; font-weight: 900; text-align: center; margin-bottom: 2mm; }
+.receipt__subtitle { text-align: center; margin-bottom: 2.5mm; }
+.receipt__row { display: flex; justify-content: space-between; gap: 2mm; }
+.receipt__row > :last-child { font-weight: 700; text-align: right; }
+.receipt__team { font-size: 14pt; font-weight: 900; overflow-wrap: anywhere; margin: 1mm 0 2.5mm; }
+.receipt__rule { border-top: 0.3mm dashed #000; margin: 2.5mm 0; }
+.receipt__line { padding: 1.2mm 0; border-bottom: 0.2mm dotted #000; break-inside: avoid; }
+.receipt__line:last-child { border-bottom: 0; }
+.receipt__small { font-size: 8pt; }
+
+/* Printing: only what's in the PrintArea (components/PrintArea.tsx), laid out for the chosen paper. */
+.print-area { display: none; }
 @media print {
-  body.printing-slips { background: #fff !important; }
-  body.printing-slips > *:not(.print-slips) { display: none !important; }
-  body.printing-slips .print-slips { display: block; }
-  body.printing-slips[data-slip-layout="receipt"] .login-slip { margin: 0 auto; padding: 4mm 0; break-after: page; }
-  body.printing-slips[data-slip-layout="a4"] .print-slips {
+  body.printing { background: #fff !important; }
+  body.printing > *:not(.print-area) { display: none !important; }
+  body.printing .print-area { display: block; }
+  body.printing[data-print-layout="receipt"] .print-area > * { margin: 0 auto; padding: 4mm 0; break-after: page; }
+  body.printing[data-print-layout="receipt-roll"] .print-area > * { margin: 0 auto; padding: 4mm 0; }
+  body.printing[data-print-layout="a4-cards"] .print-area {
     display: grid;
     grid-template-columns: repeat(2, 80mm);
     justify-content: space-around;
     gap: 6mm 0;
   }
-  body.printing-slips[data-slip-layout="a4"] .login-slip {
+  body.printing[data-print-layout="a4-cards"] .print-area > * {
     width: 80mm;
     padding: 3mm 4mm;
     border: 0.3mm dashed #000;
     break-inside: avoid;
   }
+  body.printing[data-print-layout="a4-sheet"] .print-area > * { width: 100%; font-size: 11pt; }
 }

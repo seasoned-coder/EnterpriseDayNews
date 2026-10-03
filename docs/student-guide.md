@@ -115,6 +115,14 @@ A member of staff looks at every upload first. They will either **approve** it o
 
 Scroll down to **Your uploads**. It updates by itself every few seconds.
 
+**Was it worth it?** At the top, three numbers show how your team is doing:
+
+- **Spent:** event money spent on your approved adverts.
+- **Screen time:** how long your adverts have been on the big screen.
+- **Per minute:** what each minute on the big screen cost you. **Lower is better value.** Try different priorities and durations and see what works!
+
+Each approved advert also says how many times it's been shown and for how long, e.g. "Shown 12 times · 4 min on screen".
+
 Each upload shows a label:
 
 | Label | What it means |

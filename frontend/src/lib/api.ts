@@ -99,6 +99,33 @@ export interface EventDetails {
   appAddress: string | null;
 }
 
+/** One team's results (issue #40). */
+export interface TeamResult {
+  team: string;
+  /** Approved adverts. */
+  adverts: number;
+  /** Event money spent on approved adverts. */
+  spent: number;
+  /** Times shown on the projector. */
+  plays: number;
+  /** Total time on the projector. */
+  seconds: number;
+  /** Spent per minute on screen (lower is better value); null until shown. */
+  costPerMinute: number | null;
+}
+
+export interface EventResults {
+  /** Most screen time first. */
+  teams: TeamResult[];
+  /** When the projector last recorded a showing; null if never (not opened from the staff app). */
+  lastPlayAt: string | null;
+}
+
+export interface StudentResults {
+  team: TeamResult;
+  adverts: { imageId: number; plays: number; seconds: number }[];
+}
+
 // ── Sessions ────────────────────────────────────────────────────────────────
 // Students and staff each have their own stored session, so signing in to one app in this browser
 // doesn't sign you out of the other (handy when testing both on one machine).
@@ -364,6 +391,20 @@ export const api = {
 
   saveEventDetails(details: EventDetails) {
     return staff<EventDetails>("/api/staff/event-details", { method: "PUT", body: details });
+  },
+
+  // ── Results (issue #40) ──
+  eventResults() {
+    return staff<EventResults>("/api/staff/results");
+  },
+
+  studentResults() {
+    return student<StudentResults>("/api/student/results");
+  },
+
+  /** A key so the projector can record what it shows; see lib/playRecorder.ts. */
+  projectorKey() {
+    return staff<{ key: string }>("/api/staff/projector-key", { method: "POST" });
   },
 };
 

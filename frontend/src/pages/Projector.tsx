@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type ApiSubmission } from "@/lib/api";
+import { adoptProjectorKey, queueShowing, sendShowings } from "@/lib/playRecorder";
 import { loadLastFeed, loadLastSettings, saveLastFeed, saveLastSettings, withTimeout } from "@/lib/projectorCache";
 import {
   DEFAULT_SCHEDULE_SETTINGS,
@@ -20,6 +21,8 @@ interface Shown {
 const HISTORY_LIMIT = 50;
 /** A feed check that takes longer than this counts as failed (issue #39); normally it takes milliseconds. */
 const REQUEST_TIMEOUT_MS = 5000;
+/** How often recorded showings are sent to the server (issue #40). */
+const PLAYS_SEND_MS = 30_000;
 
 const Projector = () => {
   const [paused, setPaused] = useState(false);
@@ -119,9 +122,32 @@ const Projector = () => {
     }
   }, [items]);
 
+  // Recording what was shown (issue #40): when a student advert comes off screen, note how long it was up
+  // (at most what the team paid for, e.g. if the projector was paused). Sent every 30 seconds.
+  const shownAt = useRef(Date.now());
+  const recordOutgoing = useCallback(
+    (outgoing: Shown | null) => {
+      if (!outgoing || outgoing.item.isInfoMessage) return;
+      const elapsed = Math.round((Date.now() - shownAt.current) / 1000);
+      queueShowing({
+        imageId: outgoing.item.id,
+        seconds: Math.min(elapsed, slideSeconds(outgoing.item, settings)),
+        playedAt: new Date().toISOString(),
+      });
+    },
+    [settings],
+  );
+
+  useEffect(() => {
+    adoptProjectorKey();
+    const timer = setInterval(() => void sendShowings(), PLAYS_SEND_MS);
+    return () => clearInterval(timer);
+  }, []);
+
   const show = useCallback(
     (item: ApiSubmission | null) => {
       if (!item) {
+        recordOutgoing(current);
         setPrevious(null);
         setCurrent(null);
         return;
@@ -130,11 +156,13 @@ const Projector = () => {
         setCurrent({ item, slot: current.slot }); // same slide again: no re-fade
         return;
       }
+      recordOutgoing(current);
+      shownAt.current = Date.now();
       slotCounter.current += 1;
       setPrevious(current);
       setCurrent({ item, slot: slotCounter.current });
     },
-    [current],
+    [current, recordOutgoing],
   );
 
   const advance = useCallback(() => {

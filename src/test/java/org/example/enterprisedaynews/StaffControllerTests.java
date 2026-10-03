@@ -192,7 +192,7 @@ class StaffControllerTests {
 
     @Test
     void testResetEvent() throws Exception {
-        when(eventResetService.resetEvent()).thenReturn(new EventResetService.Result(12));
+        when(eventResetService.resetEvent()).thenReturn(new EventResetService.Result(12, 300));
 
         mockMvc.perform(post("/api/staff/reset-event")
                 .header("Authorization", staffToken))

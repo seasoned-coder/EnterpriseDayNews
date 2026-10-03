@@ -14,8 +14,8 @@ export interface SlipLogin {
 export const LoginSlip = ({ login, details, address }: { login: SlipLogin; details?: EventDetails; address: string }) => {
   const wifi = wifiQrText(details);
   return (
-    <article className="login-slip" aria-label={`Login slip for ${login.username}`}>
-      <header className="login-slip__brand">BT ENTERPRISE DAY NEWS</header>
+    <article className="ticket" aria-label={`Login slip for ${login.username}`}>
+      <header className="ticket__brand">BT ENTERPRISE DAY NEWS</header>
 
       <div className="login-slip__label">Team</div>
       <div className="login-slip__team">{login.username}</div>

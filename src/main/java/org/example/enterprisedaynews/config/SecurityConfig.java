@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/staff/**").hasRole(Roles.STAFF)
                 // The projector only reads; changing its settings is a staff action.
                 .requestMatchers(HttpMethod.GET, "/api/projector/**").permitAll()
+                // Only a projector opened from the staff app (with its key) records plays (issue #40).
+                .requestMatchers(HttpMethod.POST, "/api/projector/plays").hasRole(Roles.PROJECTOR)
                 .requestMatchers("/api/projector/**").hasRole(Roles.STAFF)
                 // Access to individual files is decided by UploadAccessInterceptor (public or signed link).
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()

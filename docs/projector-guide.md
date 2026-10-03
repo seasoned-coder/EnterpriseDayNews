@@ -7,7 +7,8 @@ This guide is for whoever sets up the screen at the event. The projector page (`
 ## Setting up
 
 1. On the computer connected to the projector, open a web browser. (At the event this computer joins the private event Wi-Fi, or better, plugs into the router with a cable. See **Setup** in the README.)
-2. Go to the address you've been given, followed by `/projector`. Or open the home page and choose **Live Projector**.
+2. Sign in to the staff app (`/staff`), open the **Projector** tab and select **Open the projector**. Opened this way, the projector records each team's screen time for the **Results** (see the Staff Guide), and keeps doing so in that browser for a week, even after a refresh.
+   - You can also just go to the address followed by `/projector`, or choose **Live Projector** on the home page. It plays the same, but **records nothing**, so there will be no results.
 3. Make the browser full screen. On most Windows browsers press **F11**. Press it again to exit.
 4. Move the mouse pointer to the edge of the screen so it isn't over the picture.
 5. Turn off the computer's screen saver and sleep settings so the display doesn't go blank during the event.

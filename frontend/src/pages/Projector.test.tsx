@@ -174,6 +174,27 @@ describe("Projector", () => {
     });
   });
 
+  it("records how long each advert was on screen, when it has a key from staff (issue #40)", async () => {
+    localStorage.setItem("projector.key", JSON.stringify("staff-issued-key"));
+    const a = advert("Alpha", 1, 10);
+    const b = advert("Bravo", 1, 20);
+    mocks.projectorImages.mockResolvedValue([a, b]);
+    renderProjector();
+    await tick(0.1);
+
+    await tick(10); // Alpha's 10 seconds are up
+    const queued = JSON.parse(localStorage.getItem("projector.unsentPlays") ?? "[]");
+    expect(queued).toEqual([expect.objectContaining({ imageId: a.id, seconds: 10 })]);
+  });
+
+  it("doesn't record anything without a key", async () => {
+    mocks.projectorImages.mockResolvedValue([advert("Alpha", 1, 10), advert("Bravo", 1, 10)]);
+    renderProjector();
+    await tick(10.1);
+
+    expect(localStorage.getItem("projector.unsentPlays")).toBeNull();
+  });
+
   it("shows staff text messages without a student name", async () => {
     const info: ApiSubmission = {
       ...advert("staff.member"),

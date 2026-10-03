@@ -48,7 +48,11 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - **README screenshots** (`docs/screenshots/`): regenerate with `tools/screenshots/make-screenshots.ps1` (`-Build` for this checkout, `-KeepRunning` to inspect the demo at http://127.0.0.1:3100). Only made-up demo data: the repo is public.
 
 ## Printing (login slips, #37)
-- Print from the browser with print CSS, not raw printer commands: it works with any driver (Epson TM-T88 via its Windows driver, or A4). `printSlips(layout)` adds the `@page` size and `body.printing-slips`; `PrintableSlips` renders the slips in a portal straight under `<body>`, and `index.css` hides everything else when printing.
+- Print from the browser with print CSS, not raw printer commands: it works with any driver (Epson TM-T88 via its Windows driver, or A4). Reuse `components/PrintArea.tsx`:
+    - `PrintArea` renders what to print in a portal straight under `<body>`.
+    - `printPages(layout)` sets the `@page` size and `body.printing`. Layouts: `receipt` (one per page), `receipt-roll`, `a4-cards`, `a4-sheet`.
+    - `index.css` hides everything else when printing.
+    - Printed items use the shared `.ticket` styles (login slips, results receipts).
 - Till paper is 80 mm wide (72 mm printable): size slips in `mm`, black only (no greys or light colours, which fade on thermal paper), no web fonts.
 - Check a print layout without a printer: puppeteer `page.pdf({ preferCSSPageSize: true })` after triggering the print set-up with `window.print` stubbed (see `tools/screenshots`).
 

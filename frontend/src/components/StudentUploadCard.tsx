@@ -2,6 +2,7 @@ import { EyeOff, Loader2, MessageCircle, MonitorUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { formatPlays, formatScreenTime } from "@/lib/results";
 
 interface Publishing {
   /** What the badge says. */
@@ -61,12 +62,14 @@ export function publishingState(upload: ApiSubmission): Publishing {
 
 interface StudentUploadCardProps {
   upload: ApiSubmission;
+  /** How often and for how long it has been on the big screen (issue #40). */
+  screenTime?: { plays: number; seconds: number };
   busy: boolean;
   onSetPublished: (upload: ApiSubmission, published: boolean) => void;
   onDelete: (upload: ApiSubmission) => void;
 }
 
-export const StudentUploadCard = ({ upload, busy, onSetPublished, onDelete }: StudentUploadCardProps) => {
+export const StudentUploadCard = ({ upload, screenTime, busy, onSetPublished, onDelete }: StudentUploadCardProps) => {
   const state = publishingState(upload);
   const goesLive = state.action?.published;
 
@@ -120,6 +123,12 @@ export const StudentUploadCard = ({ upload, busy, onSetPublished, onDelete }: St
             )}
             {state.action.text}
           </Button>
+        )}
+        {upload.status === "APPROVED" && (
+          <p className="text-xs font-medium text-student-ink">
+            {formatPlays(screenTime?.plays ?? 0)}
+            {screenTime && screenTime.seconds > 0 && ` · ${formatScreenTime(screenTime.seconds)} on screen`}
+          </p>
         )}
         <p className="text-xs text-student-muted">{formatRelative(upload.uploadedAt)}</p>
         <div className="flex items-center justify-between text-xs">

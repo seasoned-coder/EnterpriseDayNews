@@ -48,7 +48,7 @@ describe("TeamSetupPanel", () => {
 
   afterEach(() => {
     document.body.className = "";
-    delete document.body.dataset.slipLayout;
+    delete document.body.dataset.printLayout;
   });
 
   it("previews the numbered team names before creating them", () => {
@@ -95,18 +95,18 @@ describe("TeamSetupPanel", () => {
     expect(within(results).getByText(/already exists/)).toBeInTheDocument();
 
     // Only the created team gets a slip.
-    const printable = screen.getByTestId("printable-slips");
+    const printable = screen.getByTestId("print-area");
     expect(within(printable).getAllByRole("article")).toHaveLength(1);
     expect(within(printable).getByText("team01")).toBeInTheDocument();
 
     fireEvent.click(within(results).getByRole("button", { name: /till printer/i }));
     expect(window.print).toHaveBeenCalled();
-    expect(document.body.dataset.slipLayout).toBe("receipt");
-    expect(document.head.querySelector("style[data-slip-page]")?.textContent).toContain("80mm");
+    expect(document.body.dataset.printLayout).toBe("receipt");
+    expect(document.head.querySelector("style[data-print-page]")?.textContent).toContain("80mm");
 
     window.dispatchEvent(new Event("afterprint"));
-    expect(document.body.classList.contains("printing-slips")).toBe(false);
-    expect(document.head.querySelector("style[data-slip-page]")).toBeNull();
+    expect(document.body.classList.contains("printing")).toBe(false);
+    expect(document.head.querySelector("style[data-print-page]")).toBeNull();
   });
 
   it("hides the passwords when done", async () => {

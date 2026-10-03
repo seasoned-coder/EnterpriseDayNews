@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { api, type ProjectorSettings } from "@/lib/api";
+import { openProjectorWithKey } from "@/lib/results";
 
 type Editable = Omit<ProjectorSettings, "id">;
 
@@ -75,6 +76,26 @@ export const ProjectorSettingsPanel = () => {
 
   return (
     <Card className="max-w-2xl p-6">
+      {/* Opening it from here gives the projector its key, so it records screen time (issue #40). */}
+      <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <p className="text-sm">
+          <span className="font-semibold">Open the projector from here</span> on the computer that runs the big
+          screen. It then records how long each team's adverts are shown, for the <b>Results</b> tab. Once opened
+          this way, that browser keeps recording (even after a refresh) for a week.
+        </p>
+        <Button
+          type="button"
+          className="mt-3"
+          onClick={() =>
+            openProjectorWithKey().catch((e: Error) =>
+              toast({ title: "Couldn't set up recording", description: e.message, variant: "destructive" }),
+            )
+          }
+        >
+          <MonitorPlay className="mr-2 h-4 w-4" /> Open the projector
+        </Button>
+      </div>
+
       <h3 className="flex items-center gap-2 font-display text-lg font-bold">
         <MonitorPlay className="h-5 w-5 text-primary" /> Projector settings
       </h3>

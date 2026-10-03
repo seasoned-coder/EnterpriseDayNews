@@ -151,6 +151,8 @@ Info items can be deleted at any time with **Delete** on their card, and confirm
 
 Open the **Projector** tab on the Advert Dashboard. Changes reach the projector within a minute.
 
+**Open the projector from here.** On the computer that runs the big screen, sign in to the staff app, go to the **Projector** tab and select **Open the projector**. (The **Projector** link at the bottom of staff pages does the same.) Opened this way, the projector records how long each team's adverts are shown, for the [Results](#results-screen-time-and-leaderboard). That browser keeps recording for a week, even if the page is refreshed. A projector opened just by typing its address still plays adverts, but doesn't record anything.
+
 | Setting | What it does | Allowed |
 |---|---|---|
 | **Staff content interval** | Displayed **Event Communications** items slip in between student adverts once this many seconds of adverts have played. `0` = after every advert. | 0 to 3600 seconds |
@@ -158,6 +160,31 @@ Open the **Projector** tab on the Advert Dashboard. Changes reach the projector 
 | **Projector refresh** | How often the projector checks for newly approved, hidden or removed items. | 2 to 60 seconds |
 
 Staff items take turns, so with several displayed, each slot shows the next one.
+
+---
+
+## Results: screen time and leaderboard
+
+Open the **Results** tab to see what each team got for its money:
+
+| Column | Meaning |
+|---|---|
+| **Adverts** | Approved adverts. |
+| **Spent** | Event money spent on approved adverts (rejected ones don't count). |
+| **Shown** | How many times their adverts appeared on the big screen. |
+| **Screen time** | Total time on the big screen. |
+| **Per min** | Event money spent for each minute on screen. **Lower is better value.** |
+
+- **Sort** by **Most screen time**, **Most spent** or **Best value**.
+- A line under the heading says when the projector last recorded a showing. If it says **No showings recorded yet**, open the projector from the Projector tab (see above).
+- Teams see their own totals, and each advert's screen time, on their upload page.
+
+**Printing** (till printer or A4, set up as for [login slips](#setting-up-the-till-printer-epson-tm-t88)):
+
+- **Leaderboard: till** prints every team on one long receipt. **Leaderboard: A4** prints it as a page.
+- **Team receipts** print a "screen time receipt" for each team, with their figures and ranking, to hand out at the end.
+
+Screen time is wiped by **End of Day** along with the adverts. Print the results first!
 
 ---
 
@@ -175,6 +202,7 @@ Three deliberate steps (switch, button, typed words) so it can't happen by accid
 **What it does:**
 
 - Deletes every student advert (new, approved and rejected) and its picture.
+- Deletes the recorded **screen time** (the Results tab starts again from zero). Print the results first.
 - Puts the **projector settings** back to their defaults.
 
 **What it keeps:**

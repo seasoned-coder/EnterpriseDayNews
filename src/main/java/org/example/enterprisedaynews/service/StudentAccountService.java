@@ -3,6 +3,7 @@ package org.example.enterprisedaynews.service;
 import lombok.extern.slf4j.Slf4j;
 import org.example.enterprisedaynews.dto.TeamLogin;
 import org.example.enterprisedaynews.model.StudentAccount;
+import org.example.enterprisedaynews.repository.AdvertPlayRepository;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,12 +38,15 @@ public class StudentAccountService extends AccountService<StudentAccount> {
     static final int MAX_TEAMS_AT_ONCE = 200;
 
     private final ImageRepository imageRepository;
+    private final AdvertPlayRepository playRepository;
     private final FriendlyPasswords friendlyPasswords;
 
     public StudentAccountService(StudentAccountRepository repository, LoginGuard loginGuard,
-                                 ImageRepository imageRepository, FriendlyPasswords friendlyPasswords) {
+                                 ImageRepository imageRepository, AdvertPlayRepository playRepository,
+                                 FriendlyPasswords friendlyPasswords) {
         super(repository, loginGuard, PasswordPolicy.STUDENT_MIN_LENGTH, "student");
         this.imageRepository = imageRepository;
+        this.playRepository = playRepository;
         this.friendlyPasswords = friendlyPasswords;
     }
 
@@ -91,10 +95,14 @@ public class StudentAccountService extends AccountService<StudentAccount> {
         return new StudentAccount();
     }
 
-    /** Uploads are linked by username, so they move with a renamed student (they can still manage them). */
+    /**
+     * Uploads and screen time (#40) are linked by username, so they move with a renamed student (they can
+     * still manage their adverts, and keep their results).
+     */
     @Override
     protected void onRenamed(String oldUsername, String newUsername) {
         imageRepository.renameUploader(oldUsername, newUsername);
+        playRepository.renameTeam(oldUsername, newUsername);
     }
 
     /** Locks any account still using a password published in this repository. Returns how many were locked. */

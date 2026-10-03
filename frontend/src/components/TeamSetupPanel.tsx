@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Loader2, Printer, Users, Wifi } from "lucide-react";
 import { LoginSlip, type SlipLogin } from "@/components/LoginSlip";
-import { PrintableSlips, printSlips } from "@/components/PrintableSlips";
+import { PrintArea, printPages } from "@/components/PrintArea";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -183,10 +183,10 @@ export const TeamSetupPanel = ({ accounts }: { accounts: ApiAccount[] }) => {
                 </table>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button onClick={() => printSlips("receipt")}>
+                <Button onClick={() => printPages("receipt")}>
                   <Printer className="mr-2 h-4 w-4" /> Till printer
                 </Button>
-                <Button variant="outline" onClick={() => printSlips("a4")}>
+                <Button variant="outline" onClick={() => printPages("a4-cards")}>
                   <Printer className="mr-2 h-4 w-4" /> A4 paper
                 </Button>
               </div>
@@ -201,7 +201,11 @@ export const TeamSetupPanel = ({ accounts }: { accounts: ApiAccount[] }) => {
               <Button variant="ghost" size="sm" className="w-full" onClick={() => setResults([])}>
                 Done, hide the passwords
               </Button>
-              <PrintableSlips logins={slips} details={detailsQ.data} address={address} />
+              <PrintArea>
+                {slips.map((login) => (
+                  <LoginSlip key={login.username} login={login} details={detailsQ.data} address={address} />
+                ))}
+              </PrintArea>
             </>
           )}
         </div>
