@@ -89,6 +89,16 @@ class UploadAccessTests {
                 .andExpect(status().isOk());
     }
 
+    /** Issue #36: browsers keep their copy (only theirs) rather than downloading it again over the Wi-Fi. */
+    @Test
+    void imagesCanBeKeptByTheBrowser() throws Exception {
+        ImageMetadata live = storedImage(ApprovalStatus.APPROVED, true, false);
+
+        mockMvc.perform(get(URI.create(uploadUrlSigner.urlFor(live))))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "max-age=3600, private"));
+    }
+
     @Test
     void unapprovedUploadIsNotPublic() throws Exception {
         ImageMetadata pending = storedImage(ApprovalStatus.NEW, false, false);

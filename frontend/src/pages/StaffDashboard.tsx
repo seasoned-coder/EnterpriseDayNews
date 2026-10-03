@@ -133,8 +133,10 @@ const StaffDashboard = () => {
       refreshAll();
       refreshProjector();
     },
-    onError: (e: Error) =>
-      toast({ title: "Approve failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => {
+      toast({ title: "Approve failed", description: e.message, variant: "destructive" });
+      refreshAll(); // usually another member of staff reviewed it first: show where it is now
+    },
   });
 
   const reject = useMutation({
@@ -146,8 +148,10 @@ const StaffDashboard = () => {
       refreshAll();
       refreshProjector();
     },
-    onError: (e: Error) =>
-      toast({ title: "Reject failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => {
+      toast({ title: "Reject failed", description: e.message, variant: "destructive" });
+      refreshAll();
+    },
   });
 
   const toggleDisplay = useMutation({

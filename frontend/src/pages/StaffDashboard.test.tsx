@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   listInfo: vi.fn(),
   delete: vi.fn(),
   toggleDisplay: vi.fn(),
+  approve: vi.fn(),
   projectorSettings: vi.fn(),
   toast: vi.fn(),
 }));
@@ -22,6 +23,7 @@ vi.mock("@/lib/api", () => ({
     listInfo: mocks.listInfo,
     delete: mocks.delete,
     toggleDisplay: mocks.toggleDisplay,
+    approve: mocks.approve,
     projectorSettings: mocks.projectorSettings,
     imageUrl: (item: { filePath: string }) => `/uploads/${item.filePath}`,
   },
@@ -135,6 +137,21 @@ describe("StaffDashboard", () => {
     const footer = await screen.findByRole("navigation", { name: "Other apps" });
     expect(within(footer).getByRole("link", { name: /student portal/i })).toHaveAttribute("href", "/student");
     expect(within(footer).getByRole("link", { name: /projector/i })).toHaveAttribute("target", "_blank");
+  });
+
+  it("explains and refreshes when another member of staff reviewed the advert first", async () => {
+    const pending = makeSubmission({ id: 3, filePath: "b.jpg", uploadedBy: "year10-team2", status: "NEW" });
+    mocks.list.mockImplementation(async (kind: string) => (kind === "new" ? [pending] : []));
+    const message = "This advert has already been approved, probably by another member of staff. The list will refresh.";
+    mocks.approve.mockRejectedValue(new Error(message));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /approve/i }));
+
+    await waitFor(() =>
+      expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Approve failed", description: message })),
+    );
+    await waitFor(() => expect(mocks.list.mock.calls.filter(([kind]) => kind === "new").length).toBeGreaterThan(1));
   });
 
   it("uses friendly empty-state text", async () => {

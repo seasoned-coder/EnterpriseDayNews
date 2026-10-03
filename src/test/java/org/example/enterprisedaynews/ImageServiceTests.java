@@ -268,24 +268,21 @@ class ImageServiceTests {
 
     @Test
     void testGetDisplayImagesFlashOverridesDisplay() {
-        ImageMetadata m1 = new ImageMetadata();
-        m1.setId(1L);
-        m1.setStatus(ApprovalStatus.APPROVED);
-        m1.setDisplay(true);
-        m1.setFlashMode(false);
-
         ImageMetadata m2 = new ImageMetadata();
         m2.setId(2L);
         m2.setStatus(ApprovalStatus.APPROVED);
         m2.setDisplay(false); // Display is FALSE
         m2.setFlashMode(true); // but FLASH is TRUE
 
-        when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
+        when(imageRepository.findByIsFlashModeTrue()).thenReturn(List.of(m2));
 
         List<ImageMetadata> result = imageService.getDisplayImages();
 
         assertEquals(1, result.size());
         assertEquals(2L, result.get(0).getId());
+        // Issue #36: the projector's poll never loads the whole table, and skips the normal list during a flash.
+        verify(imageRepository, never()).findAll();
+        verify(imageRepository, never()).findByStatusAndDisplayOrderByDisplayOrderAsc(any(), anyBoolean());
     }
 
     @Test
@@ -298,7 +295,7 @@ class ImageServiceTests {
         m2.setId(2L);
         m2.setFlashMode(true);
 
-        when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
+        when(imageRepository.findByIsFlashModeTrue()).thenReturn(List.of(m1, m2));
 
         List<ImageMetadata> result = imageService.getDisplayImages();
 
@@ -424,7 +421,8 @@ class ImageServiceTests {
         m2.setFilePath(f2);
         m2.setInfoMessage(true);
 
-        when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
+        // Only student adverts are fetched (ImageQueryTests checks the query really leaves staff items out).
+        when(imageRepository.findByIsInfoMessageOrderByUploadedAtDesc(false)).thenReturn(List.of(m1));
 
         assertEquals(1, imageService.deleteAllAdverts(), "one student advert deleted");
 

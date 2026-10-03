@@ -120,9 +120,8 @@ public class ImageService {
     }
 
     public List<ImageMetadata> getDisplayImages() {
-        List<ImageMetadata> activeFlashes = imageRepository.findAll().stream()
-                .filter(ImageMetadata::isFlashMode)
-                .toList();
+        // The projector asks every few seconds: only fetch the rows it needs, never the whole table.
+        List<ImageMetadata> activeFlashes = imageRepository.findByIsFlashModeTrue();
         if (!activeFlashes.isEmpty()) {
             return activeFlashes;
         }
@@ -284,11 +283,9 @@ public class ImageService {
     @Transactional
     public int deleteAllAdverts() {
         int deleted = 0;
-        for (ImageMetadata metadata : imageRepository.findAll()) {
-            if (!metadata.isInfoMessage()) {
-                deleteImage(metadata);
-                deleted++;
-            }
+        for (ImageMetadata metadata : imageRepository.findByIsInfoMessageOrderByUploadedAtDesc(false)) {
+            deleteImage(metadata);
+            deleted++;
         }
         return deleted;
     }

@@ -51,6 +51,12 @@ public final class ImageStateMachine {
      * {@link ResponseStatusException} otherwise.
      */
     public static void assertCanTransition(ApprovalStatus from, ApprovalStatus to) {
+        if (from != null && from == to) {
+            // Usually two staff reviewing the same advert at once (issue #36): tell the second what happened.
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This advert has already been " + from.name().toLowerCase()
+                            + ", probably by another member of staff. The list will refresh.");
+        }
         if (!canTransition(from, to)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Illegal status transition: " + from + " -> " + to);

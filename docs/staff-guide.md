@@ -62,6 +62,8 @@ Each card shows the uploader, how long ago it was uploaded, and the student's ch
 
 Either way, only approve what you are happy to show to the whole room: approval means the student can put it on screen whenever they like.
 
+**Several staff reviewing at once:** if a colleague approves or rejects an advert just before you do, you'll see "This advert has already been approved (or rejected), probably by another member of staff". Nothing is lost. The lists refresh to show where it is now. If you disagree with their decision, use **Changing your mind** below.
+
 ### Changing your mind
 
 - An **Approved** item can be moved to **Rejected** with **Reject**. It is removed from the projector.

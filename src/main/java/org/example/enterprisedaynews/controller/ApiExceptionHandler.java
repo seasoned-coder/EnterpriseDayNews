@@ -1,5 +1,7 @@
 package org.example.enterprisedaynews.controller;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,4 +23,19 @@ class ApiExceptionHandler {
                 .contentType(MediaType.TEXT_PLAIN)
                 .body(reason);
     }
+
+    /**
+     * Two people saving clashing changes at the same moment, e.g. two staff creating the same username: the
+     * "already exists" check passed for both and the database refused the second (issue #36).
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<String> handle(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(CLASHING_CHANGE);
+    }
+
+    static final String CLASHING_CHANGE =
+            "Someone else just made a change that clashes with this one (for example, took that username). "
+                    + "Refresh and try again.";
 }

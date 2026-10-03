@@ -46,6 +46,8 @@ The event runs on a **private Wi-Fi network with no internet connection**. One m
 
 Plug the server, and ideally the projector computer, into the router with **cables**. That keeps the Wi-Fi free for phones and is more reliable.
 
+**How big an event?** A normal event is 26 teams, a big one 52 (two students per team, each on a phone: up to 104 phones), plus 3 staff and the projector. Load tests show the server handles that with lots to spare: about 600 teams on a laptop before responses slow down (see [`loadtest/README.md`](loadtest/README.md)). The Wi-Fi is the real limit. One consumer access point copes well with around 30–50 busy phones, so for a big event use two or more access points on the same network.
+
 ### Before the event (server briefly online)
 
 Do this a day or more ahead, on the server, while it **is** connected to the internet:
@@ -375,6 +377,10 @@ Tests cover:
 - `StaffLogin.test.tsx`, `BrandNav.test.tsx`: staff sign-in and the top banner.
 
 `axios` or `fetch` is mocked in every test, so no backend is required.
+
+### Load testing (k6)
+
+`loadtest/` simulates a whole event (52 teams' phones, 3 staff and the projector) against the local Docker stack, including an "everyone at once" burst. `loadtest/find-limit.ps1` keeps adding teams until responses get too slow. Instructions and the latest results are in [`loadtest/README.md`](loadtest/README.md). Run it locally only: it creates test accounts and adverts.
 
 ## License
 

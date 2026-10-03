@@ -44,8 +44,18 @@ class ImageStateMachineTests {
     @Test
     void assertCanTransitionThrowsOnIllegal() {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> ImageStateMachine.assertCanTransition(ApprovalStatus.APPROVED, ApprovalStatus.NEW));
+        assertEquals(409, ex.getStatusCode().value());
+    }
+
+    /** Issue #36: two staff approving the same advert at once; the second is told what happened. */
+    @Test
+    void reviewingTwiceExplainsSomeoneElseGotThereFirst() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> ImageStateMachine.assertCanTransition(ApprovalStatus.APPROVED, ApprovalStatus.APPROVED));
         assertEquals(409, ex.getStatusCode().value());
+        assertEquals("This advert has already been approved, probably by another member of staff. The list will refresh.",
+                ex.getReason());
     }
 
     @Test

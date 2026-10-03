@@ -42,6 +42,12 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 ## Local testing
 - `docker compose up --build -d db backend frontend` (always `--build`; skip `caddy`). A fresh database needs the staff bootstrap login in `.env`.
 - Chrome autofill on the login pages can overwrite typed values; set fields directly or use the API to get a token.
+- **Load testing** (`loadtest/`, issue #36): k6 runs in Docker on the compose network (`enterprisedaynews_default`) against `http://frontend`. The default is 52 teams; set `TEAMS=26` for a normal event. `find-limit.ps1` steps the team count up until the targets are missed. It creates `loadteam*`/`loadstaff*` accounts and adverts, so never point it at the event database. Write k6 output to a file (`*> file`): run directly, PowerShell treats k6's stderr lines as errors.
+
+## Concurrency
+- Many phones poll at once, so keep request work small. Add an index (Flyway) for any new list query. Never `findAll()` and filter in Java on a polled path. Don't hold explicit locks.
+- `spring.jpa.open-in-view=false`: anything an endpoint returns must be fully loaded inside the service (there are no lazy relations today; keep it that way or fetch eagerly).
+- Unique-constraint races surface as `DataIntegrityViolationException` → 409 (`ApiExceptionHandler`). Use `saveAndFlush` where the clash must be caught inside the request.
 
 ## Known Issues
 - ESLint has no flat config (`eslint.config.js`), so `npm run lint` doesn't run.

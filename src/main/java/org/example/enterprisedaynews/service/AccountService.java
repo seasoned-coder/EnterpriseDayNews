@@ -89,7 +89,9 @@ public abstract class AccountService<T extends LoginAccount> {
         account.setFailedLoginAttempts(0);
         account.setCreatedAt(now);
         account.setUpdatedAt(now);
-        return repository.save(account);
+        // Flush now so a clash with someone creating the same name at the same moment is reported as a 409
+        // (ApiExceptionHandler), not as a failed commit after this method returns.
+        return repository.saveAndFlush(account);
     }
 
     /** Unlocking also clears any temporary lockout from failed sign-ins. */
@@ -134,7 +136,7 @@ public abstract class AccountService<T extends LoginAccount> {
         }
         account.setUsername(normalized);
         account.setUpdatedAt(LocalDateTime.now());
-        T saved = repository.save(account);
+        T saved = repository.saveAndFlush(account); // a same-moment clash becomes a 409, as in createAccount
         onRenamed(oldUsername, normalized);
         return saved;
     }

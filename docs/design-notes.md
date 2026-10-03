@@ -69,6 +69,21 @@ The repository is **public**, and the users are children, so:
 -   **Errors:** intentional API errors return a plain-text, user-safe message. The frontend never shows raw status codes or HTML error pages.
 -   **Network:** backend and database ports are bound to localhost. nginx resolves the real client IP, only trusting `X-Forwarded-For` from the Docker network, so phones on the event Wi-Fi can't fake the recorded IP. CORS is off unless `APP_CORS_ALLOWED_ORIGINS` is set.
 
+## Many people at once (#36)
+
+Sizing: up to 26 teams normally, 52 at a big event. Each team has two students, each on a phone, sharing the team's account. Add 3 staff and the projector, all refreshing every few seconds for 5 hours.
+
+-   **No locks held.** The code never locks rows or tables explicitly. Every transaction is one short request: read a row, change it, save. Nothing waits on another person.
+-   **Clashes are expected and friendly.**
+    -   **Two staff review the same advert:** the second gets a 409 saying someone else already did, and the dashboard refreshes.
+    -   **Two staff create or rename to the same username at the same moment:** the database's unique constraint refuses one. `ApiExceptionHandler` turns that into a 409 "refresh and try again" instead of a 500.
+-   **Polling stays cheap.**
+    -   Each list is one indexed query (V9: uploader, status/display, flash, info-message, file name). The projector feed no longer loads the whole table.
+    -   `open-in-view` is off, so a database connection is released when the request's work is done, not after the response has trickled out to a slow phone.
+-   **Images are cached.** Upload file names are random and never reused, so `/uploads` responses carry `Cache-Control: private, max-age=3600`. The projector and dashboards don't download the same advert over the Wi-Fi again and again.
+-   **Sign-in is the slowest step, on purpose.** BCrypt is deliberately slow. A burst where every phone signs in at once shows up as a second or two of slower responses, not errors.
+-   **Tested:** `ConcurrencyTests` (backend) runs uploads, reviews and projector reads on many threads at once, plus a same-name account race. The k6 simulation in `loadtest/` runs the whole event; see `loadtest/README.md` for how to run it and the results.
+
 ## Upload rules
 
 10 MB maximum (Spring multipart limit, nginx `client_max_body_size` and the frontend `FILE_SIZE_LIMITS.maxMb` must match). JPEG, PNG, GIF or WebP only. Images under 3 MB get a "may look blurry" warning; under 10 KB are rejected as corrupt.
