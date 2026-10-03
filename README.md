@@ -271,6 +271,10 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/projector/settings`: Update display settings (role: STAFF).
 -   `GET  /uploads/{file}`: An image file. Public only for items on the projector; otherwise use the signed `imageUrl` from the API.
 
+**Errors:** when the API refuses a request on purpose (validation, conflicts, lockouts), the response body is a plain-text message written for users, e.g. `Student account is locked`. The frontend shows it as-is, and otherwise falls back to a plain-English message based on the status code, so users never see raw status codes or HTML error pages.
+
+**Upload limits:** 10 MB per file (`spring.servlet.multipart.max-file-size`, nginx `client_max_body_size`, and `FILE_SIZE_LIMITS.maxMb` in the frontend must all match); JPEG, PNG, GIF or WebP only.
+
 Every image in API responses includes an `imageUrl` field. Always load images from it rather than building a URL from `filePath`.
 
 ### Image access
@@ -311,10 +315,11 @@ This runs Vitest for the new frontend structure. For watch mode use `npm run tes
 For coverage, run `npm run test:coverage`. It prints a summary and writes an HTML report to `frontend/coverage/index.html`. Generated shadcn/ui components (`src/components/ui`) are excluded.
 
 Tests cover:
-- `api.test.ts` — API client logic and header handling.
-- `fileSizeCheck.test.ts` — upload size limits.
-- `useNsfwCheck.test.ts` — the in-browser image scanner.
-- `StudentUpload.test.tsx` — the student upload page.
+- `api.test.ts`: API client logic, header handling, signed image URLs and user-facing error messages.
+- `fileSizeCheck.test.ts`: upload size limits (kept equal to the server's 10 MB) and allowed file types.
+- `useNsfwCheck.test.ts`: the in-browser image scanner.
+- `StudentLogin.test.tsx`, `StudentUpload.test.tsx`: the student sign-in and upload pages.
+- `StaffLogin.test.tsx`, `BrandNav.test.tsx`: staff sign-in and the top banner.
 
 `axios` or `fetch` is mocked in every test, so no backend is required.
 

@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, type DragEvent, type ChangeEvent } from 
 import { Upload, ImageIcon, X, ShieldCheck, Loader2, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type NsfwScanStatus } from "@/hooks/useNsfwCheck";
+import { ACCEPTED_FILE_TYPES, FILE_SIZE_LIMITS } from "@/lib/fileSizeCheck";
 
 interface UploadDropzoneProps {
   file: File | null;
@@ -62,7 +63,7 @@ export const UploadDropzone = ({ file, onFileChange, scanStatus = "idle" }: Uplo
         type="file"
         className="hidden"
         onChange={onChange}
-        accept="image/*,video/*,.pdf"
+        accept={ACCEPTED_FILE_TYPES}
       />
 
       {preview ? (
@@ -90,11 +91,12 @@ export const UploadDropzone = ({ file, onFileChange, scanStatus = "idle" }: Uplo
             <Upload className="h-7 w-7 text-white" />
           </div>
           <p className="font-display text-2xl font-bold text-student-ink">
-            Drop your story here
+            Drop your advert here
           </p>
           <p className="mt-1.5 text-sm text-student-muted">
-            or <span className="text-neon-2 underline-offset-4 group-hover:underline">click to browse for your advert image</span> ·
+            or <span className="text-neon-2 underline-offset-4 group-hover:underline">tap to choose your advert image</span>
           </p>
+          <p className="mt-1 text-xs text-student-muted">JPEG, PNG, GIF or WebP · up to {FILE_SIZE_LIMITS.maxMb} MB</p>
         </>
       )}
 

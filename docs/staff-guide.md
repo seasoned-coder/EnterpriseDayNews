@@ -178,7 +178,7 @@ The list refreshes every 15 seconds.
 1. In **Add a student account**, enter a **Username** and **Password**.
 2. Select **Add student account**.
 
-The account can be used straight away. Give the student the username and password. On the sign-in page they type the username in **Your Name** and the password in **Event Code**.
+The account can be used straight away. Give the student the username and password. They type them into the **Username** and **Password** boxes on the student sign-in page.
 
 **Username rules:** letters, numbers, dots, dashes and underscores only. Usernames are stored in lower case and must be unique.
 

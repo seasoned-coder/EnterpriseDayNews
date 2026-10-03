@@ -17,8 +17,8 @@ Your teacher will give you a **username** and a **password**. Keep them to yours
 
 1. Open the address you've been given.
 2. Tap **Student Portal**.
-3. In the **Your Name** box, type the username your teacher gave you.
-4. In the **Event Code** box, type the password your teacher gave you.
+3. In the **Username** box, type the username your teacher gave you.
+4. In the **Password** box, type the password your teacher gave you.
 5. Tap **Enter Portal**.
 
 If it works, you will see **Welcome back!** and the upload page opens.
@@ -26,7 +26,7 @@ If it works, you will see **Welcome back!** and the upload page opens.
 **Good to know:**
 
 - Your username does not care about capital letters. Your password does. Type it exactly.
-- If you see **Login failed**, check your spelling and try again.
+- If you see **Login failed**, read the message under it. Usually it means a spelling mistake, so try again.
 
 ### If you get the password wrong 5 times
 
@@ -45,14 +45,14 @@ You stay signed in for about an hour. After that, the site sends you back to the
 
 ## 2. Uploading your advert
 
-1. Tap the big box that says **Drop your story here**. (On a computer you can also drag your picture into it.)
+1. Tap the big box that says **Drop your advert here**. (On a computer you can also drag your picture into it.)
 2. Choose your picture.
 3. Wait while the page checks your picture. It shows **Checking image…**. The first check can take a little while.
 4. When you see **Looks good**, you are ready.
 5. Choose your **Priority** and **Duration** (see below).
 6. Tap **Send it**.
 
-When it works you will see **Sent it** and "Your story is in the queue."
+When it works you will see **Sent it** and a message saying your advert is waiting for a teacher to approve it.
 
 To pick a different picture before sending, tap the **X** on the preview.
 
@@ -66,12 +66,12 @@ To pick a different picture before sending, tap the **X** on the preview.
 
 | Rule | What happens |
 |---|---|
-| Picture types: JPEG, PNG, GIF or WebP | Other files (like videos or PDFs) will not upload. |
-| Bigger than 10 MB | It will not upload. Save a smaller copy and try again. |
+| Picture types: JPEG, PNG, GIF or WebP | Other files (like videos or PDFs) can't be chosen. If you drag one in, you'll see **That file type can't be used**. |
+| Bigger than 10 MB | You'll see **File too large**. Save a smaller copy and try again. |
 | Smaller than 3 MB | You get a warning: **Image may look blurry**. You can still send it. |
 | Smaller than 10 KB | Blocked. The file is probably broken. |
 
-**Note:** The tip on the upload page says 5 MB to 15 MB is best. But right now, anything over 10 MB will fail. Aim for **5 MB to 10 MB**.
+Aim for **3 MB to 10 MB**.
 
 ### The image checker
 
@@ -99,12 +99,12 @@ Each upload shows a label:
 
 | Label | What it means |
 |---|---|
-| **NEW** | Waiting for an adult to check it. |
-| **APPROVED** | An adult said yes. |
-| **REJECTED** | An adult said no. Ask a member of staff if you are not sure why. |
+| **Waiting for approval** | Waiting for an adult to check it. |
+| **Approved** | An adult said yes. |
+| **Not approved** | An adult said no. Ask a member of staff if you are not sure why. |
 | **On Projector** | It is in the mix on the big screen right now. |
 
-An upload can be **APPROVED** but not **On Projector**. That means staff have hidden it for now.
+An upload can be **Approved** but not **On Projector**. That means staff have hidden it for now.
 
 You can also see the priority, duration and cost you chose.
 
@@ -128,7 +128,7 @@ These tips come from the guidance on the upload page.
 - **Go big and sharp.** A 4K picture (3840 × 2160 pixels) looks crisp on the big screen.
 - **Use landscape (wide) pictures.** The big screen is wide. It fills the whole screen with your picture, so tall pictures get cut off at the top and bottom.
 - **Keep important words away from the edges.** The edges may be cut off, and the picture slowly zooms.
-- **Save as a high-quality JPEG.** Aim for 5 MB to 10 MB.
+- **Save as a high-quality JPEG.** Aim for 3 MB to 10 MB.
 - **Ask first.** By uploading, you confirm everyone in the photo is happy to be featured.
 
 ---

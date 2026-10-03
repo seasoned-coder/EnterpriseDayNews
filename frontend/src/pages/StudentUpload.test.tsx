@@ -31,7 +31,13 @@ vi.mock("@/components/BrandNav", () => ({
 }));
 
 vi.mock("@/components/UploadDropzone", () => ({
-  UploadDropzone: () => <div data-testid="upload-dropzone" />,
+  UploadDropzone: ({ onFileChange }: { onFileChange: (f: File | null) => void }) => (
+    <input
+      data-testid="upload-dropzone"
+      type="file"
+      onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+    />
+  ),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -77,6 +83,66 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+function pick(file: File) {
+  fireEvent.change(screen.getByTestId("upload-dropzone"), { target: { files: [file] } });
+}
+
+const MB = 1024 * 1024;
+
+describe("StudentUpload wording and checks", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getCurrentUser.mockReturnValue({ username: "student1", role: "STUDENT" });
+    mocks.studentGetMyUploads.mockResolvedValue([
+      sampleUpload,
+      { ...sampleUpload, id: 102, status: "NEW", display: false },
+      { ...sampleUpload, id: 103, status: "REJECTED", display: false },
+    ]);
+    mocks.imageUrl.mockImplementation((item: { filePath: string }) => `/uploads/${item.filePath}`);
+    mocks.formatRelative.mockReturnValue("just now");
+  });
+
+  it("shows friendly status labels instead of NEW / APPROVED / REJECTED", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Waiting for approval")).toBeInTheDocument();
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("Not approved")).toBeInTheDocument();
+    expect(screen.queryByText(/^(NEW|APPROVED|REJECTED)$/)).not.toBeInTheDocument();
+  });
+
+  it("talks about adverts and the real 10 MB limit", () => {
+    renderPage();
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/advert/i);
+    expect(document.body.textContent).not.toMatch(/story|stories|15 MB|25 MB/i);
+    expect(document.body.textContent).toMatch(/3 MB and 10 MB/);
+  });
+
+  it("rejects file types the server won't accept", () => {
+    renderPage();
+
+    pick(new File([new ArrayBuffer(4 * MB)], "clip.mp4", { type: "video/mp4" }));
+
+    expect(mocks.toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "That file type can't be used", variant: "destructive" }),
+    );
+  });
+
+  it("blocks pictures over 10 MB with a clear message", () => {
+    renderPage();
+
+    pick(new File([new ArrayBuffer(12 * MB)], "huge.jpg", { type: "image/jpeg" }));
+
+    expect(mocks.toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "File too large",
+        description: "That picture is over 10 MB. Please save a smaller copy and try again.",
+      }),
+    );
+  });
+});
 
 describe("StudentUpload delete flow", () => {
   beforeEach(() => {

@@ -17,8 +17,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
-import { checkFileSize } from "@/lib/fileSizeCheck";
+import { checkFileSize, FILE_SIZE_LIMITS, isAllowedImageType } from "@/lib/fileSizeCheck";
 import { useNsfwCheck } from "@/hooks/useNsfwCheck";
+
+/** What students see for each review status (the API's NEW/APPROVED/REJECTED mean little to them). */
+const STATUS_LABELS: Record<ApiSubmission["status"], string> = {
+  NEW: "Waiting for approval",
+  APPROVED: "Approved",
+  REJECTED: "Not approved",
+};
 
 const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
 const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
@@ -40,13 +47,23 @@ const StudentUpload = () => {
       return;
     }
 
-    // ── Size checks ────────────────────────────────────────────────────────
+    // ── Type and size checks ───────────────────────────────────────────────
+    if (!isAllowedImageType(f)) {
+      toast({
+        title: "That file type can't be used",
+        description: "Please choose a JPEG, PNG, GIF or WebP picture.",
+        variant: "destructive",
+      });
+      setFile(null);
+      resetScan();
+      return;
+    }
+
     const sizeResult = checkFileSize(f);
     if (sizeResult === "too-large") {
       toast({
         title: "File too large",
-        description:
-          "That file is over 25 MB and would take too long to upload. Please export it at a lower file size and try again.",
+        description: `That picture is over ${FILE_SIZE_LIMITS.maxMb} MB. Please save a smaller copy and try again.`,
         variant: "destructive",
       });
       setFile(null);
@@ -70,8 +87,7 @@ const StudentUpload = () => {
         // Soft warning: small but potentially valid image
         toast({
           title: "Image may look blurry",
-          description:
-            "This image is under 3 MB — it might not display very well on the big screen. A high-quality JPEG between 5 MB and 15 MB will look much sharper.",
+          description: `This picture is under ${FILE_SIZE_LIMITS.warnBelowMb} MB, so it might look blurry on the big screen. A high-quality JPEG between ${FILE_SIZE_LIMITS.warnBelowMb} MB and ${FILE_SIZE_LIMITS.maxMb} MB will look much sharper. You can still send this one.`,
         });
         // Non-blocking: they can still submit if they want
       }
@@ -92,7 +108,7 @@ const StudentUpload = () => {
   };
 
   useEffect(() => {
-    document.title = "Submit your story · BT Enterprise Day News";
+    document.title = "Submit your advert · BT Enterprise Day News";
   }, []);
 
   const myUploadsQ = useQuery({
@@ -111,7 +127,7 @@ const StudentUpload = () => {
     onSuccess: () => {
       toast({
         title: "Sent it ✨",
-        description: `Thanks ${name}! Your story is in the queue.`,
+        description: `Thanks ${name}! Your advert is waiting for a teacher to approve it.`,
       });
       setFile(null);
       setPriority(1);
@@ -175,7 +191,7 @@ const StudentUpload = () => {
 
             <h1 className="font-display text-5xl font-extrabold leading-[0.95] sm:text-7xl">
               Drop your <br />
-              <span className="text-gradient-neon">story.</span>
+              <span className="text-gradient-neon">advert.</span>
             </h1>
             <p className="mt-4 max-w-md text-base text-student-muted sm:text-lg">
               Snap it, upload it, and your moment lands on the big screen for the whole school to see.
@@ -183,7 +199,7 @@ const StudentUpload = () => {
 
             {/* Upload guidance */}
             <div className="mt-6 w-full rounded-2xl border border-student-border bg-white/[0.03] px-4 py-4 text-sm text-student-muted leading-relaxed sm:px-5">
-              We recommend using a <span className="text-student-ink font-medium">4K resolution (3840 × 2160 px)</span> to keep your pictures crisp and sharp. For the best balance of quality and speed, save your images as <span className="text-student-ink font-medium">high-quality JPEGs</span> with a file size between <span className="text-student-ink font-medium">5 MB and 15 MB</span>. This ensures the image looks great without slowing down the system or taking too long to upload.
+              We recommend using a <span className="text-student-ink font-medium">4K resolution (3840 × 2160 px)</span> to keep your pictures crisp and sharp. For the best balance of quality and speed, save your images as <span className="text-student-ink font-medium">high-quality JPEGs</span> with a file size between <span className="text-student-ink font-medium">{FILE_SIZE_LIMITS.warnBelowMb} MB and {FILE_SIZE_LIMITS.maxMb} MB</span>. Pictures over {FILE_SIZE_LIMITS.maxMb} MB can't be uploaded.
             </div>
           </div>
 
@@ -224,7 +240,7 @@ const StudentUpload = () => {
                 onChange={(e) => setDurationSeconds(parseInt(e.target.value))}
                 className="w-full accent-neon-2"
               />
-              <p className="text-xs text-student-muted">How long your story appears on screen</p>
+              <p className="text-xs text-student-muted">How long your advert appears on screen</p>
             </div>
 
             {/* Total Cost */}
@@ -296,7 +312,7 @@ const StudentUpload = () => {
                                 : "bg-yellow-500/20 text-yellow-400"
                             }
                           >
-                            {upload.status}
+                            {STATUS_LABELS[upload.status]}
                           </Badge>
                           {upload.display && (
                             <Badge className="bg-blue-500/20 text-blue-400">On Projector</Badge>

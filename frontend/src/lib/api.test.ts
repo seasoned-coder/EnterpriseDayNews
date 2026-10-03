@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 describe("api.studentDeleteMyUpload", () => {
   afterEach(() => {
@@ -39,6 +39,64 @@ describe("api.imageUrl", () => {
   });
 });
 
+describe("API error messages", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function errorFor(response: Response): Promise<ApiError> {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
+    try {
+      await api.login("someone", "STUDENT", "pw");
+    } catch (e) {
+      return e as ApiError;
+    }
+    throw new Error("expected the request to fail");
+  }
+
+  it("shows the server's own message without any technical prefix", async () => {
+    const err = await errorFor(
+      new Response("Too many failed attempts. This account is temporarily locked for 15 minutes.", {
+        status: 423,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    );
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.message).toBe("Too many failed attempts. This account is temporarily locked for 15 minutes.");
+    expect(err.message).not.toMatch(/Request failed|\[\d+\]/);
+    expect(err.status).toBe(423);
+  });
+
+  it("explains the size limit when nginx rejects a large upload", async () => {
+    const err = await errorFor(new Response("<html><body>413 Request Entity Too Large</body></html>", { status: 413 }));
+    expect(err.message).toBe("That file is too big to upload. The limit is 10 MB.");
+  });
+
+  it("never shows HTML error pages", async () => {
+    const err = await errorFor(new Response("<html><body>502 Bad Gateway</body></html>", { status: 502 }));
+    expect(err.message).toBe("Something went wrong on our side. Please try again in a moment.");
+  });
+
+  it("uses a JSON body's message when there is one", async () => {
+    const err = await errorFor(new Response(JSON.stringify({ status: 409, message: "Already exists" }), { status: 409 }));
+    expect(err.message).toBe("Already exists");
+  });
+
+  it("falls back to a plain message for Spring's default error body", async () => {
+    const err = await errorFor(
+      new Response(JSON.stringify({ timestamp: "x", status: 404, error: "Not Found", path: "/api/x" }), { status: 404 }),
+    );
+    expect(err.message).toBe("That item couldn't be found. It may have been deleted.");
+  });
+
+  it("falls back for empty and overly long bodies", async () => {
+    expect((await errorFor(new Response("", { status: 400 }))).message).toBe("Something went wrong. Please try again.");
+    expect((await errorFor(new Response("x".repeat(500), { status: 403 }))).message).toBe(
+      "You don't have permission to do that.",
+    );
+  });
+});
+
 describe("api.login", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -56,7 +114,7 @@ describe("api.login", () => {
     );
 
     await expect(api.login("student", "STUDENT", "wrongpass")).rejects.toThrow(
-      "Request failed [401]: Invalid username or password",
+      /^Invalid username or password$/,
     );
 
     expect(window.location.pathname).toBe("/student/login");
@@ -81,9 +139,7 @@ describe("api.createStudentAccount", () => {
       new Response("Forbidden", { status: 403, statusText: "Forbidden" }),
     );
 
-    await expect(api.createStudentAccount("year10", "fred", "staff1")).rejects.toThrow(
-      "Request failed [403]: Forbidden",
-    );
+    await expect(api.createStudentAccount("year10", "fred", "staff1")).rejects.toThrow(/^Forbidden$/);
 
     expect(window.location.pathname).toBe("/staff/students");
     expect(localStorage.getItem("token")).toBe("staff-token");

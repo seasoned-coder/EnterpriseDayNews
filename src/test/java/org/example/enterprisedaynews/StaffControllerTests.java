@@ -292,6 +292,22 @@ class StaffControllerTests {
     }
 
     @Test
+    void testErrorReasonIsSentAsPlainText() throws Exception {
+        // The UI shows this text as-is, so it must not be lost in Spring's default error body.
+        when(studentAccountService.createAccount(eq("taken"), any()))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.CONFLICT, "A student account with that username already exists"));
+
+        mockMvc.perform(post("/api/staff/students")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"taken\",\"password\":\"Sunrise7\"}")
+                .header("Authorization", staffToken))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("A student account with that username already exists"));
+    }
+
+    @Test
     void testLockStudentAccount() throws Exception {
         when(studentAccountService.setLocked(eq(4L), eq(true)))
                 .thenReturn(sampleStudentAccount(4L, "guest", true));

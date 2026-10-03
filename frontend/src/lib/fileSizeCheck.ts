@@ -1,19 +1,34 @@
 const MB = 1024 * 1024;
 
+/**
+ * Upload rules. `maxMb` must match the server limits (spring.servlet.multipart.max-file-size and
+ * nginx client_max_body_size), otherwise files pass here and fail on upload.
+ */
 export const FILE_SIZE_LIMITS = {
   minImageKb: 10,      // Absolute minimum (blocks corrupted/tiny files)
   warnBelowMb: 3,      // Soft warning threshold
-  maxMb: 25,
+  maxMb: 10,
 } as const;
 
+/** Image types the server accepts (ImageService.ALLOWED_CONTENT_TYPES). */
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+
+/** Value for a file input's `accept` attribute. */
+export const ACCEPTED_FILE_TYPES = ALLOWED_IMAGE_TYPES.join(",");
+
 export type SizeCheckResult = "too-small" | "too-large" | "ok";
+
+/** True if the server will accept this file type (pickers can be bypassed by drag-and-drop). */
+export function isAllowedImageType(file: File): boolean {
+  return (ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type.toLowerCase());
+}
 
 /**
  * Checks whether a file meets the size requirements for upload.
  *
  * - < 10 KB     → "too-small"   (images only — blocked as corrupted/invalid)
  * - < 3 MB      → "too-small"   (images only — warning, non-blocking)
- * - > 25 MB     → "too-large"   (blocked)
+ * - > 10 MB     → "too-large"   (blocked)
  * - otherwise   → "ok"
  */
 export function checkFileSize(file: File): SizeCheckResult {
@@ -30,4 +45,3 @@ export function checkFileSize(file: File): SizeCheckResult {
     return "too-small";
   return "ok";
 }
-

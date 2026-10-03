@@ -32,7 +32,7 @@ Along the bottom you'll see **Enterprise Day · Live** and the username of whoev
 | Screen | Meaning |
 |---|---|
 | **Loading the feed…** | The page is fetching items. This should only last a moment. |
-| **Waiting for approved stories…** | Nothing is currently approved and set to display. |
+| **Waiting for approved adverts…** | Nothing is currently approved and set to display. |
 | Text with **Urgent Announcement** | An urgent FLASH message from staff (see below). |
 
 ---
@@ -77,7 +77,7 @@ If the rotation seems stuck on one item, check it hasn't been paused. Press **Sp
 
 ## Troubleshooting
 
-**"Waiting for approved stories…" or a blank rotation**
+**"Waiting for approved adverts…" or a blank rotation**
 
 1. On the Advert Dashboard, open the **Approved** tab.
 2. Check items are set to display. The button should read **Hide**. If it reads **Display**, the item is hidden, so select **Display**.

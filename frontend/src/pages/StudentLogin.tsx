@@ -55,7 +55,7 @@ const StudentLogin = () => {
               <span className="text-gradient-neon">yourself.</span>
             </h1>
             <p className="mt-4 max-w-md text-base text-student-muted sm:text-lg">
-              Enter your name to start sharing your stories with the whole school.
+              Sign in with the username and password your teacher gave you to share your adverts with the whole school.
             </p>
 
             <form onSubmit={handleLogin} className="mt-10 space-y-4">
@@ -66,13 +66,17 @@ const StudentLogin = () => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder=" "
                   autoFocus
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className="peer h-16 w-full rounded-2xl border border-student-border bg-white/[0.04] px-5 pt-5 text-lg text-student-ink placeholder-transparent outline-none ring-0 transition focus:border-neon-2 focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_hsl(var(--neon-2)/0.15)]"
                 />
                 <label
                   htmlFor="student-name"
                   className="pointer-events-none absolute left-5 top-2 text-xs font-medium uppercase tracking-wider text-student-muted transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-base peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-xs peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-neon-2"
                 >
-                  Your Name
+                  Username
                 </label>
               </div>
 
@@ -83,13 +87,14 @@ const StudentLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder=" "
+                  autoComplete="current-password"
                   className="peer h-16 w-full rounded-2xl border border-student-border bg-white/[0.04] px-5 pt-5 text-lg text-student-ink placeholder-transparent outline-none ring-0 transition focus:border-neon-2 focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_hsl(var(--neon-2)/0.15)]"
                 />
                 <label
                   htmlFor="student-password"
                   className="pointer-events-none absolute left-5 top-2 text-xs font-medium uppercase tracking-wider text-student-muted transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-base peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-xs peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-neon-2"
                 >
-                  Event Code
+                  Password
                 </label>
               </div>
 

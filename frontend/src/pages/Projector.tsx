@@ -147,7 +147,7 @@ const Projector = () => {
     return (
       <div className="grid min-h-screen place-items-center bg-gradient-projector text-white">
         <div className="text-center">
-          <p className="font-display text-4xl font-bold">Waiting for approved stories…</p>
+          <p className="font-display text-4xl font-bold">Waiting for approved adverts…</p>
           <p className="mt-3 text-white/60">
             Submissions will appear here once staff approve them.
           </p>

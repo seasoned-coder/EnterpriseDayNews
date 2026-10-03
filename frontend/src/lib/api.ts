@@ -2,7 +2,9 @@
 // In development with Vite, requests to /api and /uploads are proxied to the backend.
 // For other environments, override the base URL by setting VITE_API_BASE_URL (e.g. in .env.local).
 
-const RAW_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+import { FILE_SIZE_LIMITS } from "@/lib/fileSizeCheck";
+
+const RAW_BASE =(import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 export const UPLOADS_BASE = `${API_BASE}/uploads`;
 
@@ -65,6 +67,40 @@ const headers = () => {
   };
 };
 
+/** An API failure. `message` is safe to show to users (including students); `status` is the HTTP status. */
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+/**
+ * The message to show for a failed response. The backend sends its own explanation as plain text
+ * (e.g. "Student account is locked"); anything else (HTML error pages, stack traces, empty bodies)
+ * is replaced with a plain-English message based on the status.
+ */
+async function friendlyErrorMessage(res: Response): Promise<string> {
+  if (res.status === 413) {
+    return `That file is too big to upload. The limit is ${FILE_SIZE_LIMITS.maxMb} MB.`;
+  }
+  const text = (await res.text().catch(() => "")).trim();
+  let message = "";
+  if (text) {
+    try {
+      const json = JSON.parse(text);
+      if (typeof json?.message === "string") message = json.message.trim();
+    } catch {
+      if (!text.startsWith("<")) message = text;
+    }
+  }
+  if (message && message.length <= 300) return message;
+  if (res.status >= 500) return "Something went wrong on our side. Please try again in a moment.";
+  if (res.status === 403) return "You don't have permission to do that.";
+  if (res.status === 404) return "That item couldn't be found. It may have been deleted.";
+  return "Something went wrong. Please try again.";
+}
+
 async function handle<T>(res: Response, options: HandleOptions = {}): Promise<T> {
   const { redirectOnAuthFailure = true } = options;
 
@@ -74,8 +110,7 @@ async function handle<T>(res: Response, options: HandleOptions = {}): Promise<T>
     window.location.href = "/";
   }
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Request failed [${res.status}]: ${text || res.statusText}`);
+    throw new ApiError(await friendlyErrorMessage(res), res.status);
   }
   // Some endpoints return no body
   const ct = res.headers.get("content-type") ?? "";
