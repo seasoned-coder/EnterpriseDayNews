@@ -74,6 +74,9 @@
 @layer base {
   * { @apply border-border; }
   html, body, #root { height: 100%; }
+  /* Always reserve the scrollbar's space, so centred content (like the top banner) doesn't jump
+     sideways when moving between a short page and a long one. */
+  html { scrollbar-gutter: stable; }
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
