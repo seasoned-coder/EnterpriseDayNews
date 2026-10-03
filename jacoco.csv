@@ -24,7 +24,7 @@ enterprise-day-news,org.example.enterprisedaynews.dto,AccountView,7,72,4,4,0,14,
 enterprise-day-news,org.example.enterprisedaynews.live,LiveUpdatesController,0,4,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.live,LiveTopic.Changed,0,6,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.live,LiveTopic,0,35,0,0,0,8,0,3,0,3
-enterprise-day-news,org.example.enterprisedaynews.live,LiveUpdates,36,172,0,6,6,39,3,13,3,10
+enterprise-day-news,org.example.enterprisedaynews.live,LiveUpdates,45,163,0,6,9,36,4,12,4,9
 enterprise-day-news,org.example.enterprisedaynews.repository,TeamPlayTotals,0,12,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.repository,AdvertPlayTotals,0,12,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.repository,TeamSpend,0,12,0,0,0,1,0,1,0,1
