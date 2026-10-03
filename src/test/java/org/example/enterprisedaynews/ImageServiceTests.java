@@ -100,6 +100,19 @@ class ImageServiceTests {
         ImageMetadata saved = imageService.uploadImage(file, "rushco", 4, 30, true);
 
         assertEquals(2 * (20 + 15), saved.getTotalCost());
+        assertEquals(200, saved.getPricePercent()); // so the card can say "×2" (issue #47)
+    }
+
+    @Test
+    void uploadAtNormalPricesRecordsNormalPrices() throws IOException {
+        when(imageRepository.save(any(ImageMetadata.class))).thenAnswer(i -> i.getArguments()[0]);
+        MockMultipartFile file = new MockMultipartFile("file", "advert.png", "image/png", new byte[]{1, 2, 3});
+
+        ImageMetadata saved = imageService.uploadImage(file, "normalco", 1, 10, true);
+
+        assertEquals(10, saved.getTotalCost());
+        assertEquals(100, saved.getPricePercent());
+        assertEquals(100, new ImageMetadata().getPricePercent()); // older adverts: normal prices
     }
 
     @Test

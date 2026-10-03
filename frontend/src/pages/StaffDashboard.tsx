@@ -4,6 +4,7 @@ import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { RejectDialog } from "@/components/RejectDialog";
 import { pollEvery, useLiveRefresh } from "@/lib/liveUpdates";
+import { priceNote } from "@/lib/priceWobble";
 import { SubmissionCard } from "@/components/SubmissionCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -511,6 +512,14 @@ const StaffDashboard = () => {
                    <DialogDescription>
                      {active.originalFileName} · {formatRelative(active.uploadedAt)}
                    </DialogDescription>
+                   {!active.isInfoMessage && (
+                     <p className="mt-1 text-sm">
+                       Priority {active.priority} · {active.durationSeconds}s ·{" "}
+                       <span className="font-semibold">Price {active.totalCost}</span>
+                       {priceNote(active.pricePercent) && ` (${priceNote(active.pricePercent)})`}
+                       <span className="text-muted-foreground"> · charged when uploaded</span>
+                     </p>
+                   )}
                  </div>
 
                  {active.status === "NEW" && (

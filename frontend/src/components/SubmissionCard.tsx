@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { priceNote } from "@/lib/priceWobble";
 
 interface SubmissionCardProps {
   submission: ApiSubmission;
@@ -117,9 +118,19 @@ export const SubmissionCard = ({
               <Badge variant="secondary" className="text-xs">
                 ⏱️ {submission.durationSeconds}s
               </Badge>
-              <Badge variant="secondary" className="text-xs">
-                💰 {submission.totalCost}
-              </Badge>
+              {/* What the team was charged when they uploaded it, to take from their bank later (issue #47). */}
+              {!submission.isInfoMessage && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs"
+                  title="Price the team was charged when they uploaded it (event money). It doesn't change if prices change later."
+                >
+                  💰 Price {submission.totalCost}
+                  {priceNote(submission.pricePercent) && (
+                    <span className="ml-1 font-normal">· {priceNote(submission.pricePercent)}</span>
+                  )}
+                </Badge>
+              )}
             </div>
             {submission.status === "REJECTED" && submission.rejectionReason && (
               <p className="mt-2 text-xs text-muted-foreground">

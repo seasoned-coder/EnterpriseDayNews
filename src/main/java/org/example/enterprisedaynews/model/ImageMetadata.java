@@ -50,7 +50,12 @@ public class ImageMetadata {
 
     private int priority;           // 1-4, configurable cost
     private int durationSeconds;    // 10, 20, or 30 seconds
-    private int totalCost;          // cost = priorityCost + durationCost
+    private int totalCost;          // cost = priorityCost + durationCost, at the prices when uploaded (locked in)
+
+    /** Prices when it was uploaded, as a percentage of normal (a price wobble, #41/#47); 100 = normal. */
+    @Builder.Default
+    @Column(nullable = false)
+    private int pricePercent = 100;
 
     private boolean isInfoMessage;
     private boolean isFlashMode;

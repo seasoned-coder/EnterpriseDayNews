@@ -105,6 +105,29 @@ describe("StaffDashboard", () => {
     expect(within(dialog).getByRole("img")).toHaveAttribute("src", "/uploads/a.jpg");
   });
 
+  it("shows the price the team was charged at upload, and if it was a sale (issue #47)", async () => {
+    const sale = makeSubmission({ id: 9, filePath: "s.jpg", uploadedBy: "sale-team", status: "NEW", totalCost: 18, pricePercent: 50 });
+    mocks.list.mockImplementation(async (kind: string) => (kind === "new" ? [sale] : []));
+    renderPage();
+
+    const price = await screen.findByText(/Price 18/);
+    expect(price).toHaveTextContent("💰 Price 18· half price");
+    expect(price).toHaveAttribute("title", expect.stringContaining("when they uploaded it"));
+
+    fireEvent.click(screen.getByAltText("Submission by sale-team"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/charged when uploaded/)).toBeInTheDocument();
+    expect(within(dialog).getByText("Price 18")).toBeInTheDocument();
+  });
+
+  it("doesn't show a price on staff items", async () => {
+    renderPage();
+    await openTab(/event communications/i);
+
+    await screen.findAllByText(/Fire drill at 11/);
+    expect(screen.queryByText(/Price \d/)).not.toBeInTheDocument();
+  });
+
   it("previews a text message as text, not a broken image", async () => {
     renderPage();
     await openTab(/event communications/i);

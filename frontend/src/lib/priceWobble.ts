@@ -10,6 +10,18 @@ export function wobbleHeadline(percent: number): string {
   return `Prices up ${percent - 100}%!`;
 }
 
+/**
+ * A short note on the prices an advert was uploaded at (issue #47): "half price", "25% off", "×2",
+ * "up 50%", or null at normal prices.
+ */
+export function priceNote(percent: number | undefined): string | null {
+  if (!percent || percent === 100) return null;
+  if (percent === 50) return "half price";
+  if (percent < 100) return `${100 - percent}% off`;
+  if (percent % 100 === 0) return `×${percent / 100}`;
+  return `up ${percent - 100}%`;
+}
+
 /** "until 12:45" for a time today, or nothing when there's no end time. */
 export function untilText(endsAt: string | null): string {
   if (!endsAt) return "";

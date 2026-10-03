@@ -80,6 +80,14 @@ describe("StudentUploadCard", () => {
     expect(screen.getByText("Shown 3 times · 1 min 30 s on screen")).toBeInTheDocument();
   });
 
+  it("shows the price they paid when they sent it, and if it was a sale (issue #47)", () => {
+    render(
+      <StudentUploadCard upload={upload({ totalCost: 18, pricePercent: 50 })} busy={false} onSetPublished={vi.fn()} onDelete={vi.fn()} />,
+    );
+
+    expect(screen.getByText(/Price paid:/)).toHaveTextContent("Price paid: 18 (half price)");
+  });
+
   it("says an approved advert hasn't been shown yet", () => {
     render(<StudentUploadCard upload={upload({ status: "APPROVED" })} busy={false} onSetPublished={vi.fn()} onDelete={vi.fn()} />);
 

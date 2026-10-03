@@ -38,7 +38,10 @@ export interface ApiSubmission {
   displayOrder: number;
   priority: number;
   durationSeconds: number;
+  /** What the team was charged, at the prices when it was uploaded (locked in; issue #47). */
   totalCost: number;
+  /** Those prices as a percentage of normal (a price wobble); 100 = normal. Missing on older data. */
+  pricePercent?: number;
   isInfoMessage: boolean;
   isFlashMode: boolean;
   messageText: string | null;

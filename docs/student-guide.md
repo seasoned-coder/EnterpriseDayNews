@@ -138,7 +138,7 @@ Each upload shows a label:
 | **On screen** | It is in the mix on the big screen right now. |
 | **Not approved** | An adult said no. Usually there's a **Teacher's note** saying why. Fix it and upload a new version. If there's no note, ask a member of staff. |
 
-You can also see the priority, duration and cost you chose.
+You can also see the priority and duration you chose, and the **price paid**: what you were charged when you sent it (with "half price" or similar if there was a sale). It never changes after you send it.
 
 **Teacher's notes** are there to help, for example "The text is too small to read on the big screen". Make the change, upload the new version, and delete the old one if you like.
 

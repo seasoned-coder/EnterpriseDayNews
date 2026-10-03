@@ -56,7 +56,8 @@ public class ImageService {
         validateFile(file);
         // Checked before anything is written: only choices on the price list are accepted. The price, including
         // any price wobble in force now (#41), is locked in here.
-        int totalCost = PriceList.totalCost(priority, durationSeconds, priceWobbleService.currentPercent());
+        int pricePercent = priceWobbleService.currentPercent();
+        int totalCost = PriceList.totalCost(priority, durationSeconds, pricePercent);
 
         // The name comes from the user's browser: never let it choose where the file goes.
         String originalName = UploadFileNames.displayName(file.getOriginalFilename());
@@ -85,6 +86,7 @@ public class ImageService {
                 .priority(priority)
                 .durationSeconds(durationSeconds)
                 .totalCost(totalCost)
+                .pricePercent(pricePercent)
                 .build();
 
         ImageMetadata saved = changed(imageRepository.save(metadata));

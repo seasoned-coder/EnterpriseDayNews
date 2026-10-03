@@ -2,6 +2,7 @@ import { EyeOff, Loader2, MessageCircle, MonitorUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { priceNote } from "@/lib/priceWobble";
 import { formatPlays, formatScreenTime } from "@/lib/results";
 
 interface Publishing {
@@ -138,8 +139,11 @@ export const StudentUploadCard = ({ upload, screenTime, busy, onSetPublished, on
           <span>
             Duration: <span className="font-semibold text-neon-2">{upload.durationSeconds}s</span>
           </span>
-          <span>
-            Cost: <span className="font-semibold text-neon-2">{upload.totalCost}</span>
+          <span title="What you were charged when you sent it. It doesn't change if prices change later.">
+            Price paid: <span className="font-semibold text-neon-2">{upload.totalCost}</span>
+            {priceNote(upload.pricePercent) && (
+              <span className="text-student-muted"> ({priceNote(upload.pricePercent)})</span>
+            )}
           </span>
         </div>
       </div>

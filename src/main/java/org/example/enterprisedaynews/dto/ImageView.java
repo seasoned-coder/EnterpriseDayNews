@@ -29,7 +29,10 @@ public record ImageView(
         int displayOrder,
         int priority,
         int durationSeconds,
+        /** What the team was charged, at the prices when it was uploaded (locked in; issue #47). */
         int totalCost,
+        /** Those prices as a percentage of normal (a price wobble); 100 = normal. */
+        int pricePercent,
         boolean isInfoMessage,
         boolean isFlashMode,
         String messageText
@@ -53,6 +56,7 @@ public record ImageView(
                 m.getPriority(),
                 m.getDurationSeconds(),
                 m.getTotalCost(),
+                m.getPricePercent(),
                 m.isInfoMessage(),
                 m.isFlashMode(),
                 m.getMessageText()

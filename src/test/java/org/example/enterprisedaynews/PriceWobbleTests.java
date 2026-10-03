@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -130,6 +132,25 @@ class PriceWobbleTests {
                 .andExpect(jsonPath("$.priority[3].cost").value(10));
         mockMvc.perform(get("/api/staff/prices?percent=1000").header("Authorization", staff))
                 .andExpect(status().isBadRequest());
+    }
+
+    /** Issue #47: the card shows what the team was charged at upload, and at what prices, even after they change. */
+    @Test
+    void anAdvertKeepsThePriceItWasUploadedAt() throws Exception {
+        priceWobbleService.set(new PriceWobbleRequest(50, "Sale", null, null));
+        MockMultipartFile file = new MockMultipartFile("file", "advert.png", "image/png", new byte[]{1, 2, 3});
+        mockMvc.perform(multipart("/api/student/upload").file(file)
+                        .param("priority", "4").param("durationSeconds", "30")
+                        .header("Authorization", student))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCost").value(10 + 8))
+                .andExpect(jsonPath("$.pricePercent").value(50));
+
+        priceWobbleService.stop(); // prices go back to normal...
+
+        mockMvc.perform(get("/api/student/uploads").header("Authorization", student))
+                .andExpect(jsonPath("$[0].totalCost").value(18)) // ...but the advert keeps its price
+                .andExpect(jsonPath("$[0].pricePercent").value(50));
     }
 
     @Test

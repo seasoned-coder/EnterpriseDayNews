@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { todayAt, untilText, wobbleHeadline } from "@/lib/priceWobble";
+import { priceNote, todayAt, untilText, wobbleHeadline } from "@/lib/priceWobble";
 
 describe("priceWobble (issue #41)", () => {
   it.each([
@@ -12,6 +12,18 @@ describe("priceWobble (issue #41)", () => {
     [300, "Prices tripled!"],
   ])("%i%% → %s", (percent, text) => {
     expect(wobbleHeadline(percent)).toBe(text);
+  });
+
+  it.each([
+    [undefined, null],
+    [100, null],
+    [50, "half price"],
+    [75, "25% off"],
+    [200, "×2"],
+    [300, "×3"],
+    [150, "up 50%"],
+  ])("notes the prices an advert was uploaded at: %s%% → %s (issue #47)", (percent, note) => {
+    expect(priceNote(percent)).toBe(note);
   });
 
   it("says until when", () => {
