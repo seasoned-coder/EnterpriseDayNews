@@ -79,6 +79,14 @@ describe("EventResetPanel (issue #34)", () => {
     );
     expect(screen.getByRole("switch", { name: /reset the event/i })).not.toBeChecked();
     expect(screen.getByRole("button", { name: "Clear Down" })).toBeDisabled();
+
+    // A little animated explosion, until the switch is used again.
+    const done = screen.getByRole("status");
+    expect(done.querySelector("pre[data-frame]")).not.toBeNull();
+    expect(done).toHaveTextContent("Event reset complete");
+    expect(done).toHaveTextContent("3 adverts deleted");
+    fireEvent.click(screen.getByRole("switch", { name: /reset the event/i }));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("cancelling the final question changes nothing", async () => {

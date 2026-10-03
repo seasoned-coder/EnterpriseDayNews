@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarX, Check, Loader2, X } from "lucide-react";
+import { AsciiExplosion } from "@/components/AsciiExplosion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +12,7 @@ import { api } from "@/lib/api";
 
 /** Typed in the final step, so a reset never happens by accident. */
 const CONFIRM_PHRASE = "clear down";
+
 
 const WILL = [
   "Delete every student advert (new, approved and rejected) and its picture",
@@ -27,6 +29,8 @@ export const EventResetPanel = () => {
   const [armed, setArmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState("");
+  /** How many adverts the last reset deleted; shows the explosion until the switch is used again. */
+  const [lastReset, setLastReset] = useState<number | null>(null);
 
   const openConfirm = () => {
     setTyped("");
@@ -42,6 +46,7 @@ export const EventResetPanel = () => {
       });
       setConfirming(false);
       setArmed(false);
+      setLastReset(deletedAdverts);
       queryClient.invalidateQueries();
     },
     onError: (error: Error) => toast({ title: "Reset failed", description: error.message, variant: "destructive" }),
@@ -86,13 +91,30 @@ export const EventResetPanel = () => {
 
       <div className="mt-6 flex flex-col gap-4 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
         <label htmlFor="arm-reset" className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
-          <Switch id="arm-reset" checked={armed} onCheckedChange={setArmed} />
+          <Switch
+            id="arm-reset"
+            checked={armed}
+            onCheckedChange={(on) => {
+              setArmed(on);
+              if (on) setLastReset(null);
+            }}
+          />
           ARE YOU SURE? Yes, I want to reset the event
         </label>
         <Button variant="destructive" disabled={!armed || reset.isPending} onClick={openConfirm}>
           Clear Down
         </Button>
       </div>
+
+      {lastReset !== null && (
+        <div role="status" className="mt-6 rounded-xl border border-destructive/30 bg-foreground p-4 text-center text-background">
+          <AsciiExplosion className="inline-block text-left font-mono text-[11px] leading-tight text-orange-300 sm:text-xs" />
+          <p className="mt-2 font-display text-lg font-bold">Event reset complete</p>
+          <p className="text-sm opacity-80">
+            {lastReset} advert{lastReset === 1 ? "" : "s"} deleted · projector settings back to defaults
+          </p>
+        </div>
+      )}
 
       <Dialog open={confirming} onOpenChange={(open) => !open && setConfirming(false)}>
         <DialogContent>
