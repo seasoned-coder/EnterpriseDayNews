@@ -39,20 +39,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Tokens only count while their account still exists and isn't locked, so locking or
                 // deleting an account takes effect immediately rather than when the token expires.
-<span class="fc bfc" id="L42" title="All 2 branches covered.">                boolean activeAccount = Roles.STUDENT.equals(role)</span>
-<span class="fc" id="L43">                        ? studentAccountService.findActiveAccount(username).isPresent()</span>
-<span class="pc bpc" id="L44" title="1 of 4 branches missed.">                        : Roles.STAFF.equals(role) &amp;&amp; staffAccountService.findActiveAccount(username).isPresent();</span>
+                // A projector key counts while the staff member who issued it is active (issue #40).
+<span class="pc bpc" id="L43" title="2 of 5 branches missed.">                boolean activeAccount = switch (role == null ? &quot;&quot; : role) {</span>
+<span class="fc" id="L44">                    case Roles.STUDENT -&gt; studentAccountService.findActiveAccount(username).isPresent();</span>
+<span class="fc" id="L45">                    case Roles.STAFF, Roles.PROJECTOR -&gt; staffAccountService.findActiveAccount(username).isPresent();</span>
+<span class="nc" id="L46">                    default -&gt; false;</span>
+                };
 
-<span class="pc bpc" id="L46" title="1 of 4 branches missed.">                if (username != null &amp;&amp; activeAccount) {</span>
-<span class="fc" id="L47">                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);</span>
-<span class="fc" id="L48">                    UsernamePasswordAuthenticationToken auth =</span>
-<span class="fc" id="L49">                            new UsernamePasswordAuthenticationToken(username, null, List.of(authority));</span>
-<span class="fc" id="L50">                    SecurityContextHolder.getContext().setAuthentication(auth);</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">                if (username != null &amp;&amp; activeAccount) {</span>
+<span class="fc" id="L50">                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);</span>
+<span class="fc" id="L51">                    UsernamePasswordAuthenticationToken auth =</span>
+<span class="fc" id="L52">                            new UsernamePasswordAuthenticationToken(username, null, List.of(authority));</span>
+<span class="fc" id="L53">                    SecurityContextHolder.getContext().setAuthentication(auth);</span>
                 }
             }
         }
 
-<span class="fc" id="L55">        filterChain.doFilter(request, response);</span>
-<span class="fc" id="L56">    }</span>
+<span class="fc" id="L58">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L59">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

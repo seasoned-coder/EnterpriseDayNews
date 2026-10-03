@@ -48,14 +48,16 @@ public class SecurityConfig {
 <span class="fc" id="L48">                .requestMatchers(&quot;/api/staff/**&quot;).hasRole(Roles.STAFF)</span>
                 // The projector only reads; changing its settings is a staff action.
 <span class="fc" id="L50">                .requestMatchers(HttpMethod.GET, &quot;/api/projector/**&quot;).permitAll()</span>
-<span class="fc" id="L51">                .requestMatchers(&quot;/api/projector/**&quot;).hasRole(Roles.STAFF)</span>
+                // Only a projector opened from the staff app (with its key) records plays (issue #40).
+<span class="fc" id="L52">                .requestMatchers(HttpMethod.POST, &quot;/api/projector/plays&quot;).hasRole(Roles.PROJECTOR)</span>
+<span class="fc" id="L53">                .requestMatchers(&quot;/api/projector/**&quot;).hasRole(Roles.STAFF)</span>
                 // Access to individual files is decided by UploadAccessInterceptor (public or signed link).
-<span class="fc" id="L53">                .requestMatchers(HttpMethod.GET, &quot;/uploads/**&quot;).permitAll()</span>
+<span class="fc" id="L55">                .requestMatchers(HttpMethod.GET, &quot;/uploads/**&quot;).permitAll()</span>
                 // Let error responses (e.g. the 404 for a hidden upload) through as-is instead of turning into 403.
-<span class="fc" id="L55">                .requestMatchers(&quot;/error&quot;).permitAll()</span>
-<span class="fc" id="L56">                .anyRequest().authenticated()</span>
+<span class="fc" id="L57">                .requestMatchers(&quot;/error&quot;).permitAll()</span>
+<span class="fc" id="L58">                .anyRequest().authenticated()</span>
         );
-<span class="fc" id="L58">        return http.build();</span>
+<span class="fc" id="L60">        return http.build();</span>
     }
 
     /**
@@ -65,16 +67,16 @@ public class SecurityConfig {
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-<span class="fc" id="L68">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
-<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (!allowedOrigins.isEmpty()) {</span>
-<span class="fc" id="L70">            CorsConfiguration configuration = new CorsConfiguration();</span>
-<span class="fc" id="L71">            configuration.setAllowedOrigins(allowedOrigins);</span>
-<span class="fc" id="L72">            configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
-<span class="fc" id="L73">            configuration.setAllowedHeaders(List.of(&quot;Authorization&quot;, &quot;Content-Type&quot;));</span>
-<span class="fc" id="L74">            configuration.setAllowCredentials(false);</span>
-<span class="fc" id="L75">            source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
+<span class="fc" id="L70">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (!allowedOrigins.isEmpty()) {</span>
+<span class="fc" id="L72">            CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L73">            configuration.setAllowedOrigins(allowedOrigins);</span>
+<span class="fc" id="L74">            configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L75">            configuration.setAllowedHeaders(List.of(&quot;Authorization&quot;, &quot;Content-Type&quot;));</span>
+<span class="fc" id="L76">            configuration.setAllowCredentials(false);</span>
+<span class="fc" id="L77">            source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
         }
-<span class="fc" id="L77">        return source;</span>
+<span class="fc" id="L79">        return source;</span>
     }
 
 }
