@@ -3,6 +3,7 @@
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.PriceList;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,28 +27,34 @@ public class StudentController {
                                             @RequestParam(value = &quot;durationSeconds&quot;, defaultValue = &quot;10&quot;) int durationSeconds,
                                             @RequestParam(value = &quot;publishOnApproval&quot;, defaultValue = &quot;true&quot;) boolean publishOnApproval,
                                             Principal principal) throws IOException {
-<span class="fc" id="L29">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L30">        return ResponseEntity.ok(imageViews.of(</span>
-<span class="fc" id="L31">                imageService.uploadImage(file, username, priority, durationSeconds, publishOnApproval)));</span>
+<span class="fc" id="L30">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L31">        return ResponseEntity.ok(imageViews.of(</span>
+<span class="fc" id="L32">                imageService.uploadImage(file, username, priority, durationSeconds, publishOnApproval)));</span>
+    }
+
+    /** The priority and duration choices and what each costs (issue #35). */
+    @GetMapping(&quot;/prices&quot;)
+    public PriceList.Prices prices() {
+<span class="fc" id="L38">        return PriceList.prices();</span>
     }
 
     /** Publish (put on screen) or withdraw one of your own adverts; see ImageService#setPublishedByStudent. */
     @PostMapping(&quot;/uploads/{id}/publish&quot;)
     public ImageView setPublished(@PathVariable Long id, @RequestParam boolean published, Principal principal) {
-<span class="fc" id="L37">        return imageViews.of(imageService.setPublishedByStudent(id, ControllerSupport.usernameOf(principal), published));</span>
+<span class="fc" id="L44">        return imageViews.of(imageService.setPublishedByStudent(id, ControllerSupport.usernameOf(principal), published));</span>
     }
 
     @GetMapping(&quot;/uploads&quot;)
     public ResponseEntity&lt;List&lt;ImageView&gt;&gt; getMyUploads(Principal principal) {
-<span class="fc" id="L42">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L43">        return ResponseEntity.ok(imageViews.of(imageService.getUserUploads(username)));</span>
+<span class="fc" id="L49">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L50">        return ResponseEntity.ok(imageViews.of(imageService.getUserUploads(username)));</span>
     }
 
     @DeleteMapping(&quot;/uploads/{id}&quot;)
     public ResponseEntity&lt;Void&gt; deleteMyUpload(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L48">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L49">        imageService.deleteStudentImage(id, username);</span>
-<span class="fc" id="L50">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L55">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L56">        imageService.deleteStudentImage(id, username);</span>
+<span class="fc" id="L57">        return ResponseEntity.noContent().build();</span>
     }
 }
 
