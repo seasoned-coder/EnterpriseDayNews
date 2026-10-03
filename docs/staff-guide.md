@@ -51,7 +51,7 @@ Each tab shows a count. Use **Search by student name…** to filter the current 
 
 **Everything updates by itself, straight away:** new uploads appear as soon as students send them, and you see colleagues' approvals and rejections without refreshing.
 
-Each card shows the uploader, how long ago it was uploaded, and the student's chosen priority (P1–P4), duration (10/20/30s) and total cost. Click a card to open a larger preview with the same actions.
+Each card shows the uploader, how long ago it was uploaded, the chosen priority (P1–P4) and duration (10/20/30s), and the **price** the team was charged (e.g. **💰 Price 18 · half price**). That's the price **when they uploaded it**: it doesn't change if prices change later (see [Prices](#prices-price-wobble)), so it's the amount to take from the team's bank. Click a card to open a larger preview with the same actions and details.
 
 ### Reviewing new uploads
 
