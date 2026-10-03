@@ -28,6 +28,7 @@ vi.mock("@/lib/api", () => ({
     reject: mocks.reject,
     projectorSettings: mocks.projectorSettings,
     imageUrl: (item: { filePath: string }) => `/uploads/${item.filePath}`,
+    thumbnailUrl: (item: { filePath: string }) => `/uploads/thumbs/${item.filePath}.jpg`,
   },
   formatRelative: () => "just now",
 }));
@@ -91,6 +92,17 @@ describe("StaffDashboard", () => {
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /yes, delete permanently/i }));
     await waitFor(() => expect(mocks.delete).toHaveBeenCalledWith(7, "head.teacher"));
+  });
+
+  it("shows small previews on the cards but the full picture when opened (issue #42)", async () => {
+    renderPage();
+    await openTab(/approved/i);
+
+    const card = await screen.findByAltText("Submission by year10-team1");
+    expect(card).toHaveAttribute("src", "/uploads/thumbs/a.jpg.jpg");
+    fireEvent.click(card);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("img")).toHaveAttribute("src", "/uploads/a.jpg");
   });
 
   it("previews a text message as text, not a broken image", async () => {

@@ -22,6 +22,8 @@ export interface ApiSubmission {
   filePath: string;
   /** Server-provided image URL (signed when the item isn't public); null for text-only messages. */
   imageUrl?: string | null;
+  /** Small preview for cards and lists (issue #42), same access as imageUrl; null until made. */
+  thumbnailUrl?: string | null;
   originalFileName: string;
   uploadedBy: string;
   uploadedAt: string;
@@ -298,6 +300,14 @@ export const api = {
   imageUrl(item: Pick<ApiSubmission, "imageUrl" | "filePath">) {
     if (item.imageUrl) return `${API_BASE}${item.imageUrl}`;
     return `${UPLOADS_BASE}/${encodeURIComponent(item.filePath)}`;
+  },
+
+  /**
+   * A small preview for cards and lists (issue #42): about 50 KB instead of several MB over the event Wi-Fi.
+   * Falls back to the full image until the server has made the preview.
+   */
+  thumbnailUrl(item: Pick<ApiSubmission, "imageUrl" | "filePath" | "thumbnailUrl">) {
+    return item.thumbnailUrl ? `${API_BASE}${item.thumbnailUrl}` : api.imageUrl(item);
   },
 
   studentUpload(

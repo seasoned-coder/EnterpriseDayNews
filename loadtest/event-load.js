@@ -133,9 +133,10 @@ export function student() {
       if (check(res, { "publish/withdraw ok": (r) => r.status === 200 })) publishes.add(1);
     }
   } else if (roll < 0.2 && mine.status === 200 && mine.json().length > 0) {
-    // Look at one of their own adverts (signed link).
+    // Look at one of their own adverts' cards (signed link; the small preview once made, #42).
     const list = mine.json();
-    const url = list[Math.floor(Math.random() * list.length)].imageUrl;
+    const advert = list[Math.floor(Math.random() * list.length)];
+    const url = advert.thumbnailUrl || advert.imageUrl;
     if (url) http.get(`${BASE}${url}`, { tags: { kind: "image" } });
   }
   sleep(8 + Math.random() * 4); // the page refreshes every ~10s
@@ -152,7 +153,11 @@ export function staff() {
   http.get(`${BASE}/api/staff/info`, { headers, tags: { kind: "poll" } });
 
   if (fresh.status === 200) {
-    // Review a few new uploads: open the preview, then approve (mostly) or reject.
+    // The New tab's cards load small previews (#42)...
+    for (const advert of fresh.json()) {
+      if (advert.thumbnailUrl) http.get(`${BASE}${advert.thumbnailUrl}`, { tags: { kind: "image" } });
+    }
+    // ...then review a few: open the full picture, then approve (mostly) or reject.
     for (const advert of fresh.json().slice(0, 3)) {
       if (advert.imageUrl) http.get(`${BASE}${advert.imageUrl}`, { tags: { kind: "image" } });
       const verb = Math.random() < 0.9 ? "approve" : "reject";

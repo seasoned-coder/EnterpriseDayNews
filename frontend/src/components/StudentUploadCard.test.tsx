@@ -5,7 +5,10 @@ import { publishingState, StudentUploadCard } from "@/components/StudentUploadCa
 import { makeSubmission } from "@/test/fixtures";
 
 vi.mock("@/lib/api", () => ({
-  api: { imageUrl: (item: { filePath: string }) => `/uploads/${item.filePath}` },
+  api: {
+    imageUrl: (item: { filePath: string }) => `/uploads/${item.filePath}`,
+    thumbnailUrl: (item: { filePath: string; thumbnailUrl?: string | null }) => item.thumbnailUrl ?? `/uploads/${item.filePath}`,
+  },
   formatRelative: () => "just now",
 }));
 

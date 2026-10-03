@@ -1,6 +1,7 @@
 package org.example.enterprisedaynews.security;
 
 import org.example.enterprisedaynews.model.ImageMetadata;
+import org.example.enterprisedaynews.service.ThumbnailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
@@ -23,6 +24,7 @@ import java.util.Base64;
 public class UploadUrlSigner {
 
     static final String UPLOADS_PREFIX = "/uploads/";
+    static final String THUMBS_PREFIX = ThumbnailService.FOLDER + "/";
 
     /** Links stay identical for a whole hour so polling dashboards don't re-download every image. */
     private static final long WINDOW_SECONDS = 3600;
@@ -49,11 +51,35 @@ public class UploadUrlSigner {
 
     /** URL for an image, signed unless the image is public. {@code null} for items without a file. */
     public String urlFor(ImageMetadata image) {
+        return signedUrl(image, "", "");
+    }
+
+    /**
+     * URL for an image's small preview (issue #42): {@code /uploads/thumbs/<file>.jpg}, with the same
+     * signature as the picture itself, so it has exactly the same access rules.
+     */
+    public String thumbnailUrlFor(ImageMetadata image) {
+        return signedUrl(image, THUMBS_PREFIX, ThumbnailService.SUFFIX);
+    }
+
+    /**
+     * The picture a requested upload path belongs to: itself, or for a preview ({@code thumbs/<file>.jpg}) the
+     * picture it was made from. Access is always decided by the picture.
+     */
+    public static String pictureFileFor(String requestedName) {
+        if (requestedName.startsWith(THUMBS_PREFIX) && requestedName.endsWith(ThumbnailService.SUFFIX)) {
+            return requestedName.substring(THUMBS_PREFIX.length(),
+                    requestedName.length() - ThumbnailService.SUFFIX.length());
+        }
+        return requestedName;
+    }
+
+    private String signedUrl(ImageMetadata image, String prefix, String suffix) {
         String fileName = image.getFilePath();
         if (fileName == null || fileName.isBlank()) {
             return null;
         }
-        String path = UPLOADS_PREFIX + UriUtils.encodePathSegment(fileName, StandardCharsets.UTF_8);
+        String path = UPLOADS_PREFIX + prefix + UriUtils.encodePathSegment(fileName + suffix, StandardCharsets.UTF_8);
         if (isPubliclyVisible(image)) {
             return path;
         }

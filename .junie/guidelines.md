@@ -57,6 +57,7 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - Check a print layout without a printer: puppeteer `page.pdf({ preferCSSPageSize: true })` after triggering the print set-up with `window.print` stubbed (see `tools/screenshots`).
 
 ## Concurrency
+- Show `api.thumbnailUrl(item)` (small preview, #42) on cards and lists; keep `api.imageUrl(item)` for the large preview and the projector.
 - Many phones poll at once, so keep request work small. Add an index (Flyway) for any new list query. Never `findAll()` and filter in Java on a polled path. Don't hold explicit locks.
 - `spring.jpa.open-in-view=false`: anything an endpoint returns must be fully loaded inside the service (there are no lazy relations today; keep it that way or fetch eagerly).
 - Unique-constraint races surface as `DataIntegrityViolationException` → 409 (`ApiExceptionHandler`). Use `saveAndFlush` where the clash must be caught inside the request.

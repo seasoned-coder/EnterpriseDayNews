@@ -7,6 +7,7 @@ import org.example.enterprisedaynews.service.ImageNotFoundException;
 import org.example.enterprisedaynews.service.ImageService;
 import org.example.enterprisedaynews.service.PriceList;
 import org.example.enterprisedaynews.service.PriceWobbleService;
+import org.example.enterprisedaynews.service.ThumbnailService;
 import org.example.enterprisedaynews.service.UploadFileNames;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class ImageServiceTests {
     @Mock
     private PriceWobbleService priceWobbleService;
 
+    @Mock
+    private ThumbnailService thumbnailService;
+
     @InjectMocks
     private ImageService imageService;
 
@@ -49,6 +53,21 @@ class ImageServiceTests {
     void setUp() {
         ReflectionTestUtils.setField(imageService, "uploadDir", tempDir.toAbsolutePath().toString());
         lenient().when(priceWobbleService.currentPercent()).thenReturn(PriceList.FULL_PRICE); // normal prices
+    }
+
+    /** Issue #42: each upload gets a small preview (made in the background), deleted with the picture. */
+    @Test
+    void uploadQueuesAPreviewAndDeletingRemovesIt() throws IOException {
+        when(imageRepository.save(any(ImageMetadata.class))).thenAnswer(i -> i.getArguments()[0]);
+        MockMultipartFile file = new MockMultipartFile("file", "advert.png", "image/png", new byte[]{1, 2, 3});
+
+        ImageMetadata saved = imageService.uploadImage(file, "previewco", 1, 10, true);
+        verify(thumbnailService).createLater(saved.getFilePath());
+
+        saved.setId(77L);
+        when(imageRepository.findById(77L)).thenReturn(Optional.of(saved));
+        imageService.deleteImage(77L);
+        verify(thumbnailService).delete(saved.getFilePath());
     }
 
     /** Issue #41: an upload during a price wobble pays the wobbled price, locked in for good. */

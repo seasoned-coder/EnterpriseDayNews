@@ -369,6 +369,7 @@ Every image in API responses includes an `imageUrl` field. Always load images fr
 -   **Public:** items the projector shows (approved and set to display, or in FLASH).
 -   **Everything else** (awaiting review, hidden, rejected) is only served through a **signed link**. The API includes it in `imageUrl` for staff, and for the student who uploaded the item. Links are signed with a key derived from `APP_JWT_SECRET` and stay the same for an hour (so polling dashboards don't re-download images), then expire after 1–2 hours.
 -   Requests without a valid link, and files with no database record, get a 404.
+-   **Small previews** (#42): each upload also gets a ~480 px JPEG preview, roughly 30 times smaller (e.g. 2 MB → 60 KB). It's made in the background, and on startup for older uploads. Previews are at `/uploads/thumbs/<file>.jpg` with the same rules and signature as their picture, and are given as `thumbnailUrl` (null until made). Cards and lists use it; the large preview and the projector use the full picture. JPEG, PNG, GIF and WebP (via the TwelveMonkeys ImageIO plugin) are supported; anything else just uses the full picture.
 
 ### Network exposure
 

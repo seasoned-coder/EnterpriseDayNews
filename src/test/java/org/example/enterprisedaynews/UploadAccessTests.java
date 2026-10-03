@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -157,6 +158,55 @@ class UploadAccessTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == " + pending.getId() + ")].imageUrl")
                         .value(contains(matchesPattern("/uploads/.+\\?exp=\\d+&sig=[\\w-]+"))));
+    }
+
+    /** A preview made for this picture (issue #42), as ThumbnailService would. */
+    private Path previewOf(ImageMetadata image) throws IOException {
+        Path thumb = Paths.get(uploadDir).resolve("thumbs").resolve(image.getFilePath() + ".jpg");
+        Files.createDirectories(thumb.getParent());
+        Files.write(thumb, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x01});
+        thumb.toFile().deleteOnExit();
+        return thumb;
+    }
+
+    @Test
+    void previewsFollowTheirPicturesAccessRules() throws Exception {
+        ImageMetadata live = storedImage(ApprovalStatus.APPROVED, true, false);
+        ImageMetadata pending = storedImage(ApprovalStatus.NEW, false, false);
+        Path livePreview = previewOf(live);
+        Path pendingPreview = previewOf(pending);
+        try {
+            // Public picture: public preview.
+            mockMvc.perform(get(URI.create(uploadUrlSigner.thumbnailUrlFor(live))))
+                    .andExpect(status().isOk());
+            assertThat(uploadUrlSigner.thumbnailUrlFor(live)).isEqualTo("/uploads/thumbs/" + live.getFilePath().replace(" ", "%20") + ".jpg");
+            // Private picture: the preview needs the picture's signed link too.
+            mockMvc.perform(get("/uploads/thumbs/{file}", pending.getFilePath() + ".jpg"))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(get(URI.create(uploadUrlSigner.thumbnailUrlFor(pending))))
+                    .andExpect(status().isOk());
+        } finally {
+            Files.deleteIfExists(livePreview);
+            Files.deleteIfExists(pendingPreview);
+        }
+    }
+
+    @Test
+    void listingsOfferThePreviewOnceItExists() throws Exception {
+        ImageMetadata pending = storedImage(ApprovalStatus.NEW, false, false);
+        String staffToken = TestAccounts.staffBearer(context, "staff.member");
+        String path = "$[?(@.id == " + pending.getId() + ")].thumbnailUrl";
+
+        mockMvc.perform(get("/api/staff/new").header("Authorization", staffToken))
+                .andExpect(jsonPath(path).value(contains((Object) null)));
+
+        Path preview = previewOf(pending);
+        try {
+            mockMvc.perform(get("/api/staff/new").header("Authorization", staffToken))
+                    .andExpect(jsonPath(path).value(contains(matchesPattern("/uploads/thumbs/.+\\.jpg\\?exp=\\d+&sig=[\\w-]+"))));
+        } finally {
+            Files.deleteIfExists(preview);
+        }
     }
 
     @Test

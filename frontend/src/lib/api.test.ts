@@ -114,6 +114,24 @@ describe("api.imageUrl", () => {
   });
 });
 
+describe("api.thumbnailUrl (issue #42)", () => {
+  it("uses the small preview when there is one", () => {
+    expect(
+      api.thumbnailUrl({
+        filePath: "abc.jpg",
+        imageUrl: "/uploads/abc.jpg?exp=1&sig=x",
+        thumbnailUrl: "/uploads/thumbs/abc.jpg.jpg?exp=1&sig=x",
+      }),
+    ).toBe("/uploads/thumbs/abc.jpg.jpg?exp=1&sig=x");
+  });
+
+  it("falls back to the full image until the preview has been made", () => {
+    expect(api.thumbnailUrl({ filePath: "abc.jpg", imageUrl: "/uploads/abc.jpg?exp=1&sig=x", thumbnailUrl: null })).toBe(
+      "/uploads/abc.jpg?exp=1&sig=x",
+    );
+  });
+});
+
 describe("API error messages", () => {
   afterEach(() => {
     vi.restoreAllMocks();

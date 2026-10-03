@@ -13,6 +13,8 @@ public record ImageView(
         String filePath,
         /** URL to load the image from; signed when the image isn't public. Null for text-only messages. */
         String imageUrl,
+        /** A small preview for cards and lists (issue #42), same access rules; null until it has been made. */
+        String thumbnailUrl,
         String originalFileName,
         String uploadedBy,
         OffsetDateTime uploadedAt,
@@ -32,11 +34,12 @@ public record ImageView(
         boolean isFlashMode,
         String messageText
 ) {
-    public static ImageView from(ImageMetadata m, String imageUrl) {
+    public static ImageView from(ImageMetadata m, String imageUrl, String thumbnailUrl) {
         return new ImageView(
                 m.getId(),
                 m.getFilePath(),
                 imageUrl,
+                thumbnailUrl,
                 m.getOriginalFileName(),
                 m.getUploadedBy(),
                 withServerOffset(m.getUploadedAt()),

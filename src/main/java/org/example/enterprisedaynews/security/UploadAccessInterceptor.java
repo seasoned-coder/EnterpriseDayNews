@@ -31,7 +31,9 @@ public class UploadAccessInterceptor implements HandlerInterceptor {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return false;
         }
-        String fileName = UriUtils.decode(path.substring(UploadUrlSigner.UPLOADS_PREFIX.length()), StandardCharsets.UTF_8);
+        // A preview (thumbs/<file>.jpg, issue #42) is allowed exactly when its picture is.
+        String fileName = UploadUrlSigner.pictureFileFor(
+                UriUtils.decode(path.substring(UploadUrlSigner.UPLOADS_PREFIX.length()), StandardCharsets.UTF_8));
 
         Optional<ImageMetadata> image = imageRepository.findFirstByFilePath(fileName);
         if (image.isEmpty()) {

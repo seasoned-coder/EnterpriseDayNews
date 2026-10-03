@@ -89,7 +89,7 @@ export const StudentUploadCard = ({ upload, screenTime, busy, onSetPublished, on
           Delete
         </Button>
       </div>
-      <img src={api.imageUrl(upload)} alt={upload.originalFileName} className="mb-3 aspect-video w-full rounded-lg object-cover" />
+      <img src={api.thumbnailUrl(upload)} alt={upload.originalFileName} className="mb-3 aspect-video w-full rounded-lg object-cover" />
       <div className="space-y-2">
         <Badge className={state.badgeClass}>{state.label}</Badge>
         {upload.status === "REJECTED" && upload.rejectionReason && (

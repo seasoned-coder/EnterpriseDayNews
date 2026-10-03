@@ -55,6 +55,7 @@ vi.mock("@/lib/api", () => ({
       adverts: [{ imageId: 101, plays: 4, seconds: 80 }],
     }),
     imageUrl: mocks.imageUrl,
+    thumbnailUrl: mocks.imageUrl,
   },
   formatRelative: mocks.formatRelative,
 }));

@@ -36,6 +36,7 @@ public class ImageService {
 
     private final ImageRepository imageRepository;
     private final PriceWobbleService priceWobbleService;
+    private final ThumbnailService thumbnailService;
 
     @Value("${app.upload-dir:./uploads}")
     private String uploadDir;
@@ -83,7 +84,9 @@ public class ImageService {
                 .totalCost(totalCost)
                 .build();
 
-        return imageRepository.save(metadata);
+        ImageMetadata saved = imageRepository.save(metadata);
+        thumbnailService.createLater(fileName); // small preview for cards and lists (issue #42)
+        return saved;
     }
 
     /**
@@ -320,6 +323,7 @@ public class ImageService {
         } catch (IOException e) {
             log.error("Failed to delete physical file: {}", fileName, e);
         }
+        thumbnailService.delete(fileName);
     }
 
     private ImageMetadata findOrThrow(Long id) {

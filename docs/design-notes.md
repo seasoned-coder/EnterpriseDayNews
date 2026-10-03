@@ -119,6 +119,10 @@ Sizing: up to 26 teams normally, 52 at a big event. Each team has two students, 
 -   **Polling stays cheap.**
     -   Each list is one indexed query (V9: uploader, status/display, flash, info-message, file name). The projector feed no longer loads the whole table.
     -   `open-in-view` is off, so a database connection is released when the request's work is done, not after the response has trickled out to a slow phone.
+-   **Small previews** (#42): cards and lists load a ~480 px JPEG preview (`ThumbnailService`), not the multi-MB original. The biggest saving on the Wi-Fi: the 2 MB load-test advert becomes 61 KB.
+    -   Previews are made one at a time on a background thread, so a burst of uploads doesn't slow the server, and missing ones are made at startup (`ThumbnailBackfill`).
+    -   Until a preview exists, the full picture is used.
+    -   They share their picture's access rules and signature (`UploadUrlSigner.thumbnailUrlFor`, `pictureFileFor`) and are deleted with it.
 -   **Images are cached.** Upload file names are random and never reused, so `/uploads` responses carry `Cache-Control: private, max-age=3600`. The projector and dashboards don't download the same advert over the Wi-Fi again and again.
 -   **Sign-in is the slowest step, on purpose.** BCrypt is deliberately slow. A burst where every phone signs in at once shows up as a second or two of slower responses, not errors.
 -   **Tested:** `ConcurrencyTests` (backend) runs uploads, reviews and projector reads on many threads at once, plus a same-name account race. The k6 simulation in `loadtest/` runs the whole event; see `loadtest/README.md` for how to run it and the results.
