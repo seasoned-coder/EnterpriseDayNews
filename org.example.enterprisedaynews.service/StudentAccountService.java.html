@@ -102,8 +102,8 @@ public class StudentAccountService {
 <span class="fc" id="L102">        String normalizedUsername = normalizeAndValidateUsername(username);</span>
 <span class="fc" id="L103">        String normalizedPassword = normalizeAndValidatePassword(password);</span>
 
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (studentAccountRepository.existsByUsername(normalizedUsername)) {</span>
-<span class="nc" id="L106">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;A student account with that username already exists&quot;);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (studentAccountRepository.existsByUsername(normalizedUsername)) {</span>
+<span class="fc" id="L106">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;A student account with that username already exists&quot;);</span>
         }
 
 <span class="fc" id="L109">        LocalDateTime now = LocalDateTime.now();</span>
@@ -122,8 +122,8 @@ public class StudentAccountService {
     public StudentAccount setLocked(Long id, boolean locked) {
 <span class="fc" id="L123">        StudentAccount account = findById(id);</span>
 <span class="fc" id="L124">        account.setLocked(locked);</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (!locked) {</span>
-<span class="nc" id="L126">            clearFailedAttemptState(account);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (!locked) {</span>
+<span class="fc" id="L126">            clearFailedAttemptState(account);</span>
         }
 <span class="fc" id="L128">        account.setUpdatedAt(LocalDateTime.now());</span>
 <span class="fc" id="L129">        return studentAccountRepository.save(account);</span>
@@ -131,17 +131,17 @@ public class StudentAccountService {
 
     @Transactional
     public StudentAccount changePassword(Long id, String password) {
-<span class="nc" id="L134">        String normalizedPassword = normalizeAndValidatePassword(password);</span>
-<span class="nc" id="L135">        StudentAccount account = findById(id);</span>
-<span class="nc" id="L136">        account.setPasswordHash(passwordEncoder.encode(normalizedPassword));</span>
-<span class="nc" id="L137">        account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="nc" id="L138">        return studentAccountRepository.save(account);</span>
+<span class="fc" id="L134">        String normalizedPassword = normalizeAndValidatePassword(password);</span>
+<span class="fc" id="L135">        StudentAccount account = findById(id);</span>
+<span class="fc" id="L136">        account.setPasswordHash(passwordEncoder.encode(normalizedPassword));</span>
+<span class="fc" id="L137">        account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L138">        return studentAccountRepository.save(account);</span>
     }
 
     @Transactional
     public void deleteAccount(Long id) {
-<span class="nc" id="L143">        studentAccountRepository.delete(findById(id));</span>
-<span class="nc" id="L144">    }</span>
+<span class="fc" id="L143">        studentAccountRepository.delete(findById(id));</span>
+<span class="fc" id="L144">    }</span>
 
     private void ensureAccountExists(String username, String password) {
 <span class="fc" id="L147">        String normalizedUsername = normalizeUsername(username);</span>
@@ -161,7 +161,7 @@ public class StudentAccountService {
 
     private StudentAccount findById(Long id) {
 <span class="fc" id="L163">        return studentAccountRepository.findById(id)</span>
-<span class="pc" id="L164">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Student account not found&quot;));</span>
+<span class="fc" id="L164">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Student account not found&quot;));</span>
     }
 
     private String normalizeAndValidateUsername(String username) {
@@ -169,8 +169,8 @@ public class StudentAccountService {
 <span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (normalized == null) {</span>
 <span class="nc" id="L170">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Username is required&quot;);</span>
         }
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (!USERNAME_PATTERN.matcher(normalized).matches()) {</span>
-<span class="nc" id="L173">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        if (!USERNAME_PATTERN.matcher(normalized).matches()) {</span>
+<span class="fc" id="L173">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;Username may only contain letters, numbers, dots, dashes, and underscores&quot;);
         }
 <span class="fc" id="L176">        return normalized;</span>
@@ -178,21 +178,21 @@ public class StudentAccountService {
 
     private String normalizeAndValidatePassword(String password) {
 <span class="fc" id="L180">        String normalized = normalizeAndValidateLoginPassword(password);</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (normalized.length() &lt; MIN_PASSWORD_LENGTH) {</span>
-<span class="nc" id="L182">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (normalized.length() &lt; MIN_PASSWORD_LENGTH) {</span>
+<span class="fc" id="L182">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;Password must be at least &quot; + MIN_PASSWORD_LENGTH + &quot; characters long&quot;);
         }
 
 <span class="fc" id="L186">        boolean hasUppercase = normalized.chars().anyMatch(Character::isUpperCase);</span>
 <span class="fc" id="L187">        boolean hasDigit = normalized.chars().anyMatch(Character::isDigit);</span>
-<span class="pc bpc" id="L188" title="2 of 4 branches missed.">        if (!hasUppercase || !hasDigit) {</span>
-<span class="nc" id="L189">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">        if (!hasUppercase || !hasDigit) {</span>
+<span class="fc" id="L189">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;Password must include at least one uppercase letter and one number&quot;);
         }
 
 <span class="fc" id="L193">        String lower = normalized.toLowerCase(Locale.ROOT);</span>
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (COMMON_PASSWORD_BLOCKLIST.contains(lower)) {</span>
-<span class="nc" id="L195">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (COMMON_PASSWORD_BLOCKLIST.contains(lower)) {</span>
+<span class="fc" id="L195">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;Please choose a stronger password&quot;);
         }
 

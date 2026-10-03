@@ -3,33 +3,36 @@
 import org.example.enterprisedaynews.model.StudentAccount;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
-<span class="fc" id="L7">public record StudentAccountView(</span>
+import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
+
+<span class="fc" id="L10">public record StudentAccountView(</span>
         Long id,
         String username,
         boolean locked,
         boolean manuallyLocked,
         int failedLoginAttempts,
-        LocalDateTime temporaryLockUntil,
-        LocalDateTime lastLoginAt,
+        OffsetDateTime temporaryLockUntil,
+        OffsetDateTime lastLoginAt,
         String lastLoginIp,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
     public static StudentAccountView from(StudentAccount account) {
-<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        boolean temporaryLocked = account.getTemporaryLockUntil() != null</span>
-<span class="pc bnc" id="L21" title="All 2 branches missed.">                &amp;&amp; account.getTemporaryLockUntil().isAfter(LocalDateTime.now());</span>
-<span class="fc" id="L22">        return new StudentAccountView(</span>
-<span class="fc" id="L23">                account.getId(),</span>
-<span class="fc" id="L24">                account.getUsername(),</span>
-<span class="pc bpc" id="L25" title="1 of 4 branches missed.">                account.isLocked() || temporaryLocked,</span>
-<span class="fc" id="L26">                account.isLocked(),</span>
-<span class="fc" id="L27">                account.getFailedLoginAttempts(),</span>
-<span class="fc" id="L28">                account.getTemporaryLockUntil(),</span>
-<span class="fc" id="L29">                account.getLastLoginAt(),</span>
-<span class="fc" id="L30">                account.getLastLoginIp(),</span>
-<span class="fc" id="L31">                account.getCreatedAt(),</span>
-<span class="fc" id="L32">                account.getUpdatedAt()</span>
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        boolean temporaryLocked = account.getTemporaryLockUntil() != null</span>
+<span class="pc bnc" id="L24" title="All 2 branches missed.">                &amp;&amp; account.getTemporaryLockUntil().isAfter(LocalDateTime.now());</span>
+<span class="fc" id="L25">        return new StudentAccountView(</span>
+<span class="fc" id="L26">                account.getId(),</span>
+<span class="fc" id="L27">                account.getUsername(),</span>
+<span class="pc bpc" id="L28" title="1 of 4 branches missed.">                account.isLocked() || temporaryLocked,</span>
+<span class="fc" id="L29">                account.isLocked(),</span>
+<span class="fc" id="L30">                account.getFailedLoginAttempts(),</span>
+<span class="fc" id="L31">                withServerOffset(account.getTemporaryLockUntil()),</span>
+<span class="fc" id="L32">                withServerOffset(account.getLastLoginAt()),</span>
+<span class="fc" id="L33">                account.getLastLoginIp(),</span>
+<span class="fc" id="L34">                withServerOffset(account.getCreatedAt()),</span>
+<span class="fc" id="L35">                withServerOffset(account.getUpdatedAt())</span>
         );
     }
 }

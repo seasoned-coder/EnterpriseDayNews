@@ -1,8 +1,9 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 enterprise-day-news,org.example.enterprisedaynews.security,JwtProvider,3,66,0,0,2,20,0,7,0,7
 enterprise-day-news,org.example.enterprisedaynews.security,JwtAuthenticationFilter,0,71,4,12,0,15,4,5,0,1
-enterprise-day-news,org.example.enterprisedaynews.dto,ImageView,0,87,0,0,0,18,0,2,0,2
-enterprise-day-news,org.example.enterprisedaynews.dto,StudentAccountView,7,68,4,4,0,14,3,3,0,2
+enterprise-day-news,org.example.enterprisedaynews.dto,ApiTimes,0,9,0,2,0,1,0,2,0,1
+enterprise-day-news,org.example.enterprisedaynews.dto,ImageView,0,89,0,0,0,18,0,2,0,2
+enterprise-day-news,org.example.enterprisedaynews.dto,StudentAccountView,7,72,4,4,0,14,3,3,0,2
 enterprise-day-news,org.example.enterprisedaynews.dto,UpdateStudentPasswordRequest,0,6,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.dto,CreateStudentAccountRequest,0,9,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.config,SecurityConfig,0,148,0,0,0,24,0,8,0,8
@@ -17,7 +18,7 @@ enterprise-day-news,org.example.enterprisedaynews.controller,ControllerSupport,2
 enterprise-day-news,org.example.enterprisedaynews,EnterpriseDayNewsApplication,5,3,0,0,2,1,1,1,1,1
 enterprise-day-news,org.example.enterprisedaynews.service,ImageNotFoundException,0,5,0,0,0,2,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.service,ImageStateMachine,0,54,0,6,0,11,0,6,0,3
-enterprise-day-news,org.example.enterprisedaynews.service,StudentAccountService,108,472,25,41,24,104,30,29,5,21
+enterprise-day-news,org.example.enterprisedaynews.service,StudentAccountService,39,541,18,48,11,117,20,39,2,24
 enterprise-day-news,org.example.enterprisedaynews.service,ImageService,102,420,7,33,30,103,12,34,5,21
 enterprise-day-news,org.example.enterprisedaynews.service,DisplaySettingsService,17,15,0,0,3,2,2,2,2,2
 enterprise-day-news,org.example.enterprisedaynews.model,DisplaySettings,0,11,0,0,0,6,0,1,0,1
