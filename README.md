@@ -82,10 +82,24 @@ Plug the server, and ideally the projector computer, into the router with **cabl
 Do this a day or more ahead, on the server, while it **is** connected to the internet:
 
 1. Get the latest project files: `git pull` (or copy the repo, including `docker-compose.yml`).
-2. First time only: create a `.env` next to `docker-compose.yml` with `FRONTEND_PORT=80` (so the address has no port number) and the first staff login (`APP_STAFF_BOOTSTRAP_USERNAME`, `APP_STAFF_BOOTSTRAP_PASSWORD`). Nothing else is needed; see [Settings](#settings-env).
+2. **First time only: settings and the first staff login.** Copy `.env.example` to `.env`, next to `docker-compose.yml`, and fill in:
+   ```
+   FRONTEND_PORT=80
+   APP_STAFF_BOOTSTRAP_USERNAME=your.name
+   APP_STAFF_BOOTSTRAP_PASSWORD=<choose your own password>
+   ```
+   - **You choose this login;** nothing is built in. The password needs at least 10 characters, with a capital letter and a number. **Write it down somewhere safe** (e.g. a password manager): it's stored scrambled, so it can't be looked up later.
+   - The account is created **the first time the apps start with an empty database**, and only then. After that, these lines do nothing, so changing them won't change the password. Change passwords on the Staff Account Dashboard instead. You can delete the password line once you've signed in.
+   - **Server already used for an earlier event?** Its database (and staff accounts) are still there, so sign in with the staff login you used then.
+   - Never commit `.env`: this repository is public. Other settings are optional; see [Settings](#settings-env).
 3. If the images on GitHub Container Registry are private, sign in: `docker login ghcr.io`.
-4. Download the images: `docker compose pull db backend frontend`.
-5. Start it once to check: `docker compose up -d db backend frontend`. Sign in as staff, check the **Projector** settings, and on the Student Account Dashboard use **Set up teams** to create the team accounts and print their login slips (on the till printer or A4; see the [Staff Guide](docs/staff-guide.md#setting-up-teams-and-printing-login-slips)).
+4. Download the latest release: `docker compose pull db backend frontend`.
+5. Start it once to check: `docker compose up -d db backend frontend`.
+   - Sign in at `http://<server-ip>/staff` with the login from step 2.
+   - On the **Staff Account Dashboard**, add an account for each member of staff, so nobody shares the first one.
+   - Check the **Projector** settings.
+   - On the Student Account Dashboard, use **Set up teams** to create the team accounts and print their login slips (on the till printer or A4; see the [Staff Guide](docs/staff-guide.md#setting-up-teams-and-printing-login-slips)).
+   - The footer of staff pages shows the **Version** running.
 6. Make sure the server's **clock is correct** before going offline. Sign-in sessions, image links and login times rely on it.
 
 You don't need Caddy at the event. It provides HTTPS for the public hosted domain and can't get certificates without the internet, so it's left out.
@@ -95,7 +109,7 @@ You don't need Caddy at the event. It provides HTTPS for the public hosted domai
 1. Connect the server to the event router and check it has its reserved IP.
 2. Start the apps: `docker compose up -d db backend frontend`. Don't run `auto-deploy-docker.sh` or `docker compose pull`; they need the internet.
 3. From a phone on the event Wi-Fi, open `http://<server-ip>/` and check the home page loads.
-4. **Projector computer:** open `http://<server-ip>/projector` and press **F11** for full screen (see the [Projector Guide](docs/projector-guide.md)).
+4. **Projector computer:** sign in to `http://<server-ip>/staff`, select **Open the projector** on the **Projector** tab (so it records each team's screen time for the Results), and press **F11** for full screen (see the [Projector Guide](docs/projector-guide.md)).
 5. **Staff:** `http://<server-ip>/staff`. **Students:** `http://<server-ip>/student`.
 
 Tips:
@@ -107,7 +121,10 @@ Tips:
 
 ### After the event
 
--   Use **End of Day → Clear Down** in the staff app to delete student uploads, or `docker compose down` to stop everything while keeping the data. `docker compose down -v` deletes **all** data, including accounts.
+-   Print the **Results** (leaderboard and team receipts) first.
+-   Use **End of Day → Clear Down** in the staff app. It deletes student adverts, screen time and any price changes, but **keeps all staff and team accounts**, staff messages and the slip details.
+-   `docker compose down` stops everything and keeps the data.
+-   `docker compose down -v` deletes **all** data, including every account. After that, the next start creates the first staff login from `.env` again.
 -   Back online, `git pull` and `docker compose pull` again before the next event.
 
 ## Tech Stack

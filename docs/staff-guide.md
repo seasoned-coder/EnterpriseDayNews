@@ -367,6 +367,8 @@ The student can no longer sign in. **Their existing uploads stay in the system.*
 
 ## Staff Account Dashboard
 
+**The first staff login** is chosen by whoever sets up the server (in its `.env` settings; see "Event Setup" in the README). Use it to add an account for every member of staff here. End of Day never removes accounts.
+
 Manage who can sign in to the staff app. Select **Staff accounts** in the top banner (**Staff** on smaller screens).
 
 It works like the Student Account Dashboard: the same totals, table, **Lock** / **Unlock**, **Rename**, **Password** and **Delete** buttons, and last login time and IP address. If you rename your own account, you'll be signed out and need to sign in with the new name.
