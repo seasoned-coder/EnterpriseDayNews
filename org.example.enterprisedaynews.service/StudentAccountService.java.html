@@ -1,18 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StudentAccountService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">StudentAccountService.java</span></div><h1>StudentAccountService.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.enterprisedaynews.dto.TeamLogin;
 import org.example.enterprisedaynews.model.StudentAccount;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
-<span class="fc" id="L15">@Slf4j</span>
+<span class="fc" id="L23">@Slf4j</span>
 public class StudentAccountService extends AccountService&lt;StudentAccount&gt; {
 
     /**
@@ -20,48 +28,93 @@ public class StudentAccountService extends AccountService&lt;StudentAccount&gt; 
      * in this (public) repository. They are no longer created, and are locked at startup if they still
      * use those passwords.
      */
-<span class="fc" id="L23">    static final Map&lt;String, String&gt; PUBLISHED_DEFAULT_ACCOUNTS = Map.of(</span>
+<span class="fc" id="L31">    static final Map&lt;String, String&gt; PUBLISHED_DEFAULT_ACCOUNTS = Map.of(</span>
             &quot;student&quot;, &quot;EdNews1&quot;,
             &quot;guest&quot;, &quot;Guest1A&quot;
     );
 
+    /** Most teams created in one go; a big event has about 52. */
+    static final int MAX_TEAMS_AT_ONCE = 200;
+
     private final ImageRepository imageRepository;
+    private final FriendlyPasswords friendlyPasswords;
 
     public StudentAccountService(StudentAccountRepository repository, LoginGuard loginGuard,
-                                 ImageRepository imageRepository) {
-<span class="fc" id="L32">        super(repository, loginGuard, PasswordPolicy.STUDENT_MIN_LENGTH, &quot;student&quot;);</span>
-<span class="fc" id="L33">        this.imageRepository = imageRepository;</span>
-<span class="fc" id="L34">    }</span>
+                                 ImageRepository imageRepository, FriendlyPasswords friendlyPasswords) {
+<span class="fc" id="L44">        super(repository, loginGuard, PasswordPolicy.STUDENT_MIN_LENGTH, &quot;student&quot;);</span>
+<span class="fc" id="L45">        this.imageRepository = imageRepository;</span>
+<span class="fc" id="L46">        this.friendlyPasswords = friendlyPasswords;</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Creates a team account for each name, with a generated password to print on its login slip (issue #37).
+     * Names that are invalid, repeated or already taken are skipped (with the reason) rather than failing the
+     * rest. Each account is saved on its own, so one clash doesn't undo the others.
+     */
+    public List&lt;TeamLogin&gt; createTeams(List&lt;String&gt; usernames) {
+<span class="pc bpc" id="L55" title="1 of 4 branches missed.">        if (usernames == null || usernames.isEmpty()) {</span>
+<span class="fc" id="L56">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Add at least one team name&quot;);</span>
+        }
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (usernames.size() &gt; MAX_TEAMS_AT_ONCE) {</span>
+<span class="fc" id="L59">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                    &quot;You can create up to &quot; + MAX_TEAMS_AT_ONCE + &quot; teams at once&quot;);
+        }
+<span class="fc" id="L62">        List&lt;TeamLogin&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L63">        Set&lt;String&gt; seen = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (String raw : usernames) {</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">            String shown = raw == null ? &quot;&quot; : raw.trim();</span>
+<span class="fc" id="L66">            String normalized = PasswordPolicy.normalizeUsername(raw);</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">            if (normalized != null &amp;&amp; !seen.add(normalized)) {</span>
+<span class="fc" id="L68">                results.add(TeamLogin.skipped(normalized, &quot;Listed twice&quot;));</span>
+<span class="fc" id="L69">                continue;</span>
+            }
+<span class="fc" id="L71">            String password = friendlyPasswords.next();</span>
+            try {
+<span class="fc" id="L73">                results.add(TeamLogin.created(createAccount(raw, password).getUsername(), password));</span>
+<span class="fc" id="L74">            } catch (ResponseStatusException ex) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">                results.add(TeamLogin.skipped(normalized != null ? normalized : shown, ex.getReason()));</span>
+<span class="nc" id="L76">            } catch (DataIntegrityViolationException ex) {</span>
+<span class="nc" id="L77">                results.add(TeamLogin.skipped(normalized, &quot;Already exists&quot;));</span>
+<span class="fc" id="L78">            }</span>
+<span class="fc" id="L79">        }</span>
+<span class="fc" id="L80">        return results;</span>
+    }
+
+    /** Gives a team a new generated password, e.g. to reprint a lost login slip (issue #37). */
+    public TeamLogin newGeneratedPassword(Long id) {
+<span class="fc" id="L85">        String password = friendlyPasswords.next();</span>
+<span class="fc" id="L86">        return TeamLogin.reset(changePassword(id, password).getUsername(), password);</span>
+    }
 
     @Override
     protected StudentAccount newAccount() {
-<span class="fc" id="L38">        return new StudentAccount();</span>
+<span class="fc" id="L91">        return new StudentAccount();</span>
     }
 
     /** Uploads are linked by username, so they move with a renamed student (they can still manage them). */
     @Override
     protected void onRenamed(String oldUsername, String newUsername) {
-<span class="fc" id="L44">        imageRepository.renameUploader(oldUsername, newUsername);</span>
-<span class="fc" id="L45">    }</span>
+<span class="fc" id="L97">        imageRepository.renameUploader(oldUsername, newUsername);</span>
+<span class="fc" id="L98">    }</span>
 
     /** Locks any account still using a password published in this repository. Returns how many were locked. */
     @Transactional
     public int lockAccountsWithPublishedPasswords() {
-<span class="fc" id="L50">        int locked = 0;</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (Map.Entry&lt;String, String&gt; entry : PUBLISHED_DEFAULT_ACCOUNTS.entrySet()) {</span>
-<span class="fc" id="L52">            Optional&lt;StudentAccount&gt; found = repository.findByUsername(entry.getKey());</span>
-<span class="fc bfc" id="L53" title="All 6 branches covered.">            if (found.isPresent() &amp;&amp; !found.get().isLocked() &amp;&amp; loginGuard.storedPasswordIs(found.get(), entry.getValue())) {</span>
-<span class="fc" id="L54">                StudentAccount account = found.get();</span>
-<span class="fc" id="L55">                account.setLocked(true);</span>
-<span class="fc" id="L56">                account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="fc" id="L57">                repository.save(account);</span>
-<span class="fc" id="L58">                locked++;</span>
-<span class="fc" id="L59">                log.warn(&quot;Locked student account '{}': it still uses a password published in the source code. &quot;</span>
+<span class="fc" id="L103">        int locked = 0;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (Map.Entry&lt;String, String&gt; entry : PUBLISHED_DEFAULT_ACCOUNTS.entrySet()) {</span>
+<span class="fc" id="L105">            Optional&lt;StudentAccount&gt; found = repository.findByUsername(entry.getKey());</span>
+<span class="fc bfc" id="L106" title="All 6 branches covered.">            if (found.isPresent() &amp;&amp; !found.get().isLocked() &amp;&amp; loginGuard.storedPasswordIs(found.get(), entry.getValue())) {</span>
+<span class="fc" id="L107">                StudentAccount account = found.get();</span>
+<span class="fc" id="L108">                account.setLocked(true);</span>
+<span class="fc" id="L109">                account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L110">                repository.save(account);</span>
+<span class="fc" id="L111">                locked++;</span>
+<span class="fc" id="L112">                log.warn(&quot;Locked student account '{}': it still uses a password published in the source code. &quot;</span>
                         + &quot;Set a new password from the Student Account Dashboard and unlock it if it is needed.&quot;,
-<span class="fc" id="L61">                        account.getUsername());</span>
+<span class="fc" id="L114">                        account.getUsername());</span>
             }
-<span class="fc" id="L63">        }</span>
-<span class="fc" id="L64">        return locked;</span>
+<span class="fc" id="L116">        }</span>
+<span class="fc" id="L117">        return locked;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
