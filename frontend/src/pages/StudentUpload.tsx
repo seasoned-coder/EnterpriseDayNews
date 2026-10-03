@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
+import { StudentUploadCard } from "@/components/StudentUploadCard";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -16,16 +16,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { api, type ApiSubmission } from "@/lib/api";
 import { checkFileSize, FILE_SIZE_LIMITS, isAllowedImageType } from "@/lib/fileSizeCheck";
 import { useNsfwCheck } from "@/hooks/useNsfwCheck";
-
-/** What students see for each review status (the API's NEW/APPROVED/REJECTED mean little to them). */
-const STATUS_LABELS: Record<ApiSubmission["status"], string> = {
-  NEW: "Waiting for approval",
-  APPROVED: "Approved",
-  REJECTED: "Not approved",
-};
 
 const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
 const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
@@ -36,6 +29,7 @@ const StudentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [priority, setPriority] = useState(1);
   const [durationSeconds, setDurationSeconds] = useState(10);
+  const [publishOnApproval, setPublishOnApproval] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<ApiSubmission | null>(null);
 
   const { scanStatus, scanFile, resetScan } = useNsfwCheck();
@@ -122,16 +116,19 @@ const StudentUpload = () => {
 
   const upload = useMutation({
     mutationFn: async () => {
-      return api.studentUpload(name, file as File, priority, durationSeconds);
+      return api.studentUpload(name, file as File, priority, durationSeconds, publishOnApproval);
     },
-    onSuccess: () => {
+    onSuccess: (sent) => {
       toast({
         title: "Sent it ✨",
-        description: `Thanks ${name}! Your advert is waiting for a teacher to approve it.`,
+        description: sent.publishOnApproval
+          ? `Thanks ${name}! Your advert is waiting for a teacher to approve it.`
+          : `Thanks ${name}! Once a teacher approves it, tap "Publish now" when you want it on screen.`,
       });
       setFile(null);
       setPriority(1);
       setDurationSeconds(10);
+      setPublishOnApproval(true);
       resetScan();
       myUploadsQ.refetch();
     },
@@ -162,6 +159,34 @@ const StudentUpload = () => {
         description: err.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const setPublished = useMutation({
+    mutationFn: ({ upload, published }: { upload: ApiSubmission; published: boolean }) =>
+      api.studentSetPublished(upload.id, published),
+    onSuccess: (updated) => {
+      const onScreen = updated.status === "APPROVED" && updated.display;
+      toast({
+        title:
+          updated.status !== "APPROVED"
+            ? "Got it"
+            : onScreen
+              ? "It's going on screen"
+              : "Taken off screen",
+        description:
+          updated.status !== "APPROVED"
+            ? updated.publishOnApproval
+              ? "It'll go on screen as soon as it's approved."
+              : "Once it's approved, you choose when it goes on screen."
+            : onScreen
+              ? "Your advert will appear on the big screen in a few seconds."
+              : "Your advert won't be shown until you publish it again.",
+      });
+      myUploadsQ.refetch();
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't change that", description: err.message, variant: "destructive" });
     },
   });
 
@@ -243,6 +268,24 @@ const StudentUpload = () => {
               <p className="text-xs text-student-muted">How long your advert appears on screen</p>
             </div>
 
+            {/* When it goes on screen (issue #9) */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-student-border bg-white/[0.03] p-4">
+              <input
+                type="checkbox"
+                checked={publishOnApproval}
+                onChange={(e) => setPublishOnApproval(e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-neon-2"
+              />
+              <span>
+                <span className="block text-sm font-medium text-student-ink">
+                  Put it on screen as soon as it's approved
+                </span>
+                <span className="mt-1 block text-xs text-student-muted">
+                  Untick to upload it now and choose when it goes on screen later (for example, for a special offer).
+                </span>
+              </span>
+            </label>
+
             {/* Total Cost */}
             <div className="rounded-xl border border-neon-2/30 bg-neon-2/5 p-4">
               <div className="flex items-center justify-between">
@@ -281,53 +324,13 @@ const StudentUpload = () => {
               ) : myUploadsQ.data && myUploadsQ.data.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {myUploadsQ.data.map((upload) => (
-                    <div key={upload.id} className="rounded-xl border border-student-border bg-white/[0.03] p-4">
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <p className="min-w-0 text-xs font-medium text-student-ink truncate">{upload.originalFileName}</p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                          onClick={() => setDeleteTarget(upload)}
-                          disabled={deleteUpload.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
-                        </Button>
-                      </div>
-                      <img
-                        src={api.imageUrl(upload)}
-                        alt={upload.originalFileName}
-                        className="mb-3 aspect-video w-full rounded-lg object-cover"
-                      />
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            className={
-                              upload.status === "APPROVED"
-                                ? "bg-green-500/20 text-green-400"
-                                : upload.status === "REJECTED"
-                                ? "bg-red-500/20 text-red-400"
-                                : "bg-yellow-500/20 text-yellow-400"
-                            }
-                          >
-                            {STATUS_LABELS[upload.status]}
-                          </Badge>
-                          {upload.display && (
-                            <Badge className="bg-blue-500/20 text-blue-400">On Projector</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-student-muted">
-                          {formatRelative(upload.uploadedAt)}
-                        </p>
-                        <div className="flex items-center justify-between text-xs">
-                          <span>Priority: <span className="font-semibold text-neon-2">{upload.priority}</span></span>
-                          <span>Duration: <span className="font-semibold text-neon-2">{upload.durationSeconds}s</span></span>
-                          <span>Cost: <span className="font-semibold text-neon-2">{upload.totalCost}</span></span>
-                        </div>
-                      </div>
-                    </div>
+                    <StudentUploadCard
+                      key={upload.id}
+                      upload={upload}
+                      busy={deleteUpload.isPending || (setPublished.isPending && setPublished.variables?.upload.id === upload.id)}
+                      onSetPublished={(target, published) => setPublished.mutate({ upload: target, published })}
+                      onDelete={setDeleteTarget}
+                    />
                   ))}
                 </div>
               ) : (

@@ -19,6 +19,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
 import { ProjectorSettingsPanel } from "@/components/ProjectorSettingsPanel";
+import { StaffFooter } from "@/components/StaffFooter";
 import { STAFF_NAV } from "@/lib/staffNav";
 
 type Tab = "new" | "approved" | "rejected" | "comm" | "projector" | "eod";
@@ -484,6 +485,7 @@ const StaffDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <StaffFooter />
 
        <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
          <DialogContent className="max-w-2xl overflow-hidden p-0">

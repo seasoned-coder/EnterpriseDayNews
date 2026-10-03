@@ -20,6 +20,8 @@ public record ImageView(
         String vettedBy,
         OffsetDateTime vettedAt,
         boolean display,
+        /** Whether it goes on screen as soon as it's approved, or waits for the student to publish it. */
+        boolean publishOnApproval,
         int displayOrder,
         int priority,
         int durationSeconds,
@@ -40,6 +42,7 @@ public record ImageView(
                 m.getVettedBy(),
                 withServerOffset(m.getVettedAt()),
                 m.isDisplay(),
+                m.isPublishOnApproval(),
                 m.getDisplayOrder(),
                 m.getPriority(),
                 m.getDurationSeconds(),

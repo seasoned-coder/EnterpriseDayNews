@@ -293,9 +293,10 @@ The frontend automatically handles login and token management when navigating to
 ## API Endpoints
 
 -   `POST /api/auth/login`: Authenticate and receive a JWT token.
--   `POST /api/student/upload`: Upload an image (role: STUDENT).
+-   `POST /api/student/upload`: Upload an image (role: STUDENT). Form fields: `file`, `priority`, `durationSeconds`, `publishOnApproval` (default `true`; `false` = wait after approval until the student publishes).
 -   `GET  /api/student/uploads`: List current user's uploads.
 -   `DELETE /api/student/uploads/{id}`: Delete one of the current user's own uploads.
+-   `POST /api/student/uploads/{id}/publish?published=true|false`: For your own approved advert, put it on screen or take it off; while it's awaiting review, choose whether it goes on screen when approved. Refused (`409`) for rejected adverts.
 -   `GET  /api/staff/new`: List images awaiting review (role: STAFF).
 -   `GET  /api/staff/approved`: List approved images.
 -   `GET  /api/staff/rejected`: List rejected images.

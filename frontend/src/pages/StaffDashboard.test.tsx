@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiSubmission } from "@/lib/api";
 import StaffDashboard from "@/pages/StaffDashboard";
+import { makeSubmission } from "@/test/fixtures";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
@@ -29,34 +30,16 @@ vi.mock("@/lib/api", () => ({
 vi.mock("@/hooks/use-toast", () => ({ toast: mocks.toast }));
 vi.mock("@/components/BrandNav", () => ({ BrandNav: () => <nav /> }));
 
-const base: ApiSubmission = {
-  id: 1,
-  filePath: "a.jpg",
-  originalFileName: "a.jpg",
-  uploadedBy: "year10-team1",
-  uploadedAt: "2026-10-03T10:00:00Z",
-  status: "APPROVED",
-  vettedBy: "staff",
-  vettedAt: null,
-  display: true,
-  displayOrder: 0,
-  priority: 1,
-  durationSeconds: 10,
-  totalCost: 10,
-  isInfoMessage: false,
-  isFlashMode: false,
-  messageText: null,
-};
+const base: ApiSubmission = makeSubmission({ id: 1, filePath: "a.jpg", uploadedBy: "year10-team1" });
 
-const urgent: ApiSubmission = {
-  ...base,
+const urgent: ApiSubmission = makeSubmission({
   id: 7,
   filePath: "",
   uploadedBy: "staff",
   isInfoMessage: true,
   isFlashMode: true,
   messageText: "Fire drill at 11",
-};
+});
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -143,6 +126,14 @@ describe("StaffDashboard", () => {
     await openTab(/^projector$/i);
 
     expect(await screen.findByLabelText(/staff content interval/i)).toHaveValue(60);
+  });
+
+  it("has quiet footer links to the student portal and projector", async () => {
+    renderPage();
+
+    const footer = await screen.findByRole("navigation", { name: "Other apps" });
+    expect(within(footer).getByRole("link", { name: /student portal/i })).toHaveAttribute("href", "/student");
+    expect(within(footer).getByRole("link", { name: /projector/i })).toHaveAttribute("target", "_blank");
   });
 
   it("uses friendly empty-state text", async () => {

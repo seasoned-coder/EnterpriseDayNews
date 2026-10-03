@@ -39,8 +39,15 @@ public class ImageService {
     @Value("${app.upload-dir:./uploads}")
     private String uploadDir;
 
+    /**
+     * Stores a student's upload as NEW (awaiting review).
+     *
+     * @param publishOnApproval true = goes on screen as soon as staff approve it; false = waits after
+     *                          approval until the student publishes it (issue #9)
+     */
     @Transactional
-    public ImageMetadata uploadImage(MultipartFile file, String username, int priority, int durationSeconds) throws IOException {
+    public ImageMetadata uploadImage(MultipartFile file, String username, int priority, int durationSeconds,
+                                     boolean publishOnApproval) throws IOException {
         validateFile(file);
 
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image";
@@ -62,6 +69,7 @@ public class ImageService {
                 .uploadedAt(LocalDateTime.now())
                 .status(ApprovalStatus.NEW)
                 .display(false)
+                .publishOnApproval(publishOnApproval)
                 .priority(priority)
                 .durationSeconds(durationSeconds)
                 .totalCost(calculateCost(priority, durationSeconds))
@@ -75,7 +83,7 @@ public class ImageService {
      */
     @Transactional
     public ImageMetadata uploadImage(MultipartFile file, String username) throws IOException {
-        return uploadImage(file, username, 1, 10);
+        return uploadImage(file, username, 1, 10, true);
     }
 
     private int calculateCost(int priority, int durationSeconds) {
@@ -129,7 +137,7 @@ public class ImageService {
 
     @Transactional
     public ImageMetadata uploadInfoMessage(MultipartFile file, String username, boolean flashMode) throws IOException {
-        ImageMetadata metadata = uploadImage(file, username, 4, 10);
+        ImageMetadata metadata = uploadImage(file, username, 4, 10, true);
         metadata.setInfoMessage(true);
         metadata.setFlashMode(flashMode);
         metadata.setStatus(ApprovalStatus.APPROVED);
@@ -190,8 +198,25 @@ public class ImageService {
         metadata.setStatus(status);
         metadata.setVettedBy(vettedBy);
         metadata.setVettedAt(LocalDateTime.now());
-        // Display flag is derived from status: APPROVED -> visible by default, REJECTED -> hidden.
-        metadata.setDisplay(status == ApprovalStatus.APPROVED);
+        // Approving puts it on screen only if the student chose "as soon as it's approved"; rejecting hides it.
+        metadata.setDisplay(status == ApprovalStatus.APPROVED && metadata.isPublishOnApproval());
+        return imageRepository.save(metadata);
+    }
+
+    /**
+     * A student publishing or withdrawing their own advert (issue #9). Once approved this puts it on or
+     * takes it off the screen straight away; while still awaiting review it changes whether it goes on
+     * screen when approved. Rejected adverts can't be published.
+     */
+    @Transactional
+    public ImageMetadata setPublishedByStudent(Long id, String username, boolean published) {
+        ImageMetadata metadata = findOwnedByStudent(id, username, "publish");
+        switch (metadata.getStatus()) {
+            case APPROVED -> metadata.setDisplay(published);
+            case NEW -> metadata.setPublishOnApproval(published);
+            case REJECTED -> throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This advert wasn't approved, so it can't go on screen. Ask a member of staff why.");
+        }
         return imageRepository.save(metadata);
     }
 
@@ -236,11 +261,16 @@ public class ImageService {
 
     @Transactional
     public void deleteStudentImage(Long id, String username) {
+        deleteImage(findOwnedByStudent(id, username, "delete"));
+    }
+
+    /** The image if it exists and was uploaded by this student (staff info items never belong to students). */
+    private ImageMetadata findOwnedByStudent(Long id, String username, String action) {
         ImageMetadata metadata = findOrThrow(id);
-        if (!Objects.equals(metadata.getUploadedBy(), username)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own uploads");
+        if (metadata.isInfoMessage() || !Objects.equals(metadata.getUploadedBy(), username)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only " + action + " your own uploads");
         }
-        deleteImage(metadata);
+        return metadata;
     }
 
     private void deleteImage(ImageMetadata metadata) {

@@ -8,28 +8,10 @@ import {
   type ScheduleSettings,
   type ScheduleState,
 } from "@/lib/projectorSchedule";
+import { makeSubmission } from "@/test/fixtures";
 
-let nextId = 1;
-function advert(name: string, priority = 1, durationSeconds = 10): ApiSubmission {
-  return {
-    id: nextId++,
-    filePath: `${name}.jpg`,
-    originalFileName: `${name}.jpg`,
-    uploadedBy: name,
-    uploadedAt: "2026-10-03T10:00:00Z",
-    status: "APPROVED",
-    vettedBy: "staff",
-    vettedAt: null,
-    display: true,
-    displayOrder: 0,
-    priority,
-    durationSeconds,
-    totalCost: 0,
-    isInfoMessage: false,
-    isFlashMode: false,
-    messageText: null,
-  };
-}
+const advert = (name: string, priority = 1, durationSeconds = 10): ApiSubmission =>
+  makeSubmission({ uploadedBy: name, filePath: `${name}.jpg`, priority, durationSeconds });
 const staffItem = (name: string, flash = false): ApiSubmission => ({
   ...advert(name, 4, 10),
   isInfoMessage: true,

@@ -126,6 +126,67 @@ describe("AccountsDashboard", () => {
     });
   });
 
+  describe("summary tiles", () => {
+    beforeEach(() => {
+      mocks.list.mockResolvedValue([
+        account(1, "active.never.seen"),
+        { ...account(2, "active.seen"), lastLoginAt: "2026-10-03T09:00:00Z" },
+        account(3, "locked.team", true),
+      ]);
+    });
+
+    const tile = (name: RegExp) => screen.getByRole("button", { name });
+    const shownUsernames = () =>
+      screen.queryAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[0].textContent);
+
+    it("count each group and filter the table when clicked", async () => {
+      renderPage(<StudentAccountsDashboard />);
+      await screen.findByText("locked.team");
+
+      expect(tile(/total accounts/i)).toHaveTextContent("3");
+      expect(tile(/^active/i)).toHaveTextContent("2");
+      expect(tile(/locked/i)).toHaveTextContent("1");
+      expect(tile(/seen at least once/i)).toHaveTextContent("1");
+
+      fireEvent.click(tile(/locked/i));
+      expect(tile(/locked/i)).toHaveAttribute("aria-pressed", "true");
+      expect(shownUsernames()).toEqual([expect.stringContaining("locked.team")]);
+
+      fireEvent.click(tile(/seen at least once/i));
+      expect(shownUsernames()).toEqual([expect.stringContaining("active.seen")]);
+
+      fireEvent.click(tile(/^active/i));
+      expect(shownUsernames()).toHaveLength(2);
+
+      fireEvent.click(tile(/total accounts/i));
+      expect(shownUsernames()).toHaveLength(3);
+      expect(tile(/total accounts/i)).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("works the same on the staff page, with a Show all link", async () => {
+      renderPage(<StaffAccountsDashboard />);
+      await screen.findByText("locked.team");
+
+      fireEvent.click(tile(/locked/i));
+      expect(shownUsernames()).toHaveLength(1);
+
+      fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+      expect(shownUsernames()).toHaveLength(3);
+    });
+
+    it("explains when a filter matches nobody", async () => {
+      mocks.list.mockResolvedValue([account(1, "only.active")]);
+      renderPage(<StudentAccountsDashboard />);
+      await screen.findByText("only.active");
+
+      fireEvent.click(tile(/locked/i));
+
+      expect(screen.getByText('No accounts match "Locked"')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Show all accounts" }));
+      expect(screen.getByText("only.active")).toBeInTheDocument();
+    });
+  });
+
   describe("for student accounts", () => {
     beforeEach(() => {
       mocks.list.mockResolvedValue([account(7, "year10-team1"), account(8, "head.teacher")]);

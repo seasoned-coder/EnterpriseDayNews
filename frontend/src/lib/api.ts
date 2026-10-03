@@ -29,6 +29,8 @@ export interface ApiSubmission {
   vettedBy: string | null;
   vettedAt: string | null;
   display: boolean;
+  /** Goes on screen as soon as it's approved (true) or waits for the student to publish it (false). */
+  publishOnApproval: boolean;
   displayOrder: number;
   priority: number;
   durationSeconds: number;
@@ -219,12 +221,24 @@ export const api = {
     return `${UPLOADS_BASE}/${encodeURIComponent(item.filePath)}`;
   },
 
-  studentUpload(_name: string, file: File, priority: number = 1, durationSeconds: number = 10) {
+  studentUpload(
+    _name: string,
+    file: File,
+    priority: number = 1,
+    durationSeconds: number = 10,
+    publishOnApproval: boolean = true,
+  ) {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("priority", priority.toString());
     fd.append("durationSeconds", durationSeconds.toString());
+    fd.append("publishOnApproval", publishOnApproval.toString());
     return student<ApiSubmission>("/api/student/upload", { method: "POST", body: fd });
+  },
+
+  /** Put an approved advert on screen or take it off; before approval, choose whether it goes on when approved. */
+  studentSetPublished(id: number, published: boolean) {
+    return student<ApiSubmission>(`/api/student/uploads/${id}/publish?published=${published}`, { method: "POST" });
   },
 
   studentGetMyUploads(_name: string) {

@@ -24,9 +24,17 @@ public class StudentController {
     public ResponseEntity<ImageView> upload(@RequestParam("file") MultipartFile file,
                                             @RequestParam(value = "priority", defaultValue = "1") int priority,
                                             @RequestParam(value = "durationSeconds", defaultValue = "10") int durationSeconds,
+                                            @RequestParam(value = "publishOnApproval", defaultValue = "true") boolean publishOnApproval,
                                             Principal principal) throws IOException {
         String username = ControllerSupport.usernameOf(principal);
-        return ResponseEntity.ok(imageViews.of(imageService.uploadImage(file, username, priority, durationSeconds)));
+        return ResponseEntity.ok(imageViews.of(
+                imageService.uploadImage(file, username, priority, durationSeconds, publishOnApproval)));
+    }
+
+    /** Publish (put on screen) or withdraw one of your own adverts; see ImageService#setPublishedByStudent. */
+    @PostMapping("/uploads/{id}/publish")
+    public ImageView setPublished(@PathVariable Long id, @RequestParam boolean published, Principal principal) {
+        return imageViews.of(imageService.setPublishedByStudent(id, ControllerSupport.usernameOf(principal), published));
     }
 
     @GetMapping("/uploads")

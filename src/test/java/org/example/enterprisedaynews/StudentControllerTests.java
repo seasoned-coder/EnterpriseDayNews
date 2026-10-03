@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -71,13 +72,49 @@ class StudentControllerTests {
         metadata.setId(1L);
         metadata.setUploadedBy(STUDENT_USERNAME);
 
-        when(imageService.uploadImage(any(), eq(STUDENT_USERNAME), anyInt(), anyInt())).thenReturn(metadata);
+        when(imageService.uploadImage(any(), eq(STUDENT_USERNAME), anyInt(), anyInt(), eq(true))).thenReturn(metadata);
 
         mockMvc.perform(multipart("/api/student/upload")
                 .file(file)
                 .header("Authorization", studentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uploadedBy").value(STUDENT_USERNAME));
+    }
+
+    @Test
+    void testUploadCanWaitForTheStudentToPublish() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
+        ImageMetadata metadata = new ImageMetadata();
+        metadata.setId(2L);
+        metadata.setUploadedBy(STUDENT_USERNAME);
+        metadata.setPublishOnApproval(false);
+        when(imageService.uploadImage(any(), eq(STUDENT_USERNAME), anyInt(), anyInt(), eq(false))).thenReturn(metadata);
+
+        mockMvc.perform(multipart("/api/student/upload")
+                .file(file)
+                .param("publishOnApproval", "false")
+                .header("Authorization", studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publishOnApproval").value(false));
+    }
+
+    @Test
+    void testPublishAndWithdrawOwnAdvert() throws Exception {
+        ImageMetadata published = new ImageMetadata();
+        published.setId(42L);
+        published.setDisplay(true);
+        when(imageService.setPublishedByStudent(42L, STUDENT_USERNAME, true)).thenReturn(published);
+
+        mockMvc.perform(post("/api/student/uploads/42/publish")
+                .param("published", "true")
+                .header("Authorization", studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.display").value(true));
+
+        mockMvc.perform(post("/api/student/uploads/42/publish")
+                .param("published", "true")
+                .header("Authorization", staffToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test

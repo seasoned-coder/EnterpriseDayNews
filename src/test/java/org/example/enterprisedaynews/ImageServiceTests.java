@@ -116,6 +116,77 @@ class ImageServiceTests {
         assertFalse(updated.isDisplay());
     }
 
+    private ImageMetadata studentAdvert(long id, ApprovalStatus status, boolean display, boolean publishOnApproval) {
+        ImageMetadata m = ImageMetadata.builder()
+                .id(id)
+                .uploadedBy("year10")
+                .status(status)
+                .display(display)
+                .publishOnApproval(publishOnApproval)
+                .build();
+        lenient().when(imageRepository.findById(id)).thenReturn(Optional.of(m));
+        lenient().when(imageRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        return m;
+    }
+
+    @Test
+    void testUploadRemembersWhetherToPublishOnApproval() throws IOException {
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "data".getBytes());
+        when(imageRepository.save(any(ImageMetadata.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        assertFalse(imageService.uploadImage(file, "year10", 2, 20, false).isPublishOnApproval());
+        assertTrue(imageService.uploadImage(file, "year10", 2, 20, true).isPublishOnApproval());
+    }
+
+    @Test
+    void testApprovingAWaitingAdvertKeepsItOffScreen() {
+        studentAdvert(5L, ApprovalStatus.NEW, false, false);
+
+        ImageMetadata approved = imageService.updateStatus(5L, ApprovalStatus.APPROVED, "staff1");
+
+        assertEquals(ApprovalStatus.APPROVED, approved.getStatus());
+        assertFalse(approved.isDisplay(), "student chose to publish it themselves");
+    }
+
+    @Test
+    void testStudentPublishesAndWithdrawsAnApprovedAdvert() {
+        studentAdvert(6L, ApprovalStatus.APPROVED, false, false);
+
+        assertTrue(imageService.setPublishedByStudent(6L, "year10", true).isDisplay());
+        assertFalse(imageService.setPublishedByStudent(6L, "year10", false).isDisplay());
+    }
+
+    @Test
+    void testStudentChangesTheirMindBeforeApproval() {
+        studentAdvert(7L, ApprovalStatus.NEW, false, true);
+
+        ImageMetadata waiting = imageService.setPublishedByStudent(7L, "year10", false);
+
+        assertFalse(waiting.isPublishOnApproval());
+        assertFalse(waiting.isDisplay(), "still nothing on screen before approval");
+    }
+
+    @Test
+    void testRejectedAdvertCannotBePublished() {
+        studentAdvert(8L, ApprovalStatus.REJECTED, false, true);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> imageService.setPublishedByStudent(8L, "year10", true));
+        assertEquals(409, ex.getStatusCode().value());
+    }
+
+    @Test
+    void testStudentsCanOnlyPublishTheirOwnAdverts() {
+        studentAdvert(9L, ApprovalStatus.APPROVED, false, false);
+        ImageMetadata staffInfo = studentAdvert(10L, ApprovalStatus.APPROVED, false, true);
+        staffInfo.setInfoMessage(true);
+
+        assertEquals(FORBIDDEN, assertThrows(ResponseStatusException.class,
+                () -> imageService.setPublishedByStudent(9L, "another-team", true)).getStatusCode());
+        assertEquals(FORBIDDEN, assertThrows(ResponseStatusException.class,
+                () -> imageService.setPublishedByStudent(10L, "year10", true)).getStatusCode());
+    }
+
     @Test
     void testUpdateStatusNotFound() {
         when(imageRepository.findById(999L)).thenReturn(Optional.empty());

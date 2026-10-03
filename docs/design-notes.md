@@ -49,7 +49,8 @@ Settings are validated server-side (`DisplaySettingsService`: interval 0–3600,
 
 ## Moderation and visibility
 
--   Student uploads start as **NEW** and are invisible to everyone except staff and the uploader. **Approving** sets `display = true`, so it goes live within one refresh. There is no separate publish step.
+-   Student uploads start as **NEW** and are invisible to everyone except staff and the uploader. The student chooses at upload whether it goes **on screen as soon as it's approved** (`publishOnApproval`, the default) or **waits for them to publish it** (#9, e.g. for timed offers). Approving sets `display = publishOnApproval`.
+-   **Students control `display` on their own approved adverts** (Publish now / Withdraw); before approval they can change `publishOnApproval`. Rejected adverts can't be published. Staff Hide/Display still works, but a student can re-publish a hidden advert, so **Reject** is the way to keep something off screen.
 -   **Hide/Display** (approved items only) and **Reject** take an item off screen. Items can't go back to NEW.
 -   Staff content is auto-approved and **hidden by default**. Ticking **Flash Mode** makes it take over immediately, which is why the checkbox is unticked by default.
 -   **Clear Down** (End of Day) deletes every student upload and its file. It keeps staff content and all accounts.

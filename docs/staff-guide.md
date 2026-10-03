@@ -55,7 +55,12 @@ Each card shows the uploader, how long ago it was uploaded, and the student's ch
 2. Click the card to see the image at a larger size. Check it carefully (see [Safeguarding](#safeguarding)).
 3. Select **Approve** or **Reject**.
 
-**Important:** Approving an item puts it **on the projector straight away** (within a few seconds). There is no separate "publish" step. Only approve what you are happy to show to the whole room.
+**Important:** Approving an item can put it **on the projector straight away** (within a few seconds). Students choose this when uploading:
+
+- **Most adverts** go on screen as soon as you approve them.
+- **Some adverts wait:** the student chose to publish it themselves later (for example, for a timed special offer). These stay in **Approved** but hidden until the student taps **Publish now** on their phone.
+
+Either way, only approve what you are happy to show to the whole room: approval means the student can put it on screen whenever they like.
 
 ### Changing your mind
 
@@ -70,6 +75,7 @@ On the **Approved** tab, each card has a **Hide** / **Display** button. (In the 
 - **Hide** keeps the item approved but takes it off the projector.
 - **Display** puts it back on.
 - Only approved items can be displayed.
+- Students can also **publish** and **withdraw** their own approved adverts, so a student can put back an advert you hid. **To keep something off the screen for good, select Reject**: rejected adverts can't be published.
 
 Students can see whether their item is currently **On Projector**.
 
@@ -180,7 +186,7 @@ Students sign in to the upload portal with accounts you manage here.
 
 ### The overview
 
-Four totals appear at the top: **Total accounts**, **Active**, **Locked** and **Seen at least once**.
+Four totals appear at the top: **Total accounts**, **Active**, **Locked** and **Seen at least once**. **Select a total to show just those accounts** in the table (it's highlighted while selected). Select **Total accounts**, or **Show all**, to see everyone again. The Staff Account Dashboard works the same way.
 
 The **Student accounts** table shows, for each account:
 
@@ -247,6 +253,12 @@ It works like the Student Account Dashboard: the same totals, table, **Lock** / 
 
 ---
 
+## Quick links
+
+At the bottom of every staff page, **Student portal** and **Projector** open those pages in a new tab, so you can see what students and the big screen see.
+
+---
+
 ## Safeguarding
 
 All uploads are made by children and shown publicly on the big screen.
@@ -254,6 +266,6 @@ All uploads are made by children and shown publicly on the big screen.
 - **Always check every upload yourself before approving.** Approving shows it on the projector right away.
 - The automatic image checker on the student page is a helper, not a guarantee. If it can't run, it lets images through.
 - Check for faces, names, school uniforms or other personal details. Students are asked to confirm that everyone in the photo is happy to be featured. If in doubt, reject.
-- If something inappropriate gets onto the screen, select **Hide** or **Reject** immediately. For a fast takeover, send an **Urgent Free Text** message.
+- If something inappropriate gets onto the screen, select **Reject** immediately (**Hide** can be undone by the student publishing it again). For a fast takeover, send an **Urgent Free Text** message.
 - The uploader's username appears on screen under each item. Choose student usernames that don't reveal full names.
 - Lock or delete any account that is misused, and follow your school's safeguarding procedures.

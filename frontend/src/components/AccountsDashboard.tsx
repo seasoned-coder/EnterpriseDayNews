@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Loader2, Lock, Trash2, Unlock, UserPlus, Users } from "lucide-react";
 import { BrandNav } from "@/components/BrandNav";
+import { StaffFooter } from "@/components/StaffFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "@/hooks/use-toast";
 import { accountApi, api, formatDateTime, formatRelative, type AccountKind, type ApiAccount } from "@/lib/api";
 import { STAFF_NAV } from "@/lib/staffNav";
+import { cn } from "@/lib/utils";
 
 /** Everything that differs between the student and staff account dashboards. */
 export interface AccountsDashboardConfig {
@@ -29,6 +31,16 @@ export interface AccountsDashboardConfig {
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
+type AccountFilter = "all" | "active" | "locked" | "seen";
+
+/** The summary tiles: each shows a count and, when clicked, filters the table to those accounts. */
+const ACCOUNT_FILTERS: { key: AccountFilter; label: string; matches: (account: ApiAccount) => boolean }[] = [
+  { key: "all", label: "Total accounts", matches: () => true },
+  { key: "active", label: "Active", matches: (account) => !account.locked },
+  { key: "locked", label: "Locked", matches: (account) => account.locked },
+  { key: "seen", label: "Seen at least once", matches: (account) => account.lastLoginAt !== null },
+];
+
 export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig }) => {
   const user = api.getCurrentUser("STAFF");
   const accounts = useMemo(() => accountApi(config.kind), [config.kind]);
@@ -40,6 +52,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
   const [passwordTarget, setPasswordTarget] = useState<ApiAccount | null>(null);
   const [nextPassword, setNextPassword] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ApiAccount | null>(null);
+  const [filter, setFilter] = useState<AccountFilter>("all");
 
   useEffect(() => {
     document.title = `${config.title} · BT Enterprise Day News`;
@@ -102,16 +115,9 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
     onError: failed("Could not delete account"),
   });
 
-  const summary = useMemo(() => {
-    const list = accountsQ.data ?? [];
-    const locked = list.filter((account) => account.locked).length;
-    return {
-      total: list.length,
-      active: list.length - locked,
-      locked,
-      seen: list.filter((account) => account.lastLoginAt !== null).length,
-    };
-  }, [accountsQ.data]);
+  const allAccounts = useMemo(() => accountsQ.data ?? [], [accountsQ.data]);
+  const activeFilter = ACCOUNT_FILTERS.find((f) => f.key === filter) ?? ACCOUNT_FILTERS[0];
+  const shownAccounts = useMemo(() => allAccounts.filter(activeFilter.matches), [allAccounts, activeFilter]);
 
   if (!user) return null;
 
@@ -143,37 +149,65 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
           </div>
         )}
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: "Total accounts", value: summary.total },
-            { label: "Active", value: summary.active },
-            { label: "Locked", value: summary.locked },
-            { label: "Seen at least once", value: summary.seen },
-          ].map((item) => (
-            <Card key={item.label} className="p-4">
-              <p className="text-sm text-muted-foreground">{item.label}</p>
-              <p className="mt-1 font-display text-3xl font-bold tracking-tight">{item.value}</p>
-            </Card>
-          ))}
+        {/* The totals double as filters for the table; "Total accounts" shows everyone again. */}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="group" aria-label="Filter accounts">
+          {ACCOUNT_FILTERS.map((item) => {
+            const selected = item.key === activeFilter.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setFilter(item.key)}
+                className={cn(
+                  "rounded-xl border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/40",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  selected ? "border-primary/60 ring-1 ring-primary/40" : "border-border",
+                )}
+              >
+                <p className={cn("text-sm", selected ? "font-medium text-primary" : "text-muted-foreground")}>{item.label}</p>
+                <p className="mt-1 font-display text-3xl font-bold tracking-tight">
+                  {allAccounts.filter(item.matches).length}
+                </p>
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,0.9fr)]">
           <Card className="overflow-hidden">
             <div className="border-b border-border px-5 py-4">
               <h2 className="font-display text-2xl font-bold tracking-tight">{capitalize(config.noun)} accounts</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                See each account, latest login time, and most recent IP address.
-              </p>
+              {activeFilter.key === "all" ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  See each account, latest login time, and most recent IP address.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Showing: <span className="font-medium text-foreground">{activeFilter.label.toLowerCase()}</span>
+                  {" · "}
+                  <button type="button" className="text-primary underline-offset-4 hover:underline" onClick={() => setFilter("all")}>
+                    Show all
+                  </button>
+                </p>
+              )}
             </div>
 
             {accountsQ.isLoading ? (
               <div className="flex items-center gap-2 px-6 py-12 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading accounts…
               </div>
-            ) : (accountsQ.data?.length ?? 0) === 0 ? (
+            ) : allAccounts.length === 0 ? (
               <div className="px-6 py-12 text-center">
                 <p className="font-medium">No {config.noun} accounts yet</p>
                 <p className="mt-1 text-sm text-muted-foreground">Add the first account using the form.</p>
+              </div>
+            ) : shownAccounts.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <p className="font-medium">No accounts match "{activeFilter.label}"</p>
+                <button type="button" className="mt-1 text-sm text-primary underline-offset-4 hover:underline" onClick={() => setFilter("all")}>
+                  Show all accounts
+                </button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -188,7 +222,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(accountsQ.data ?? []).map((account) => (
+                    {shownAccounts.map((account) => (
                       <TableRow key={account.id}>
                         <TableCell className="py-3">
                           <div className="font-semibold">
@@ -330,6 +364,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
           </Card>
         </div>
       </main>
+      <StaffFooter />
 
       <Dialog open={passwordTarget !== null} onOpenChange={(open) => !open && setPasswordTarget(null)}>
         <DialogContent>

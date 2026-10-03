@@ -36,6 +36,14 @@ public class ImageMetadata {
     private boolean display;
     private int displayOrder;
 
+    /**
+     * Student's choice at upload: go on screen as soon as staff approve it (true), or wait until the
+     * student publishes it (false). See issue #9.
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean publishOnApproval = true;
+
     private int priority;           // 1-4, configurable cost
     private int durationSeconds;    // 10, 20, or 30 seconds
     private int totalCost;          // cost = priorityCost + durationCost

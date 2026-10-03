@@ -20,7 +20,7 @@ The page updates by itself. You don't need to refresh it when staff approve new 
 
 The projector shows:
 
-- **Student adverts** that staff have **approved** and set to **Display**, and
+- **Student adverts** that staff have **approved** and that are on screen (straight away, or when the student taps **Publish now**), and
 - **Staff content**: **Event Communications** items (information images and messages) set to **Display**, which slip in between the adverts.
 
 Each item fills the screen. Wide (landscape) images fit best, and tall images are cropped. Images slowly zoom, and items fade from one to the next.

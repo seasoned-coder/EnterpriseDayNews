@@ -50,9 +50,17 @@ You stay signed in for about an hour. After that, the site sends you back to the
 3. Wait while the page checks your picture. It shows **Checking image…**. The first check can take a little while.
 4. When you see **Looks good**, you are ready.
 5. Choose your **Priority** and **Duration** (see below).
-6. Tap **Send it**.
+6. Choose **when it goes on screen** (see below).
+7. Tap **Send it**.
 
 When it works you will see **Sent it** and a message saying your advert is waiting for a teacher to approve it.
+
+### When it goes on screen
+
+The box **Put it on screen as soon as it's approved** is ticked to start with.
+
+- **Leave it ticked** and your advert goes on the big screen as soon as a teacher approves it.
+- **Untick it** to upload now and choose the moment yourself, for example for a special offer at lunchtime. After a teacher approves it, tap **Publish now** when you're ready (see [part 5](#5-publishing-and-withdrawing)).
 
 To pick a different picture before sending, tap the **X** on the preview.
 
@@ -87,7 +95,7 @@ The page checks every picture before you can send it.
 
 Your advert does **not** go on the big screen straight away.
 
-A member of staff looks at every upload first. They will either **approve** it or **reject** it. Only approved adverts appear on the big screen.
+A member of staff looks at every upload first. They will either **approve** it or **reject** it. Only approved adverts can appear on the big screen.
 
 ---
 
@@ -99,18 +107,33 @@ Each upload shows a label:
 
 | Label | What it means |
 |---|---|
-| **Waiting for approval** | Waiting for an adult to check it. |
-| **Approved** | An adult said yes. |
+| **Waiting for approval** | Waiting for an adult to check it. The line underneath says whether it goes on screen straight away when approved, or waits for you. |
+| **Approved** | An adult said yes. It is **not** on the big screen yet: tap **Publish now** when you want it on. |
+| **On screen** | It is in the mix on the big screen right now. |
 | **Not approved** | An adult said no. Ask a member of staff if you are not sure why. |
-| **On Projector** | It is in the mix on the big screen right now. |
-
-An upload can be **Approved** but not **On Projector**. That means staff have hidden it for now.
 
 You can also see the priority, duration and cost you chose.
 
 ---
 
-## 5. Deleting your own advert
+## 5. Publishing and withdrawing
+
+You decide when your approved advert is on the big screen. Each upload has one button underneath it:
+
+| Button | What it does |
+|---|---|
+| **Publish now** | Puts your approved advert on the big screen. It appears within a few seconds. |
+| **Withdraw** | Takes it off the big screen. It stays approved, so you can **Publish now** again later. |
+| **Keep it off screen** | While it's waiting for approval: don't put it on screen when it's approved. You'll publish it yourself. |
+| **Publish when approved** | While it's waiting for approval: put it on screen as soon as it's approved. |
+
+Adverts that were **Not approved** can't be published.
+
+Staff can still take any advert off the screen at any time.
+
+---
+
+## 6. Deleting your own advert
 
 You can only delete your own uploads.
 

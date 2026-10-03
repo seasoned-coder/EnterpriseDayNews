@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import StudentUpload from "@/pages/StudentUpload";
+import { makeSubmission } from "@/test/fixtures";
 
 const mocks = vi.hoisted(() => {
   return {
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => {
     getCurrentUser: vi.fn(),
     studentGetMyUploads: vi.fn(),
     studentDeleteMyUpload: vi.fn(),
+    studentSetPublished: vi.fn(),
     imageUrl: vi.fn(),
     formatRelative: vi.fn(),
   };
@@ -45,29 +47,18 @@ vi.mock("@/lib/api", () => ({
     getCurrentUser: mocks.getCurrentUser,
     studentGetMyUploads: mocks.studentGetMyUploads,
     studentDeleteMyUpload: mocks.studentDeleteMyUpload,
+    studentSetPublished: mocks.studentSetPublished,
     imageUrl: mocks.imageUrl,
   },
   formatRelative: mocks.formatRelative,
 }));
 
-const sampleUpload = {
+const sampleUpload = makeSubmission({
   id: 101,
   filePath: "photo-101.jpg",
   originalFileName: "my-upload.jpg",
   uploadedBy: "student1",
-  uploadedAt: "2026-05-14T08:00:00Z",
-  status: "APPROVED" as const,
-  vettedBy: "staff1",
-  vettedAt: "2026-05-14T08:02:00Z",
-  display: true,
-  displayOrder: 0,
-  priority: 2,
-  durationSeconds: 10,
-  totalCost: 15,
-  isInfoMessage: false,
-  isFlashMode: false,
-  messageText: null,
-};
+});
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -98,6 +89,7 @@ describe("StudentUpload wording and checks", () => {
       sampleUpload,
       { ...sampleUpload, id: 102, status: "NEW", display: false },
       { ...sampleUpload, id: 103, status: "REJECTED", display: false },
+      { ...sampleUpload, id: 104, status: "APPROVED", display: false },
     ]);
     mocks.imageUrl.mockImplementation((item: { filePath: string }) => `/uploads/${item.filePath}`);
     mocks.formatRelative.mockReturnValue("just now");
@@ -107,9 +99,29 @@ describe("StudentUpload wording and checks", () => {
     renderPage();
 
     expect(await screen.findByText("Waiting for approval")).toBeInTheDocument();
+    expect(screen.getByText("On screen")).toBeInTheDocument();
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("Not approved")).toBeInTheDocument();
     expect(screen.queryByText(/^(NEW|APPROVED|REJECTED)$/)).not.toBeInTheDocument();
+  });
+
+  it("lets the student publish an approved advert when they choose", async () => {
+    mocks.studentSetPublished.mockResolvedValue({ ...sampleUpload, id: 104, display: true });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /publish now/i }));
+
+    await waitFor(() => expect(mocks.studentSetPublished).toHaveBeenCalledWith(104, true));
+    expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "It's going on screen" }));
+  });
+
+  it("puts adverts on screen as soon as they're approved unless the student unticks it", () => {
+    renderPage();
+
+    const box = screen.getByRole("checkbox", { name: /as soon as it's approved/i });
+    expect(box).toBeChecked();
+    fireEvent.click(box);
+    expect(box).not.toBeChecked();
   });
 
   it("talks about adverts and the real 10 MB limit", () => {

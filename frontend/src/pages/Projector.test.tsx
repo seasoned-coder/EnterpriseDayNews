@@ -3,6 +3,7 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiSubmission } from "@/lib/api";
 import Projector from "@/pages/Projector";
+import { makeSubmission } from "@/test/fixtures";
 
 const mocks = vi.hoisted(() => ({
   projectorImages: vi.fn(),
@@ -17,25 +18,8 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-let id = 1;
-const advert = (name: string, priority = 1, durationSeconds = 10): ApiSubmission => ({
-  id: id++,
-  filePath: `${name}.jpg`,
-  originalFileName: `${name}.jpg`,
-  uploadedBy: name,
-  uploadedAt: "2026-10-03T10:00:00Z",
-  status: "APPROVED",
-  vettedBy: "staff",
-  vettedAt: null,
-  display: true,
-  displayOrder: 0,
-  priority,
-  durationSeconds,
-  totalCost: 0,
-  isInfoMessage: false,
-  isFlashMode: false,
-  messageText: null,
-});
+const advert = (name: string, priority = 1, durationSeconds = 10): ApiSubmission =>
+  makeSubmission({ uploadedBy: name, filePath: `${name}.jpg`, priority, durationSeconds });
 
 function renderProjector() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
