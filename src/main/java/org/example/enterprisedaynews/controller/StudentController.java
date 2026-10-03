@@ -3,6 +3,7 @@ package org.example.enterprisedaynews.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.PriceList;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +30,12 @@ public class StudentController {
         String username = ControllerSupport.usernameOf(principal);
         return ResponseEntity.ok(imageViews.of(
                 imageService.uploadImage(file, username, priority, durationSeconds, publishOnApproval)));
+    }
+
+    /** The priority and duration choices and what each costs (issue #35). */
+    @GetMapping("/prices")
+    public PriceList.Prices prices() {
+        return PriceList.prices();
     }
 
     /** Publish (put on screen) or withdraw one of your own adverts; see ImageService#setPublishedByStudent. */

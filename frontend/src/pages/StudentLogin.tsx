@@ -55,7 +55,7 @@ const StudentLogin = () => {
               <span className="text-gradient-neon">yourself.</span>
             </h1>
             <p className="mt-4 max-w-md text-base text-student-muted sm:text-lg">
-              Sign in with the username and password your teacher gave you to share your adverts with the whole school.
+              Sign in with the username and password your teacher gave you to share your adverts with everyone at the event.
             </p>
 
             <form onSubmit={handleLogin} className="mt-10 space-y-4">

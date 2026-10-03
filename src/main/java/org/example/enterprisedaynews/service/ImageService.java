@@ -49,6 +49,8 @@ public class ImageService {
     public ImageMetadata uploadImage(MultipartFile file, String username, int priority, int durationSeconds,
                                      boolean publishOnApproval) throws IOException {
         validateFile(file);
+        // Checked before anything is written: only choices on the price list are accepted.
+        int totalCost = PriceList.totalCost(priority, durationSeconds);
 
         // The name comes from the user's browser: never let it choose where the file goes.
         String originalName = UploadFileNames.displayName(file.getOriginalFilename());
@@ -76,7 +78,7 @@ public class ImageService {
                 .publishOnApproval(publishOnApproval)
                 .priority(priority)
                 .durationSeconds(durationSeconds)
-                .totalCost(calculateCost(priority, durationSeconds))
+                .totalCost(totalCost)
                 .build();
 
         return imageRepository.save(metadata);
@@ -88,14 +90,6 @@ public class ImageService {
     @Transactional
     public ImageMetadata uploadImage(MultipartFile file, String username) throws IOException {
         return uploadImage(file, username, 1, 10, true);
-    }
-
-    private int calculateCost(int priority, int durationSeconds) {
-        // Costs: priority 1=5, 2=10, 3=15, 4=20
-        int priorityCost = priority * 5;
-        // Costs: 10s=5, 20s=10, 30s=15
-        int durationCost = (durationSeconds / 10) * 5;
-        return priorityCost + durationCost;
     }
 
     public List<ImageMetadata> getUserUploads(String username) {

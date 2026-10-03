@@ -4,7 +4,7 @@ How the system is meant to work and why. Read this before changing behaviour. Th
 
 ## The event and its audiences
 
-BT Enterprise Day is a school event where students (aged 13–14) run small companies. Each company advertises on a big screen, paying with **virtual event money**.
+BT Enterprise Day is an event where students (aged 13–14) from **several schools** run small companies. Wording should talk about "the event", not "the school". Each company advertises on a big screen, paying with **virtual event money**.
 
 | App | Route | Who uses it | Design consequences |
 |---|---|---|---|
@@ -21,7 +21,7 @@ When uploading, a student chooses (and pays for):
 -   **Priority 1–4:** how *often* the advert appears.
 -   **Duration 10 / 20 / 30 s:** how *long* each appearance lasts.
 
-The cost shown is `priorityCost + durationCost` (priority 5/10/15/20, duration 5/10/15). The backend stores `priority`, `durationSeconds` and `totalCost` on the image record. **Paid choices must translate exactly into screen time**, because that is what students are buying.
+The cost is `priorityCost + durationCost` (priority 5/10/15/20, duration 5/10/15). **The only copy of the price list is the backend's `PriceList`** (#35): it calculates the stored `totalCost`, refuses any priority or duration that isn't on the list, and is served to the student page (`GET /api/student/prices`), which builds its sliders and total from it. **Paid choices must translate exactly into screen time**, because that is what students are buying.
 
 ## Projector scheduling
 

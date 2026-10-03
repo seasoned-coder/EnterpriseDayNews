@@ -90,7 +90,7 @@ Aim for **3 MB to 10 MB**.
 The page checks every picture before you can send it.
 
 - If you see **Image not accepted**, that picture can't be used. Choose a different one.
-- Only send pictures that are right for a school event.
+- Only send pictures that are right for the event.
 - The checker is not the only check. An adult looks at every upload too.
 
 ---

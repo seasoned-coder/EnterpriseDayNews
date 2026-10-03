@@ -72,6 +72,17 @@ describe("BrandNav", () => {
     expect(screen.queryByTitle("Logout")).not.toBeInTheDocument();
   });
 
+  it("cuts long usernames short instead of breaking the banner", () => {
+    const longName = "christopher.long-borthwicksmith";
+    mocks.getCurrentUser.mockReturnValue({ username: longName, role: "STAFF" });
+    renderNav({ links: STAFF_NAV });
+
+    const name = screen.getByTestId("signed-in-user");
+    expect(name).toHaveClass("truncate");
+    expect(name).toHaveAttribute("title", longName);
+    expect(name.parentElement).toHaveClass("max-w-[9rem]", "min-w-0");
+  });
+
   it("stays pinned to the top while the page scrolls", () => {
     renderNav({ links: STAFF_NAV });
 

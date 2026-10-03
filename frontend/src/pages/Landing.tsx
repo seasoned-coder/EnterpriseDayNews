@@ -26,7 +26,7 @@ const Landing = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-primary">Day News</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-400 sm:text-xl">
-            The beating heart of our school event. Share your adverts, manage the feed, and watch it all live on the BT big screen.
+            The beating heart of the event. Share your adverts, manage the feed, and watch it all live on the BT big screen.
           </p>
         </div>
 

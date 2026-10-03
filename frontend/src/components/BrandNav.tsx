@@ -85,9 +85,12 @@ export const BrandNav = ({ variant = "light", links = [] }: BrandNavProps) => {
                 ))}
               </nav>
             )}
-            <div className="hidden sm:flex sm:flex-col sm:items-end">
+            {/* Long usernames are cut short with "…" (full name on hover) so the banner never breaks. */}
+            <div className="hidden min-w-0 max-w-[9rem] sm:flex sm:flex-col sm:items-end lg:max-w-[12rem]">
               <span className="text-xs font-medium uppercase tracking-wider opacity-60">Signed in as</span>
-              <span className="text-sm font-bold">{user.username}</span>
+              <span data-testid="signed-in-user" className="w-full truncate text-right text-sm font-bold" title={user.username}>
+                {user.username}
+              </span>
             </div>
             <button
               onClick={handleLogout}

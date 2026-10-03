@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
 
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -115,6 +116,15 @@ class StudentControllerTests {
                 .param("published", "true")
                 .header("Authorization", staffToken))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testPriceListForStudents() throws Exception {
+        mockMvc.perform(get("/api/student/prices").header("Authorization", studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priority[3].value").value(4))
+                .andExpect(jsonPath("$.priority[3].cost").value(20))
+                .andExpect(jsonPath("$.durationSeconds[*].value").value(contains(10, 20, 30)));
     }
 
     @Test

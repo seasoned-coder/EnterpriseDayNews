@@ -16,12 +16,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { api, type ApiSubmission } from "@/lib/api";
+import { PriceChoice } from "@/components/PriceChoice";
+import { api, type ApiSubmission, type PriceOption } from "@/lib/api";
 import { checkFileSize, FILE_SIZE_LIMITS, isAllowedImageType } from "@/lib/fileSizeCheck";
 import { useNsfwCheck } from "@/hooks/useNsfwCheck";
 
-const PRIORITY_COSTS = { 1: 5, 2: 10, 3: 15, 4: 20 };
-const DURATION_COSTS = { 10: 5, 20: 10, 30: 15 };
+/** What a choice costs on the price list (0 while the list is loading). */
+const costOf = (options: PriceOption[] | undefined, value: number) =>
+  options?.find((option) => option.value === value)?.cost ?? 0;
 
 const StudentUpload = () => {
   const user = api.getCurrentUser("STUDENT");
@@ -93,7 +95,7 @@ const StudentUpload = () => {
       toast({
         title: "Image not accepted",
         description:
-          "That image can't be submitted — it may contain content that isn't appropriate for the school event. Please choose a different photo.",
+          "That image can't be submitted — it may contain content that isn't appropriate for the event. Please choose a different photo.",
         variant: "destructive",
       });
       setFile(null);
@@ -104,6 +106,8 @@ const StudentUpload = () => {
   useEffect(() => {
     document.title = "Submit your advert · BT Enterprise Day News";
   }, []);
+
+  const pricesQ = useQuery({ queryKey: ["prices"], queryFn: api.studentPrices, staleTime: 5 * 60_000 });
 
   const myUploadsQ = useQuery({
     queryKey: ["my-uploads", name],
@@ -190,8 +194,7 @@ const StudentUpload = () => {
     },
   });
 
-  const totalCost = (PRIORITY_COSTS[priority as keyof typeof PRIORITY_COSTS] ?? 5) +
-                    (DURATION_COSTS[durationSeconds as keyof typeof DURATION_COSTS] ?? 5);
+  const totalCost = costOf(pricesQ.data?.priority, priority) + costOf(pricesQ.data?.durationSeconds, durationSeconds);
   const canSubmit =
     name.trim().length > 0 &&
     file !== null &&
@@ -218,8 +221,8 @@ const StudentUpload = () => {
               Drop your <br />
               <span className="text-gradient-neon">advert.</span>
             </h1>
-            <p className="mt-4 max-w-md text-base text-student-muted sm:text-lg">
-              Snap it, upload it, and your moment lands on the big screen for the whole school to see.
+            <p className="mt-4 max-w-2xl text-base text-student-muted sm:text-lg">
+              Snap it, upload it, and it lands on the big screen for everyone at the event.
             </p>
 
             {/* Upload guidance */}
@@ -231,42 +234,24 @@ const StudentUpload = () => {
           <div className="mt-10 space-y-6 fade-in" style={{ animationDelay: "120ms" }}>
             <UploadDropzone file={file} onFileChange={handleFileChange} scanStatus={scanStatus} />
 
-            {/* Priority Slider */}
-            <div className="space-y-2 rounded-xl border border-student-border bg-white/[0.03] p-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-student-muted">
-                  Priority: <span className="text-neon-2">{priority}</span> (cost: {PRIORITY_COSTS[priority as keyof typeof PRIORITY_COSTS]})
-                </label>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="4"
-                value={priority}
-                onChange={(e) => setPriority(parseInt(e.target.value))}
-                className="w-full accent-neon-2"
-              />
-              <p className="text-xs text-student-muted">1=Low, 4=High - Higher priority shows more often</p>
-            </div>
-
-            {/* Duration Slider */}
-            <div className="space-y-2 rounded-xl border border-student-border bg-white/[0.03] p-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-student-muted">
-                  Duration: <span className="text-neon-2">{durationSeconds}s</span> (cost: {DURATION_COSTS[durationSeconds as keyof typeof DURATION_COSTS]})
-                </label>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="30"
-                step="10"
-                value={durationSeconds}
-                onChange={(e) => setDurationSeconds(parseInt(e.target.value))}
-                className="w-full accent-neon-2"
-              />
-              <p className="text-xs text-student-muted">How long your advert appears on screen</p>
-            </div>
+            {/* Choices and prices come from the server's price list (issue #35). */}
+            <PriceChoice
+              id="priority"
+              label="Priority"
+              hint="1 = Low, 4 = High. Higher priority shows more often."
+              options={pricesQ.data?.priority ?? []}
+              value={priority}
+              onChange={setPriority}
+            />
+            <PriceChoice
+              id="duration"
+              label="Duration"
+              format={(seconds) => `${seconds}s`}
+              hint="How long your advert stays on screen each time"
+              options={pricesQ.data?.durationSeconds ?? []}
+              value={durationSeconds}
+              onChange={setDurationSeconds}
+            />
 
             {/* When it goes on screen (issue #9) */}
             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-student-border bg-white/[0.03] p-4">

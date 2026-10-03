@@ -99,6 +99,21 @@ class ImageServiceTests {
     }
 
     @Test
+    void testUploadUsesThePriceListAndRefusesOffListChoices() throws IOException {
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "data".getBytes());
+        when(imageRepository.save(any(ImageMetadata.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        assertEquals(20 + 15, imageService.uploadImage(file, "year10", 4, 30, true).getTotalCost());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> imageService.uploadImage(file, "year10", 1, 300, true));
+        assertEquals(400, ex.getStatusCode().value());
+        try (var stream = Files.list(tempDir)) {
+            assertEquals(1, stream.count(), "nothing is written for a refused upload");
+        }
+    }
+
+    @Test
     void testUploadEmptyFileRejected() {
         MockMultipartFile file = new MockMultipartFile("file", "x.png", "image/png", new byte[0]);
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,

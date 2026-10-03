@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import StudentUpload from "@/pages/StudentUpload";
 import { makeSubmission } from "@/test/fixtures";
@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => {
     studentGetMyUploads: vi.fn(),
     studentDeleteMyUpload: vi.fn(),
     studentSetPublished: vi.fn(),
+    studentPrices: vi.fn(),
     imageUrl: vi.fn(),
     formatRelative: vi.fn(),
   };
@@ -48,6 +49,7 @@ vi.mock("@/lib/api", () => ({
     studentGetMyUploads: mocks.studentGetMyUploads,
     studentDeleteMyUpload: mocks.studentDeleteMyUpload,
     studentSetPublished: mocks.studentSetPublished,
+    studentPrices: mocks.studentPrices,
     imageUrl: mocks.imageUrl,
   },
   formatRelative: mocks.formatRelative,
@@ -75,6 +77,21 @@ function renderPage() {
   );
 }
 
+/** Deliberately different from the real prices: the page must show whatever the server sends. */
+const PRICES = {
+  priority: [
+    { value: 1, cost: 7 },
+    { value: 2, cost: 11 },
+    { value: 3, cost: 13 },
+    { value: 4, cost: 17 },
+  ],
+  durationSeconds: [
+    { value: 10, cost: 3 },
+    { value: 20, cost: 6 },
+    { value: 30, cost: 9 },
+  ],
+};
+
 function pick(file: File) {
   fireEvent.change(screen.getByTestId("upload-dropzone"), { target: { files: [file] } });
 }
@@ -84,6 +101,7 @@ const MB = 1024 * 1024;
 describe("StudentUpload wording and checks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.studentPrices.mockResolvedValue(PRICES);
     mocks.getCurrentUser.mockReturnValue({ username: "student1", role: "STUDENT" });
     mocks.studentGetMyUploads.mockResolvedValue([
       sampleUpload,
@@ -124,6 +142,41 @@ describe("StudentUpload wording and checks", () => {
     expect(box).not.toBeChecked();
   });
 
+  const totalCost = () => screen.getByText("Total Cost:").closest("div");
+
+  it("builds the choices and total cost from the server's price list", async () => {
+    renderPage();
+
+    expect(await screen.findByText(/\(cost: 7\)/)).toBeInTheDocument(); // priority 1
+    expect(screen.getByText(/\(cost: 3\)/)).toBeInTheDocument(); // 10 seconds
+    expect(totalCost()).toHaveTextContent("Total Cost:10"); // 7 + 3
+
+    // One tap/click per choice: no fiddly slider.
+    const priority = screen.getByRole("radiogroup", { name: /priority/i });
+    const duration = screen.getByRole("radiogroup", { name: /duration/i });
+    expect(within(priority).getAllByRole("radio")).toHaveLength(4);
+    fireEvent.click(within(priority).getByRole("radio", { name: "4, costs 17" }));
+    fireEvent.click(within(duration).getByRole("radio", { name: "30s, costs 9" }));
+
+    expect(within(priority).getByRole("radio", { name: "4, costs 17" })).toHaveAttribute("aria-checked", "true");
+    expect(document.getElementById("priority-label")).toHaveTextContent("Priority: 4 (cost: 17)");
+    expect(document.getElementById("duration-label")).toHaveTextContent("Duration: 30s (cost: 9)");
+    expect(totalCost()).toHaveTextContent("Total Cost:26"); // 17 + 9
+  });
+
+  it("lets the arrow keys move between choices", async () => {
+    renderPage();
+    await screen.findByRole("radio", { name: "1, costs 7" });
+    const priority = screen.getByRole("radiogroup", { name: /priority/i });
+
+    fireEvent.keyDown(within(priority).getByRole("radio", { name: "1, costs 7" }), { key: "ArrowRight" });
+    expect(within(priority).getByRole("radio", { name: "2, costs 11" })).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.keyDown(within(priority).getByRole("radio", { name: "2, costs 11" }), { key: "ArrowLeft" });
+    fireEvent.keyDown(within(priority).getByRole("radio", { name: "1, costs 7" }), { key: "ArrowLeft" });
+    expect(within(priority).getByRole("radio", { name: "4, costs 17" })).toHaveAttribute("aria-checked", "true");
+  });
+
   it("talks about adverts and the real 10 MB limit", () => {
     renderPage();
 
@@ -159,6 +212,7 @@ describe("StudentUpload wording and checks", () => {
 describe("StudentUpload delete flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.studentPrices.mockResolvedValue(PRICES);
 
     mocks.getCurrentUser.mockReturnValue({ username: "student1", role: "STUDENT" });
     mocks.studentGetMyUploads.mockResolvedValue([sampleUpload]);

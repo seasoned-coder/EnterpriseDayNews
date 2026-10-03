@@ -50,6 +50,18 @@ export interface ProjectorSettings {
   imageRefreshSeconds: number;
 }
 
+/** One choice on the price list and what it costs (event money). */
+export interface PriceOption {
+  value: number;
+  cost: number;
+}
+
+/** The price list: the single source is the backend (PriceList.java). */
+export interface PriceList {
+  priority: PriceOption[];
+  durationSeconds: PriceOption[];
+}
+
 export interface ApiUser {
   username: string;
   role: Role;
@@ -239,6 +251,10 @@ export const api = {
   /** Put an approved advert on screen or take it off; before approval, choose whether it goes on when approved. */
   studentSetPublished(id: number, published: boolean) {
     return student<ApiSubmission>(`/api/student/uploads/${id}/publish?published=${published}`, { method: "POST" });
+  },
+
+  studentPrices() {
+    return student<PriceList>("/api/student/prices");
   },
 
   studentGetMyUploads(_name: string) {
