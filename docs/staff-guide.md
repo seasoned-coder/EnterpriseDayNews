@@ -206,7 +206,61 @@ The **Student accounts** table shows, for each account:
 
 The list refreshes every 15 seconds.
 
+### Setting up teams and printing login slips
+
+The quickest way to get ready for the day: create every team's account at once and print a slip for each, to hand out. Use the **Set up teams** panel.
+
+**Before you print (once per event):** under **Printed on the slips**, enter:
+
+- the event **Wi-Fi name**;
+- the **Wi-Fi password** (leave it empty for an open network);
+- the **App address** phones should open, e.g. `http://192.168.1.10`. Leave this empty if you're using this laptop at the event: it uses the address in your address bar.
+
+Then select **Save slip details**. Every staff laptop prints the same details.
+
+**Create the teams:**
+
+1. Choose how to name them:
+    - **Numbered:** e.g. "team" and 26 makes `team01` … `team26`.
+    - **List of names:** one team per line, e.g. their company names. "Rocket Lemonade" becomes `rocket-lemonade`.
+2. Check the line underneath, which shows the names it will create. Then select **Create teams**.
+
+Each team gets an easy-to-type password, like `Tiger-Maple-47`. Names that already exist are skipped and listed with the reason; they keep their current password.
+
+**Print the slips straight away.** The passwords are only shown on this screen (they're stored scrambled, so nobody can look them up later).
+
+- **Till printer:** one slip per team, cut between each.
+- **A4 paper:** several slips per page, with dashed lines to cut along.
+
+Each slip shows the team name, the password, and two QR codes:
+
+1. **Join the Wi-Fi:** scanning it with the phone's camera joins the event Wi-Fi.
+2. **Open the app:** scanning it opens the sign-in page with the team name already filled in, so they only type the password.
+
+There's a preview of the first slip on screen. When you've printed them, select **Done, hide the passwords**.
+
+**Lost a slip?** Under **Lost a slip?**, choose the team and select **New slip**, then **Set new password**. The team gets a new password and you can print a new slip. Their old password stops working, but anyone already signed in stays signed in.
+
+#### Setting up the till printer (Epson TM-T88)
+
+Print from the staff laptop the printer is plugged into (USB) or can reach on the network.
+
+- **Driver:** install Epson's Windows driver for the TM-T88 (the "Advanced Printer Driver"). The printer then appears in the browser's print dialog like any other.
+- **In the driver's printing preferences:**
+    - **Paper size:** roll paper 80 mm.
+    - **Cut:** cut after each page, so each slip comes out separately.
+    - **Paper reduction:** "bottom margin". Each slip page is a little longer than the slip, and this stops blank paper being fed.
+- **In the browser's print dialog:**
+    - **Printer:** the TM-T88.
+    - **Margins:** default or none.
+    - **Headers and footers:** turn off, so the date and web address aren't printed on every slip.
+- **First time:** print one test slip (for example, create a test team, print it, then delete the team). Check the QR codes scan from a phone and nothing is cut off at the sides.
+
+If the till printer won't cooperate on the day, print on **A4** instead and cut the slips out.
+
 ### Adding an account
+
+To add a single account by hand, with a password you choose:
 
 1. In **Add a student account**, enter a **Username** and **Password**.
 2. Select **Add student account**.

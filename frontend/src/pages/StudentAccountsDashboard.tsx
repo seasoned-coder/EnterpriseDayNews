@@ -1,4 +1,5 @@
 import { AccountsDashboard, type AccountsDashboardConfig } from "@/components/AccountsDashboard";
+import { TeamSetupPanel } from "@/components/TeamSetupPanel";
 
 const STUDENT_ACCOUNTS: AccountsDashboardConfig = {
   kind: "student",
@@ -10,6 +11,7 @@ const STUDENT_ACCOUNTS: AccountsDashboardConfig = {
   deleteNote: "Existing uploads will remain in the system.",
   renameNote: "Their adverts move to the new name. If they're signed in, they'll need to sign in again with it.",
   protectSelf: false,
+  sidePanel: (accounts) => <TeamSetupPanel accounts={accounts} />,
 };
 
 const StudentAccountsDashboard = () => <AccountsDashboard config={STUDENT_ACCOUNTS} />;

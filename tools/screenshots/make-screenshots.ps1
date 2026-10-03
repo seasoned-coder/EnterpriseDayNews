@@ -8,11 +8,14 @@
 # Your normal local stack and its data are not touched. Needs Docker, Node 20+ and Chrome.
 param(
     [switch]$Build,
-    [switch]$KeepRunning
+    [switch]$KeepRunning,
+    # Somewhere else to save them, e.g. to check a change without touching the README's images.
+    [string]$OutDir
 )
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
 $repo = Resolve-Path (Join-Path $here "..\..")
+if (-not $OutDir) { $OutDir = Join-Path $repo "docs\screenshots" }
 
 if ($Build) {
     docker compose -f (Join-Path $repo "docker-compose.yml") build backend frontend
@@ -30,7 +33,7 @@ try {
     Push-Location $here
     try {
         if (-not (Test-Path node_modules)) { npm install --no-audit --no-fund | Out-Null }
-        node screenshots.mjs (Join-Path $repo "docs\screenshots")
+        node screenshots.mjs $OutDir
         if ($LASTEXITCODE -ne 0) { throw "screenshots failed" }
     } finally {
         Pop-Location

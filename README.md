@@ -64,7 +64,8 @@ The event runs on a **private Wi-Fi network with no internet connection**. One m
 | **Staff devices** | Laptops or tablets with a browser, on the event Wi-Fi. |
 | **Student devices** | Phones or tablets (school or own), on the event Wi-Fi. |
 | **Cables and power** | Network cables for the server (and ideally the projector computer) to the router, the projector video cable, extension leads. |
-| **Signs** | Printed Wi-Fi name, Wi-Fi password and the app address (e.g. `http://192.168.1.10/student`), ideally as a QR code. Hand student login slips out separately. |
+| **Signs** | Printed Wi-Fi name, Wi-Fi password and the app address (e.g. `http://192.168.1.10/student`), ideally as a QR code. |
+| **Till printer** (optional) | An 80 mm receipt printer, e.g. Epson TM-T88, with its Windows driver on a staff laptop, for team login slips (each with QR codes to join the Wi-Fi and open the app). Or print them on A4. |
 
 Plug the server, and ideally the projector computer, into the router with **cables**. That keeps the Wi-Fi free for phones and is more reliable.
 
@@ -78,7 +79,7 @@ Do this a day or more ahead, on the server, while it **is** connected to the int
 2. First time only: create a `.env` next to `docker-compose.yml` with `FRONTEND_PORT=80` (so the address has no port number) and the first staff login (`APP_STAFF_BOOTSTRAP_USERNAME`, `APP_STAFF_BOOTSTRAP_PASSWORD`). Nothing else is needed; see [Settings](#settings-env).
 3. If the images on GitHub Container Registry are private, sign in: `docker login ghcr.io`.
 4. Download the images: `docker compose pull db backend frontend`.
-5. Start it once to check: `docker compose up -d db backend frontend`. Sign in as staff, create the student accounts, and check the **Projector** settings.
+5. Start it once to check: `docker compose up -d db backend frontend`. Sign in as staff, check the **Projector** settings, and on the Student Account Dashboard use **Set up teams** to create the team accounts and print their login slips (on the till printer or A4; see the [Staff Guide](docs/staff-guide.md#setting-up-teams-and-printing-login-slips)).
 6. Make sure the server's **clock is correct** before going offline. Sign-in sessions, image links and login times rely on it.
 
 You don't need Caddy at the event. It provides HTTPS for the public hosted domain and can't get certificates without the internet, so it's left out.
@@ -341,6 +342,9 @@ The frontend automatically handles login and token management when navigating to
 -   `PUT  /api/staff/students/{id}/password`: Reset a student's password (JSON body: `{"password": "..."}`).
 -   `DELETE /api/staff/students/{id}`: Delete a student account.
 -   `PUT  /api/staff/students/{id}/username`: Rename a student account (JSON body: `{"username": "..."}`). `409` if the name is used by any other student account (active or locked); their uploads move to the new name.
+-   `POST /api/staff/students/teams`: Create many team accounts at once with generated passwords (JSON body: `{"usernames": ["team01", ...]}`, up to 200). Returns each team's username and new password once (`CREATED`), or `SKIPPED` with the reason (e.g. already exists).
+-   `POST /api/staff/students/{id}/generated-password`: Give one team a new generated password (to reprint a lost login slip).
+-   `GET|PUT /api/staff/event-details`: The Wi-Fi name, Wi-Fi password and app address printed on login slips.
 -   `/api/staff/staff-accounts`: the same operations (`GET`, `POST`, `POST /{id}/lock`, `PUT /{id}/password`, `PUT /{id}/username`, `DELETE /{id}`) for staff accounts. Locking or deleting your own account is refused with `409`.
 -   Requests without a valid sign-in (missing, expired, or for an account that has since been locked, renamed or deleted) get `401`, and the frontend returns to the sign-in page. Signed in with the wrong role gets `403`.
 -   `GET  /api/projector/images`: Items the projector may show: FLASH items if any, otherwise approved + displayed items (student adverts and staff content) in staff order. The projector page decides what to show next; see [docs/design-notes.md](docs/design-notes.md#projector-scheduling). Public.

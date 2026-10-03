@@ -1,15 +1,23 @@
 package org.example.enterprisedaynews.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.enterprisedaynews.dto.TeamLogin;
 import org.example.enterprisedaynews.model.StudentAccount;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -25,12 +33,57 @@ public class StudentAccountService extends AccountService<StudentAccount> {
             "guest", "Guest1A"
     );
 
+    /** Most teams created in one go; a big event has about 52. */
+    static final int MAX_TEAMS_AT_ONCE = 200;
+
     private final ImageRepository imageRepository;
+    private final FriendlyPasswords friendlyPasswords;
 
     public StudentAccountService(StudentAccountRepository repository, LoginGuard loginGuard,
-                                 ImageRepository imageRepository) {
+                                 ImageRepository imageRepository, FriendlyPasswords friendlyPasswords) {
         super(repository, loginGuard, PasswordPolicy.STUDENT_MIN_LENGTH, "student");
         this.imageRepository = imageRepository;
+        this.friendlyPasswords = friendlyPasswords;
+    }
+
+    /**
+     * Creates a team account for each name, with a generated password to print on its login slip (issue #37).
+     * Names that are invalid, repeated or already taken are skipped (with the reason) rather than failing the
+     * rest. Each account is saved on its own, so one clash doesn't undo the others.
+     */
+    public List<TeamLogin> createTeams(List<String> usernames) {
+        if (usernames == null || usernames.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Add at least one team name");
+        }
+        if (usernames.size() > MAX_TEAMS_AT_ONCE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "You can create up to " + MAX_TEAMS_AT_ONCE + " teams at once");
+        }
+        List<TeamLogin> results = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (String raw : usernames) {
+            String shown = raw == null ? "" : raw.trim();
+            String normalized = PasswordPolicy.normalizeUsername(raw);
+            if (normalized != null && !seen.add(normalized)) {
+                results.add(TeamLogin.skipped(normalized, "Listed twice"));
+                continue;
+            }
+            String password = friendlyPasswords.next();
+            try {
+                results.add(TeamLogin.created(createAccount(raw, password).getUsername(), password));
+            } catch (ResponseStatusException ex) {
+                results.add(TeamLogin.skipped(normalized != null ? normalized : shown, ex.getReason()));
+            } catch (DataIntegrityViolationException ex) {
+                results.add(TeamLogin.skipped(normalized, "Already exists"));
+            }
+        }
+        return results;
+    }
+
+    /** Gives a team a new generated password, e.g. to reprint a lost login slip (issue #37). */
+    public TeamLogin newGeneratedPassword(Long id) {
+        String password = friendlyPasswords.next();
+        return TeamLogin.reset(changePassword(id, password).getUsername(), password);
     }
 
     @Override

@@ -81,6 +81,22 @@ export interface ApiAccount {
   updatedAt: string;
 }
 
+/** A team's sign-in details for a login slip (issue #37). The password is only returned once. */
+export interface TeamLogin {
+  username: string;
+  password: string | null;
+  status: "CREATED" | "RESET" | "SKIPPED";
+  message: string | null;
+}
+
+/** Printed on login slips (issue #37). Empty fields are left off the slip. */
+export interface EventDetails {
+  wifiName: string | null;
+  wifiPassword: string | null;
+  /** e.g. http://192.168.1.10; when empty, the address the staff page was opened from. */
+  appAddress: string | null;
+}
+
 // ── Sessions ────────────────────────────────────────────────────────────────
 // Students and staff each have their own stored session, so signing in to one app in this browser
 // doesn't sign you out of the other (handy when testing both on one machine).
@@ -327,6 +343,23 @@ export const api = {
 
   updateProjectorSettings(settings: Omit<ProjectorSettings, "id">) {
     return staff<ProjectorSettings>("/api/projector/settings", { method: "POST", body: settings });
+  },
+
+  // ── Team setup and login slips (issue #37) ──
+  createTeams(usernames: string[]) {
+    return staff<TeamLogin[]>("/api/staff/students/teams", { method: "POST", body: { usernames } });
+  },
+
+  newTeamPassword(id: number) {
+    return staff<TeamLogin>(`/api/staff/students/${id}/generated-password`, { method: "POST" });
+  },
+
+  eventDetails() {
+    return staff<EventDetails>("/api/staff/event-details");
+  },
+
+  saveEventDetails(details: EventDetails) {
+    return staff<EventDetails>("/api/staff/event-details", { method: "PUT", body: details });
   },
 };
 

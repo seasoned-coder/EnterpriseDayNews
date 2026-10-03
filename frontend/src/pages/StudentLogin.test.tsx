@@ -17,9 +17,9 @@ vi.mock("react-router-dom", async (importOriginal) => ({
   useNavigate: () => mocks.navigate,
 }));
 
-function renderPage() {
+function renderPage(path = "/student/login") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <StudentLogin />
     </MemoryRouter>,
   );
@@ -36,6 +36,13 @@ describe("StudentLogin", () => {
     expect(screen.getByLabelText("Username")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toHaveAttribute("type", "password");
     expect(screen.queryByText(/your name|event code/i)).not.toBeInTheDocument();
+  });
+
+  it("fills in the team name from the login slip's QR code", () => {
+    renderPage("/student/login?team=rocket-lemonade");
+
+    expect(screen.getByLabelText("Username")).toHaveValue("rocket-lemonade");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
   });
 
   it("stops phone keyboards capitalising or autocorrecting the username", () => {

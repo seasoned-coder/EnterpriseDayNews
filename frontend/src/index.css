@@ -169,3 +169,89 @@
   @keyframes crossfadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 }
+
+/* ── Team login slips (issue #37) ─────────────────────────────────────────────────────────────────────
+   Sized for 80 mm till paper (72 mm printable, e.g. Epson TM-T88). Black only: thermal printers fade greys.
+   No web fonts (the event is offline): system sans-serif and monospace. */
+.login-slip {
+  box-sizing: border-box;
+  width: 72mm;
+  padding: 2mm 0 3mm;
+  color: #000;
+  background: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.3;
+}
+.login-slip__brand {
+  border-bottom: 0.6mm solid #000;
+  padding-bottom: 1.5mm;
+  margin-bottom: 2.5mm;
+  text-align: center;
+  font-weight: 900;
+  letter-spacing: 0.4mm;
+}
+.login-slip__label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3mm; }
+.login-slip__team { font-size: 17pt; font-weight: 900; line-height: 1.1; overflow-wrap: anywhere; margin-bottom: 2mm; }
+.login-slip__password {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 17pt;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  margin-bottom: 3mm;
+}
+.login-slip__mono { font-family: Consolas, "Courier New", monospace; font-weight: 700; overflow-wrap: anywhere; }
+.login-slip__step {
+  display: flex;
+  gap: 3mm;
+  align-items: center;
+  border-top: 0.3mm dashed #000;
+  padding-top: 2.5mm;
+  margin-top: 2.5mm;
+}
+.login-slip__step svg { width: 24mm; height: 24mm; flex-shrink: 0; }
+.login-slip__step-title { font-weight: 900; font-size: 10.5pt; }
+.login-slip__footer {
+  border-top: 0.6mm solid #000;
+  margin-top: 3mm;
+  padding-top: 1.5mm;
+  font-size: 7.5pt;
+  text-align: center;
+}
+
+/* On screen: a preview that looks like a strip of till paper. */
+.slip-paper {
+  display: inline-block;
+  padding: 0 4mm;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15), 0 8px 24px -8px rgb(0 0 0 / 0.25);
+  /* torn top and bottom edges */
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 3mm 100%,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 3mm 100%;
+  -webkit-mask-composite: source-in;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 3mm 100%,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 3mm 100%;
+  mask-composite: intersect;
+}
+
+/* Printing: only the slips. */
+.print-slips { display: none; }
+@media print {
+  body.printing-slips { background: #fff !important; }
+  body.printing-slips > *:not(.print-slips) { display: none !important; }
+  body.printing-slips .print-slips { display: block; }
+  body.printing-slips[data-slip-layout="receipt"] .login-slip { margin: 0 auto; padding: 4mm 0; break-after: page; }
+  body.printing-slips[data-slip-layout="a4"] .print-slips {
+    display: grid;
+    grid-template-columns: repeat(2, 80mm);
+    justify-content: space-around;
+    gap: 6mm 0;
+  }
+  body.printing-slips[data-slip-layout="a4"] .login-slip {
+    width: 80mm;
+    padding: 3mm 4mm;
+    border: 0.3mm dashed #000;
+    break-inside: avoid;
+  }
+}

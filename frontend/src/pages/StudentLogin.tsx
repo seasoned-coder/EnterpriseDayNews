@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -7,7 +7,9 @@ import { api } from "@/lib/api";
 import { BrandNav } from "@/components/BrandNav";
 
 const StudentLogin = () => {
-  const [name, setName] = useState("");
+  // The QR code on a team's login slip (issue #37) opens this page with ?team=<username>.
+  const [searchParams] = useSearchParams();
+  const [name, setName] = useState(() => searchParams.get("team") ?? "");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();

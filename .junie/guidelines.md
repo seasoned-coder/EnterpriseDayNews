@@ -46,6 +46,11 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 
 - **README screenshots** (`docs/screenshots/`): regenerate with `tools/screenshots/make-screenshots.ps1` (`-Build` for this checkout, `-KeepRunning` to inspect the demo at http://127.0.0.1:3100). Only made-up demo data: the repo is public.
 
+## Printing (login slips, #37)
+- Print from the browser with print CSS, not raw printer commands: it works with any driver (Epson TM-T88 via its Windows driver, or A4). `printSlips(layout)` adds the `@page` size and `body.printing-slips`; `PrintableSlips` renders the slips in a portal straight under `<body>`, and `index.css` hides everything else when printing.
+- Till paper is 80 mm wide (72 mm printable): size slips in `mm`, black only (no greys or light colours, which fade on thermal paper), no web fonts.
+- Check a print layout without a printer: puppeteer `page.pdf({ preferCSSPageSize: true })` after triggering the print set-up with `window.print` stubbed (see `tools/screenshots`).
+
 ## Concurrency
 - Many phones poll at once, so keep request work small. Add an index (Flyway) for any new list query. Never `findAll()` and filter in Java on a polled path. Don't hold explicit locks.
 - `spring.jpa.open-in-view=false`: anything an endpoint returns must be fully loaded inside the service (there are no lazy relations today; keep it that way or fetch eagerly).

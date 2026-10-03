@@ -208,6 +208,30 @@ async function main() {
     console.log("  staff-approved.png");
     await shoot(staffPage, "/staff/students", "staff-students");
 
+    // A login slip as it comes out of the till printer (#37): demo Wi-Fi details, then create two teams.
+    await api("/api/staff/event-details", {
+      token: staff,
+      method: "PUT",
+      json: { wifiName: "EnterpriseDay", wifiPassword: "Sunflower88", appAddress: "http://192.168.1.10" },
+    });
+    await staffPage.reload({ waitUntil: "networkidle0" });
+    await staffPage.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent === "List of names").click());
+    await staffPage.type("textarea", "Nova Noodles\nStar Socks");
+    await staffPage.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent.includes("Create teams")).click());
+    await staffPage.waitForSelector('[data-testid="slip-preview"] .slip-paper');
+    await staffPage.setViewport({ ...desktop, deviceScaleFactor: 2 });
+    await settle(staffPage);
+    const slip = await staffPage.$('[data-testid="slip-preview"]');
+    await slip.evaluate((el) => {
+      // A plain desk-coloured background around the strip of paper.
+      el.style.background = "#d6d0c4";
+      el.style.padding = "28px";
+      el.scrollIntoView({ block: "center" });
+    });
+    await settle(staffPage, 300);
+    await slip.screenshot({ path: join(OUT, "login-slip.png") });
+    console.log("  login-slip.png");
+
     const projector = await signedInPage(browser, { width: 1280, height: 720, deviceScaleFactor: 1 }, {});
     await projector.goto(`${BASE}/projector`, { waitUntil: "networkidle0" });
     await settle(projector, 4000);

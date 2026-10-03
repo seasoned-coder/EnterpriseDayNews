@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, UserPlus, Users } from "lucide-react";
 import { AccountActions } from "@/components/AccountActions";
@@ -32,6 +32,8 @@ export interface AccountsDashboardConfig {
   renameNote: string;
   /** Staff can't lock or delete their own account (the server refuses too). */
   protectSelf: boolean;
+  /** Extra panel above "Add an account", given the accounts (students: team setup and slips, #37). */
+  sidePanel?: (accounts: ApiAccount[]) => ReactNode;
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -304,61 +306,64 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
             )}
           </Card>
 
-          <Card className="p-5">
-            <h2 className="font-display text-2xl font-bold tracking-tight">Add a {config.noun} account</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              New accounts appear in the list immediately and can sign in as soon as they are created.
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">Password policy: {config.passwordPolicy}</p>
+          <div className="space-y-4">
+            {config.sidePanel?.(allAccounts)}
+            <Card className="p-5">
+              <h2 className="font-display text-2xl font-bold tracking-tight">Add a {config.noun} account</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                New accounts appear in the list immediately and can sign in as soon as they are created.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">Password policy: {config.passwordPolicy}</p>
 
-            <form
-              className="mt-6 space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!createDisabled) createAccount.mutate();
-              }}
-            >
-              <div className="space-y-2">
-                <label htmlFor="new-account-username" className="text-sm font-medium text-foreground">
-                  Username
-                </label>
-                <Input
-                  id="new-account-username"
-                  value={newUsername}
-                  onChange={(event) => setNewUsername(event.target.value)}
-                  placeholder={config.usernamePlaceholder}
-                  autoComplete="off"
-                  autoCapitalize="none"
-                />
-              </div>
+              <form
+                className="mt-6 space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!createDisabled) createAccount.mutate();
+                }}
+              >
+                <div className="space-y-2">
+                  <label htmlFor="new-account-username" className="text-sm font-medium text-foreground">
+                    Username
+                  </label>
+                  <Input
+                    id="new-account-username"
+                    value={newUsername}
+                    onChange={(event) => setNewUsername(event.target.value)}
+                    placeholder={config.usernamePlaceholder}
+                    autoComplete="off"
+                    autoCapitalize="none"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label htmlFor="new-account-password" className="text-sm font-medium text-foreground">
-                  Password
-                </label>
-                <Input
-                  id="new-account-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="Set a password"
-                  autoComplete="new-password"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label htmlFor="new-account-password" className="text-sm font-medium text-foreground">
+                    Password
+                  </label>
+                  <Input
+                    id="new-account-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="Set a password"
+                    autoComplete="new-password"
+                  />
+                </div>
 
-              <Button type="submit" className="w-full" disabled={createDisabled}>
-                {createAccount.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account…
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" /> Add {config.noun} account
-                  </>
-                )}
-              </Button>
-            </form>
-          </Card>
+                <Button type="submit" className="w-full" disabled={createDisabled}>
+                  {createAccount.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account…
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-2 h-4 w-4" /> Add {config.noun} account
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Card>
+          </div>
         </div>
       </main>
       <StaffFooter />

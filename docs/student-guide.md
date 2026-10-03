@@ -13,7 +13,15 @@ You will:
 
 ## 1. Signing in
 
-Your teacher will give you a **username** and a **password**. Keep them to yourself and your team.
+Your teacher will give you a **username** and a **password**, usually on a printed **login slip**. Keep them to yourself and your team.
+
+**With a login slip (quickest):**
+
+1. Point your phone's camera at the **Join the Wi-Fi** QR code and tap to join. (If there's no Wi-Fi code, join the Wi-Fi your teacher tells you.)
+2. Point the camera at the **Open the app** QR code and tap the link. The sign-in page opens with your team name already filled in.
+3. Type the **password** from the slip, exactly as printed (for example `Tiger-Maple-47`, with the capital letters and dashes). Tap **Enter Portal**.
+
+**Or type it in:**
 
 1. Open the address you've been given.
 2. Tap **Student Portal**.
