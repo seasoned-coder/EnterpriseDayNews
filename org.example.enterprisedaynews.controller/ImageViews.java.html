@@ -4,23 +4,30 @@ import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.security.UploadUrlSigner;
+import org.example.enterprisedaynews.service.ThumbnailService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/** Maps images to API views, attaching a (signed if needed) URL the caller is allowed to load. */
+/**
+ * Maps images to API views, attaching (signed if needed) URLs the caller is allowed to load: the picture,
+ * and its small preview once that has been made (issue #42).
+ */
 @Component
 @RequiredArgsConstructor
 class ImageViews {
 
     private final UploadUrlSigner uploadUrlSigner;
+    private final ThumbnailService thumbnailService;
 
     ImageView of(ImageMetadata image) {
-<span class="fc" id="L19">        return ImageView.from(image, uploadUrlSigner.urlFor(image));</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        String thumbnailUrl = thumbnailService.hasThumbnail(image.getFilePath())</span>
+<span class="fc" id="L25">                ? uploadUrlSigner.thumbnailUrlFor(image) : null;</span>
+<span class="fc" id="L26">        return ImageView.from(image, uploadUrlSigner.urlFor(image), thumbnailUrl);</span>
     }
 
     List&lt;ImageView&gt; of(List&lt;ImageMetadata&gt; images) {
-<span class="fc" id="L23">        return images.stream().map(this::of).toList();</span>
+<span class="fc" id="L30">        return images.stream().map(this::of).toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

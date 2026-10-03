@@ -13,6 +13,8 @@ import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
         String filePath,
         /** URL to load the image from; signed when the image isn't public. Null for text-only messages. */
         String imageUrl,
+        /** A small preview for cards and lists (issue #42), same access rules; null until it has been made. */
+        String thumbnailUrl,
         String originalFileName,
         String uploadedBy,
         OffsetDateTime uploadedAt,
@@ -32,27 +34,28 @@ import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
         boolean isFlashMode,
         String messageText
 ) {
-    public static ImageView from(ImageMetadata m, String imageUrl) {
-<span class="fc" id="L36">        return new ImageView(</span>
-<span class="fc" id="L37">                m.getId(),</span>
-<span class="fc" id="L38">                m.getFilePath(),</span>
+    public static ImageView from(ImageMetadata m, String imageUrl, String thumbnailUrl) {
+<span class="fc" id="L38">        return new ImageView(</span>
+<span class="fc" id="L39">                m.getId(),</span>
+<span class="fc" id="L40">                m.getFilePath(),</span>
                 imageUrl,
-<span class="fc" id="L40">                m.getOriginalFileName(),</span>
-<span class="fc" id="L41">                m.getUploadedBy(),</span>
-<span class="fc" id="L42">                withServerOffset(m.getUploadedAt()),</span>
-<span class="fc" id="L43">                m.getStatus(),</span>
-<span class="fc" id="L44">                m.getVettedBy(),</span>
-<span class="fc" id="L45">                withServerOffset(m.getVettedAt()),</span>
-<span class="fc" id="L46">                m.getRejectionReason(),</span>
-<span class="fc" id="L47">                m.isDisplay(),</span>
-<span class="fc" id="L48">                m.isPublishOnApproval(),</span>
-<span class="fc" id="L49">                m.getDisplayOrder(),</span>
-<span class="fc" id="L50">                m.getPriority(),</span>
-<span class="fc" id="L51">                m.getDurationSeconds(),</span>
-<span class="fc" id="L52">                m.getTotalCost(),</span>
-<span class="fc" id="L53">                m.isInfoMessage(),</span>
-<span class="fc" id="L54">                m.isFlashMode(),</span>
-<span class="fc" id="L55">                m.getMessageText()</span>
+                thumbnailUrl,
+<span class="fc" id="L43">                m.getOriginalFileName(),</span>
+<span class="fc" id="L44">                m.getUploadedBy(),</span>
+<span class="fc" id="L45">                withServerOffset(m.getUploadedAt()),</span>
+<span class="fc" id="L46">                m.getStatus(),</span>
+<span class="fc" id="L47">                m.getVettedBy(),</span>
+<span class="fc" id="L48">                withServerOffset(m.getVettedAt()),</span>
+<span class="fc" id="L49">                m.getRejectionReason(),</span>
+<span class="fc" id="L50">                m.isDisplay(),</span>
+<span class="fc" id="L51">                m.isPublishOnApproval(),</span>
+<span class="fc" id="L52">                m.getDisplayOrder(),</span>
+<span class="fc" id="L53">                m.getPriority(),</span>
+<span class="fc" id="L54">                m.getDurationSeconds(),</span>
+<span class="fc" id="L55">                m.getTotalCost(),</span>
+<span class="fc" id="L56">                m.isInfoMessage(),</span>
+<span class="fc" id="L57">                m.isFlashMode(),</span>
+<span class="fc" id="L58">                m.getMessageText()</span>
         );
     }
 }

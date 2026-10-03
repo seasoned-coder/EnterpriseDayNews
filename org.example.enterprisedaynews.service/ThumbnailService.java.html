@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ThumbnailService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">ThumbnailService.java</span></div><h1>ThumbnailService.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
+
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+/**
+ * Small previews of uploads for cards and lists (issue #42): about 480 px wide JPEGs, typically 30-60 KB
+ * instead of several MB, which matters on the event Wi-Fi with 100+ phones. The full picture is still used
+ * for the large preview and the projector.
+ *
+ * &lt;p&gt;Previews are made one at a time in the background, so a burst of uploads doesn't slow the server or
+ * the uploads down; until one exists, the full picture is used. They live in {@code &lt;upload-dir&gt;/thumbs/}
+ * as {@code &lt;file name&gt;.jpg} and share their picture's access rules (UploadAccessInterceptor).
+ */
+<span class="fc" id="L35">@Slf4j</span>
+@Service
+public class ThumbnailService {
+
+    public static final String FOLDER = &quot;thumbs&quot;;
+    public static final String SUFFIX = &quot;.jpg&quot;;
+    static final int WIDTH = 480;
+    private static final float QUALITY = 0.8f;
+
+    private final Path uploadDir;
+<span class="fc" id="L45">    private final ExecutorService worker = Executors.newSingleThreadExecutor(r -&gt; {</span>
+<span class="fc" id="L46">        Thread t = new Thread(r, &quot;thumbnails&quot;);</span>
+<span class="fc" id="L47">        t.setDaemon(true);</span>
+<span class="fc" id="L48">        return t;</span>
+    });
+
+<span class="fc" id="L51">    public ThumbnailService(@Value(&quot;${app.upload-dir:./uploads}&quot;) String uploadDir) {</span>
+<span class="fc" id="L52">        this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();</span>
+<span class="fc" id="L53">    }</span>
+
+    /** Where an upload's preview is (or will be). */
+    public Path thumbnailOf(String fileName) {
+<span class="fc" id="L57">        return uploadDir.resolve(FOLDER).resolve(fileName + SUFFIX);</span>
+    }
+
+    public boolean hasThumbnail(String fileName) {
+<span class="pc bpc" id="L61" title="1 of 6 branches missed.">        return fileName != null &amp;&amp; !fileName.isBlank() &amp;&amp; Files.isRegularFile(thumbnailOf(fileName));</span>
+    }
+
+    /** Makes the preview in the background, unless it already exists. */
+    public Future&lt;Boolean&gt; createLater(String fileName) {
+<span class="fc bfc" id="L66" title="All 4 branches covered.">        return worker.submit(() -&gt; hasThumbnail(fileName) || create(fileName));</span>
+    }
+
+    /**
+     * Makes the preview now. Never throws: a picture Java can't read (or a broken file) just gets no preview,
+     * and the full picture is used instead.
+     *
+     * @return whether a preview was made
+     */
+    boolean create(String fileName) {
+<span class="fc" id="L76">        Path original = uploadDir.resolve(fileName).normalize();</span>
+<span class="fc bfc" id="L77" title="All 4 branches covered.">        if (!original.startsWith(uploadDir) || !Files.isRegularFile(original)) {</span>
+<span class="fc" id="L78">            return false;</span>
+        }
+        try {
+<span class="fc" id="L81">            BufferedImage source = ImageIO.read(original.toFile());</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (source == null) {</span>
+<span class="fc" id="L83">                log.info(&quot;No preview for {}: not a picture Java can read&quot;, fileName);</span>
+<span class="fc" id="L84">                return false;</span>
+            }
+<span class="fc" id="L86">            Path thumb = thumbnailOf(fileName);</span>
+<span class="fc" id="L87">            Files.createDirectories(thumb.getParent());</span>
+<span class="fc" id="L88">            Path partial = thumb.resolveSibling(thumb.getFileName() + &quot;.part&quot;);</span>
+<span class="fc" id="L89">            writeJpeg(shrink(source), partial);</span>
+<span class="fc" id="L90">            Files.move(partial, thumb, StandardCopyOption.REPLACE_EXISTING,</span>
+                    StandardCopyOption.ATOMIC_MOVE);
+<span class="fc" id="L92">            return true;</span>
+<span class="fc" id="L93">        } catch (IOException | RuntimeException e) {</span>
+<span class="fc" id="L94">            log.warn(&quot;Couldn't make a preview of {}: {}&quot;, fileName, e.getMessage());</span>
+<span class="fc" id="L95">            return false;</span>
+        }
+    }
+
+    /** Deletes an upload's preview, if it has one. */
+    public void delete(String fileName) {
+<span class="pc bpc" id="L101" title="1 of 4 branches missed.">        if (fileName == null || fileName.isBlank()) {</span>
+<span class="fc" id="L102">            return;</span>
+        }
+        try {
+<span class="fc" id="L105">            Files.deleteIfExists(thumbnailOf(fileName));</span>
+<span class="nc" id="L106">        } catch (IOException e) {</span>
+<span class="nc" id="L107">            log.warn(&quot;Couldn't delete the preview of {}&quot;, fileName, e);</span>
+<span class="fc" id="L108">        }</span>
+<span class="fc" id="L109">    }</span>
+
+    /**
+     * Scales down to WIDTH (never up), halving in steps for a smooth result, onto white (JPEG has no
+     * transparency, and a PNG's see-through parts would otherwise turn black).
+     */
+    static BufferedImage shrink(BufferedImage source) {
+<span class="fc" id="L116">        int width = Math.min(WIDTH, source.getWidth());</span>
+<span class="fc" id="L117">        int height = Math.max(1, Math.round(source.getHeight() * (width / (float) source.getWidth())));</span>
+<span class="fc" id="L118">        BufferedImage current = source;</span>
+<span class="fc" id="L119">        int w = source.getWidth();</span>
+<span class="fc" id="L120">        int h = source.getHeight();</span>
+        do {
+<span class="fc" id="L122">            w = Math.max(width, w / 2);</span>
+<span class="fc" id="L123">            h = Math.max(height, h / 2);</span>
+<span class="fc" id="L124">            BufferedImage step = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);</span>
+<span class="fc" id="L125">            Graphics2D g = step.createGraphics();</span>
+<span class="fc" id="L126">            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);</span>
+<span class="fc" id="L127">            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+<span class="fc" id="L128">            g.setColor(Color.WHITE);</span>
+<span class="fc" id="L129">            g.fillRect(0, 0, w, h);</span>
+<span class="fc" id="L130">            g.drawImage(current, 0, 0, w, h, null);</span>
+<span class="fc" id="L131">            g.dispose();</span>
+<span class="fc" id="L132">            current = step;</span>
+<span class="pc bpc" id="L133" title="1 of 4 branches missed.">        } while (w &gt; width || h &gt; height);</span>
+<span class="fc" id="L134">        return current;</span>
+    }
+
+    private static void writeJpeg(BufferedImage image, Path target) throws IOException {
+<span class="fc" id="L138">        ImageWriter writer = ImageIO.getImageWritersByFormatName(&quot;jpeg&quot;).next();</span>
+<span class="fc" id="L139">        ImageWriteParam params = writer.getDefaultWriteParam();</span>
+<span class="fc" id="L140">        params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);</span>
+<span class="fc" id="L141">        params.setCompressionQuality(QUALITY);</span>
+<span class="fc" id="L142">        try (ImageOutputStream out = ImageIO.createImageOutputStream(target.toFile())) {</span>
+<span class="fc" id="L143">            writer.setOutput(out);</span>
+<span class="fc" id="L144">            writer.write(null, new IIOImage(image, null, null), params);</span>
+        } finally {
+<span class="fc" id="L146">            writer.dispose();</span>
+        }
+<span class="fc" id="L148">    }</span>
+
+    @PreDestroy
+    void stop() {
+<span class="fc" id="L152">        worker.shutdownNow();</span>
+<span class="fc" id="L153">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,11 +1,11 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
-enterprise-day-news,org.example.enterprisedaynews.security,UploadAccessInterceptor,5,60,1,7,2,14,1,4,0,1
+enterprise-day-news,org.example.enterprisedaynews.security,UploadAccessInterceptor,5,61,1,7,2,15,1,4,0,1
 enterprise-day-news,org.example.enterprisedaynews.security,SigningSecret,0,83,0,8,0,20,0,10,0,6
 enterprise-day-news,org.example.enterprisedaynews.security,JwtProvider,0,82,0,0,0,26,0,8,0,8
-enterprise-day-news,org.example.enterprisedaynews.security,UploadUrlSigner,7,135,3,17,2,32,3,14,0,7
+enterprise-day-news,org.example.enterprisedaynews.security,UploadUrlSigner,7,170,4,20,2,38,4,18,0,10
 enterprise-day-news,org.example.enterprisedaynews.security,JwtAuthenticationFilter,3,78,5,10,1,16,5,4,0,1
 enterprise-day-news,org.example.enterprisedaynews.dto,ApiTimes,0,9,0,2,0,1,0,2,0,1
-enterprise-day-news,org.example.enterprisedaynews.dto,ImageView,0,103,0,0,0,20,0,2,0,2
+enterprise-day-news,org.example.enterprisedaynews.dto,ImageView,0,107,0,0,0,20,0,2,0,2
 enterprise-day-news,org.example.enterprisedaynews.dto,RenameAccountRequest,0,6,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.dto,CreateTeamsRequest,0,6,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.dto,TeamResult,0,52,0,2,0,3,0,3,0,2
@@ -29,7 +29,7 @@ enterprise-day-news,org.example.enterprisedaynews.config,SecurityConfig,1,190,1,
 enterprise-day-news,org.example.enterprisedaynews.config,StartupSeeder,0,13,0,0,0,4,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.config,WebConfig,0,53,0,0,0,9,0,3,0,3
 enterprise-day-news,org.example.enterprisedaynews.controller,AccountManagementController,0,60,0,0,0,11,0,7,0,7
-enterprise-day-news,org.example.enterprisedaynews.controller,ImageViews,0,14,0,0,0,2,0,2,0,2
+enterprise-day-news,org.example.enterprisedaynews.controller,ImageViews,0,28,0,2,0,4,0,3,0,2
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentController,0,54,0,0,0,10,0,5,0,5
 enterprise-day-news,org.example.enterprisedaynews.controller,ProjectorController,0,25,0,0,0,4,0,4,0,4
 enterprise-day-news,org.example.enterprisedaynews.controller,StaffController,0,126,0,2,0,20,0,14,0,13
@@ -49,9 +49,11 @@ enterprise-day-news,org.example.enterprisedaynews.service,ResultsService,17,328,
 enterprise-day-news,org.example.enterprisedaynews.service,EventDetailsService,0,91,0,12,0,17,0,11,0,5
 enterprise-day-news,org.example.enterprisedaynews.service,ImageNotFoundException,0,5,0,0,0,2,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.service,EventResetService.Result,0,9,0,0,0,1,0,1,0,1
+enterprise-day-news,org.example.enterprisedaynews.service,ThumbnailBackfill,0,47,1,9,0,11,1,6,0,2
 enterprise-day-news,org.example.enterprisedaynews.service,PriceWobbleService,3,158,5,23,0,24,5,18,0,9
 enterprise-day-news,org.example.enterprisedaynews.service,StudentAccountService,9,210,2,22,2,45,2,17,0,7
-enterprise-day-news,org.example.enterprisedaynews.service,ImageService,98,501,7,49,29,114,11,46,4,24
+enterprise-day-news,org.example.enterprisedaynews.service,ImageService,98,512,7,49,29,117,11,46,4,24
+enterprise-day-news,org.example.enterprisedaynews.service,ThumbnailService,6,289,3,21,2,61,3,21,0,12
 enterprise-day-news,org.example.enterprisedaynews.service,FriendlyPasswords,0,533,0,0,0,11,0,4,0,4
 enterprise-day-news,org.example.enterprisedaynews.service,PasswordPolicy,6,166,3,17,1,23,3,12,0,5
 enterprise-day-news,org.example.enterprisedaynews.service,PriceList.Option,0,9,0,0,0,1,0,1,0,1
