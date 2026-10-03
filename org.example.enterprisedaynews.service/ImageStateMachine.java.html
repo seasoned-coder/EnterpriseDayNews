@@ -51,10 +51,16 @@ public final class ImageStateMachine {
      * {@link ResponseStatusException} otherwise.
      */
     public static void assertCanTransition(ApprovalStatus from, ApprovalStatus to) {
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (!canTransition(from, to)) {</span>
-<span class="fc" id="L55">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+<span class="pc bpc" id="L54" title="1 of 4 branches missed.">        if (from != null &amp;&amp; from == to) {</span>
+            // Usually two staff reviewing the same advert at once (issue #36): tell the second what happened.
+<span class="fc" id="L56">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+<span class="fc" id="L57">                    &quot;This advert has already been &quot; + from.name().toLowerCase()</span>
+                            + &quot;, probably by another member of staff. The list will refresh.&quot;);
+        }
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (!canTransition(from, to)) {</span>
+<span class="fc" id="L61">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
                     &quot;Illegal status transition: &quot; + from + &quot; -&gt; &quot; + to);
         }
-<span class="fc" id="L58">    }</span>
+<span class="fc" id="L64">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

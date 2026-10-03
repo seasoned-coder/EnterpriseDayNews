@@ -4,12 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.security.UploadAccessInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,17 +24,23 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-<span class="fc" id="L25">        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();</span>
-<span class="fc" id="L26">        String location = &quot;file:&quot; + uploadPath.toString().replace(&quot;\\&quot;, &quot;/&quot;) + &quot;/&quot;;</span>
+<span class="fc" id="L27">        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();</span>
+<span class="fc" id="L28">        String location = &quot;file:&quot; + uploadPath.toString().replace(&quot;\\&quot;, &quot;/&quot;) + &quot;/&quot;;</span>
 
-<span class="fc" id="L28">        registry.addResourceHandler(&quot;/uploads/**&quot;)</span>
-<span class="fc" id="L29">                .addResourceLocations(location);</span>
-<span class="fc" id="L30">    }</span>
+        // Every upload gets a new, random file name and is never changed, so browsers can keep their copy
+        // instead of downloading it again over the event Wi-Fi each time the projector or a dashboard shows it
+        // (issue #36). &quot;private&quot;: only that browser keeps it, never a shared cache.
+<span class="fc" id="L33">        registry.addResourceHandler(&quot;/uploads/**&quot;)</span>
+<span class="fc" id="L34">                .addResourceLocations(location)</span>
+<span class="fc" id="L35">                .setCacheControl(UPLOAD_CACHING);</span>
+<span class="fc" id="L36">    }</span>
+
+<span class="fc" id="L38">    static final CacheControl UPLOAD_CACHING = CacheControl.maxAge(Duration.ofHours(1)).cachePrivate();</span>
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-<span class="fc" id="L34">        registry.addInterceptor(uploadAccessInterceptor).addPathPatterns(&quot;/uploads/**&quot;);</span>
-<span class="fc" id="L35">    }</span>
+<span class="fc" id="L42">        registry.addInterceptor(uploadAccessInterceptor).addPathPatterns(&quot;/uploads/**&quot;);</span>
+<span class="fc" id="L43">    }</span>
 
     // CORS is configured in SecurityConfig (same-origin only unless APP_CORS_ALLOWED_ORIGINS is set).
 }
