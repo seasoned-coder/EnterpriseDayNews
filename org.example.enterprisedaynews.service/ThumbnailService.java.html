@@ -90,9 +90,9 @@ public class ThumbnailService {
 <span class="fc" id="L90">            Files.move(partial, thumb, StandardCopyOption.REPLACE_EXISTING,</span>
                     StandardCopyOption.ATOMIC_MOVE);
 <span class="fc" id="L92">            return true;</span>
-<span class="fc" id="L93">        } catch (IOException | RuntimeException e) {</span>
-<span class="fc" id="L94">            log.warn(&quot;Couldn't make a preview of {}: {}&quot;, fileName, e.getMessage());</span>
-<span class="fc" id="L95">            return false;</span>
+<span class="nc" id="L93">        } catch (IOException | RuntimeException e) {</span>
+<span class="nc" id="L94">            log.warn(&quot;Couldn't make a preview of {}: {}&quot;, fileName, e.getMessage());</span>
+<span class="nc" id="L95">            return false;</span>
         }
     }
 
