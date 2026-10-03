@@ -10,20 +10,22 @@
     /** Projector timing settings. */
 <span class="fc" id="L11">    PROJECTOR_SETTINGS(&quot;projector-settings&quot;),</span>
     /** A price wobble started, changed or ended (#41). */
-<span class="fc" id="L13">    PRICES(&quot;prices&quot;);</span>
+<span class="fc" id="L13">    PRICES(&quot;prices&quot;),</span>
+    /** A team was charged, credited or paid (#48). */
+<span class="fc" id="L15">    BALANCES(&quot;balances&quot;);</span>
 
     private final String eventName;
 
-<span class="fc" id="L17">    LiveTopic(String eventName) {</span>
-<span class="fc" id="L18">        this.eventName = eventName;</span>
-<span class="fc" id="L19">    }</span>
+<span class="fc" id="L19">    LiveTopic(String eventName) {</span>
+<span class="fc" id="L20">        this.eventName = eventName;</span>
+<span class="fc" id="L21">    }</span>
 
     public String eventName() {
-<span class="fc" id="L22">        return eventName;</span>
+<span class="fc" id="L24">        return eventName;</span>
     }
 
     /** Published by services when something changed; sent to listeners once the change is committed. */
-<span class="fc" id="L26">    public record Changed(LiveTopic topic) {</span>
+<span class="fc" id="L28">    public record Changed(LiveTopic topic) {</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

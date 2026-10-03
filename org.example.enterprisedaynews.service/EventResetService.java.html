@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Resets the event (issue #34): deletes every student advert and its recorded screen time (#40), ends any
- * price wobble (#41), and puts the projector settings back to their defaults. Staff information items and
- * all accounts are kept.
+ * price wobble (#41), clears every team's balance and payments (#48), and puts the projector settings back to
+ * their defaults. Staff information items and all accounts are kept.
  */
 @Service
 @RequiredArgsConstructor
@@ -17,18 +17,20 @@ public class EventResetService {
     private final DisplaySettingsService displaySettingsService;
     private final ResultsService resultsService;
     private final PriceWobbleService priceWobbleService;
+    private final TeamBalanceService teamBalanceService;
 
     /** What a reset did, for the confirmation message. */
-<span class="fc" id="L22">    public record Result(int deletedAdverts, long deletedPlays) {</span>
+<span class="fc" id="L23">    public record Result(int deletedAdverts, long deletedPlays) {</span>
     }
 
     @Transactional
     public Result resetEvent() {
-<span class="fc" id="L27">        int deleted = imageService.deleteAllAdverts();</span>
-<span class="fc" id="L28">        long plays = resultsService.deleteAllPlays();</span>
-<span class="fc" id="L29">        priceWobbleService.stop();</span>
-<span class="fc" id="L30">        displaySettingsService.resetToDefaults();</span>
-<span class="fc" id="L31">        return new Result(deleted, plays);</span>
+<span class="fc" id="L28">        int deleted = imageService.deleteAllAdverts();</span>
+<span class="fc" id="L29">        long plays = resultsService.deleteAllPlays();</span>
+<span class="fc" id="L30">        priceWobbleService.stop();</span>
+<span class="fc" id="L31">        teamBalanceService.deleteAll(); // balances and payments (#48), after the End of Day report is printed</span>
+<span class="fc" id="L32">        displaySettingsService.resetToDefaults();</span>
+<span class="fc" id="L33">        return new Result(deleted, plays);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TeamBalanceService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">TeamBalanceService.java</span></div><h1>TeamBalanceService.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
+
+import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.dto.TeamAccount;
+import org.example.enterprisedaynews.dto.TeamBalance;
+import org.example.enterprisedaynews.live.LiveTopic;
+import org.example.enterprisedaynews.model.ImageMetadata;
+import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
+import org.example.enterprisedaynews.model.LedgerEntry;
+import org.example.enterprisedaynews.model.LedgerEntry.Kind;
+import org.example.enterprisedaynews.model.StudentAccount;
+import org.example.enterprisedaynews.repository.ImageRepository;
+import org.example.enterprisedaynews.repository.LedgerRepository;
+import org.example.enterprisedaynews.repository.LedgerTotals;
+import org.example.enterprisedaynews.repository.StudentAccountRepository;
+import org.example.enterprisedaynews.repository.TeamAdvertCounts;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+/**
+ * What each team owes for its adverts, in event money (issue #48). The rules agreed for the event:
+ * &lt;ul&gt;
+ *     &lt;li&gt;An advert is &lt;b&gt;owed once approved&lt;/b&gt; (at the price locked in when it was uploaded, #41/#47).
+ *     Rejected adverts are never charged.&lt;/li&gt;
+ *     &lt;li&gt;An approved advert later &lt;b&gt;rejected&lt;/b&gt; is credited back.&lt;/li&gt;
+ *     &lt;li&gt;A team &lt;b&gt;deleting&lt;/b&gt; its own approved advert still owes for it: no refunds.&lt;/li&gt;
+ *     &lt;li&gt;Staff take the money from the team's bank themselves, then mark the &lt;b&gt;whole&lt;/b&gt; balance as paid
+ *     (no partial payments).&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+@Service
+@RequiredArgsConstructor
+public class TeamBalanceService {
+
+    private final LedgerRepository ledgerRepository;
+    private final ImageRepository imageRepository;
+    private final StudentAccountRepository studentAccountRepository;
+    private final ApplicationEventPublisher events;
+    private final TransactionTemplate transactions;
+    private final Object paymentLock = new Object();
+
+    /**
+     * Called (in the same transaction) when staff approve or reject an advert. Approving charges the team;
+     * rejecting an approved one credits it back. Staff items cost nothing.
+     */
+    @Transactional
+    public void onStatusChange(ImageMetadata advert, ApprovalStatus from, ApprovalStatus to, String staff) {
+<span class="pc bpc" id="L62" title="2 of 6 branches missed.">        if (advert.isInfoMessage() || advert.getUploadedBy() == null || from == to) {</span>
+<span class="fc" id="L63">            return;</span>
+        }
+        Kind kind;
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (to == ApprovalStatus.APPROVED) {</span>
+<span class="fc" id="L67">            kind = Kind.CHARGE;</span>
+<span class="pc bpc" id="L68" title="1 of 4 branches missed.">        } else if (from == ApprovalStatus.APPROVED &amp;&amp; to == ApprovalStatus.REJECTED) {</span>
+<span class="fc" id="L69">            kind = Kind.CREDIT;</span>
+        } else {
+<span class="fc" id="L71">            return; // e.g. NEW -&gt; REJECTED: never charged, nothing to give back</span>
+        }
+<span class="fc" id="L73">        ledgerRepository.save(LedgerEntry.builder()</span>
+<span class="fc" id="L74">                .team(advert.getUploadedBy())</span>
+<span class="fc" id="L75">                .kind(kind)</span>
+<span class="fc" id="L76">                .amount(advert.getTotalCost())</span>
+<span class="fc" id="L77">                .imageId(advert.getId())</span>
+<span class="fc" id="L78">                .description(describe(advert, kind))</span>
+<span class="fc" id="L79">                .createdAt(LocalDateTime.now())</span>
+<span class="fc" id="L80">                .recordedBy(staff)</span>
+<span class="fc" id="L81">                .build());</span>
+<span class="fc" id="L82">        changed();</span>
+<span class="fc" id="L83">    }</span>
+
+    /**
+     * Staff have taken the team's whole balance from its bank: record the payment, bringing the balance to 0.
+     *
+     * @param expected the balance the staff member saw; refused if it has changed since (so they never mark
+     *                 as paid an amount they didn't take)
+     */
+    public TeamBalance markPaid(String team, long expected, String staff) {
+        // One payment at a time, each committed before the next is checked: two staff pressing &quot;paid&quot; at once
+        // can't both record it.
+<span class="fc" id="L94">        synchronized (paymentLock) {</span>
+<span class="fc" id="L95">            return transactions.execute(status -&gt; recordPayment(team, expected, staff));</span>
+        }
+    }
+
+    private TeamBalance recordPayment(String team, long expected, String staff) {
+<span class="fc" id="L100">        long owed = balanceOf(team).owed();</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (owed &lt;= 0) {</span>
+<span class="fc" id="L102">            throw new ResponseStatusException(HttpStatus.CONFLICT, team + &quot; doesn't owe anything&quot;);</span>
+        }
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (expected != owed) {</span>
+<span class="fc" id="L105">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                    team + &quot; now owes &quot; + owed + &quot; (not &quot; + expected + &quot;): check, take that amount, and try again&quot;);
+        }
+<span class="fc" id="L108">        ledgerRepository.save(LedgerEntry.builder()</span>
+<span class="fc" id="L109">                .team(team)</span>
+<span class="fc" id="L110">                .kind(Kind.PAYMENT)</span>
+<span class="fc" id="L111">                .amount(Math.toIntExact(owed))</span>
+<span class="fc" id="L112">                .description(&quot;Paid from the team's bank&quot;)</span>
+<span class="fc" id="L113">                .createdAt(LocalDateTime.now())</span>
+<span class="fc" id="L114">                .recordedBy(staff)</span>
+<span class="fc" id="L115">                .build());</span>
+<span class="fc" id="L116">        changed();</span>
+<span class="fc" id="L117">        return balanceOf(team);</span>
+    }
+
+    /** Every team (all team accounts, plus any team with history), by name. */
+    public List&lt;TeamBalance&gt; balances() {
+<span class="fc" id="L122">        Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; totals = totalsByTeam();</span>
+<span class="fc" id="L123">        Map&lt;String, TeamAdvertCounts&gt; counts = imageRepository.advertCountsByTeam().stream()</span>
+<span class="fc" id="L124">                .collect(Collectors.toMap(TeamAdvertCounts::team, Function.identity()));</span>
+<span class="fc" id="L125">        Set&lt;String&gt; teams = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L126">        studentAccountRepository.findAllByOrderByUsernameAsc().stream().map(StudentAccount::getUsername).forEach(teams::add);</span>
+<span class="fc" id="L127">        teams.addAll(totals.keySet());</span>
+<span class="fc" id="L128">        teams.addAll(counts.keySet());</span>
+<span class="fc" id="L129">        return teams.stream().sorted()</span>
+<span class="fc" id="L130">                .map(team -&gt; balance(team, totals.getOrDefault(team, Map.of()), counts.get(team)))</span>
+<span class="fc" id="L131">                .toList();</span>
+    }
+
+    public TeamBalance balanceOf(String team) {
+<span class="fc" id="L135">        TeamAdvertCounts counts = imageRepository.advertCountsByTeam().stream()</span>
+<span class="fc" id="L136">                .filter(c -&gt; team.equals(c.team())).findFirst().orElse(null);</span>
+<span class="fc" id="L137">        return balance(team, totalsByTeam().getOrDefault(team, Map.of()), counts);</span>
+    }
+
+    /** The balance and every line behind it. */
+    public TeamAccount account(String team) {
+<span class="fc" id="L142">        return new TeamAccount(balanceOf(team),</span>
+<span class="fc" id="L143">                ledgerRepository.findByTeamOrderByCreatedAtAscIdAsc(team).stream().map(TeamAccount.Entry::from).toList());</span>
+    }
+
+    /** Wipes every balance and payment (part of resetting the event, after printing the report). */
+    @Transactional
+    public long deleteAll() {
+<span class="fc" id="L149">        long count = ledgerRepository.count();</span>
+<span class="fc" id="L150">        ledgerRepository.deleteAllInBatch();</span>
+<span class="fc" id="L151">        changed();</span>
+<span class="fc" id="L152">        return count;</span>
+    }
+
+    private Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; totalsByTeam() {
+<span class="fc" id="L156">        Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; byTeam = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (LedgerTotals t : ledgerRepository.totalsByTeamAndKind()) {</span>
+<span class="fc" id="L158">            byTeam.computeIfAbsent(t.team(), k -&gt; new EnumMap&lt;&gt;(Kind.class)).put(t.kind(), t);</span>
+<span class="fc" id="L159">        }</span>
+<span class="fc" id="L160">        return byTeam;</span>
+    }
+
+    private static TeamBalance balance(String team, Map&lt;Kind, LedgerTotals&gt; totals, TeamAdvertCounts counts) {
+<span class="fc" id="L164">        long charged = sum(totals, Kind.CHARGE);</span>
+<span class="fc" id="L165">        long credited = sum(totals, Kind.CREDIT);</span>
+<span class="fc" id="L166">        long paid = sum(totals, Kind.PAYMENT);</span>
+<span class="fc" id="L167">        long chargedAdverts = count(totals, Kind.CHARGE) - count(totals, Kind.CREDIT);</span>
+<span class="fc" id="L168">        return new TeamBalance(team, charged, credited, paid, charged - credited - paid,</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">                counts == null ? 0 : counts.uploaded(), chargedAdverts);</span>
+    }
+
+    private static long sum(Map&lt;Kind, LedgerTotals&gt; totals, Kind kind) {
+<span class="fc" id="L173">        LedgerTotals t = totals.get(kind);</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        return t == null ? 0 : t.amount();</span>
+    }
+
+    private static long count(Map&lt;Kind, LedgerTotals&gt; totals, Kind kind) {
+<span class="fc" id="L178">        LedgerTotals t = totals.get(kind);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        return t == null ? 0 : t.count();</span>
+    }
+
+    private static String describe(ImageMetadata advert, Kind kind) {
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        String what = (advert.getOriginalFileName() == null ? &quot;Advert&quot; : advert.getOriginalFileName())</span>
+<span class="fc" id="L184">                + &quot; (priority &quot; + advert.getPriority() + &quot;, &quot; + advert.getDurationSeconds() + &quot; s)&quot;;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        String full = (kind == Kind.CREDIT ? &quot;Refund, not approved after all: &quot; : &quot;Approved: &quot;) + what;</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        return full.length() &gt; 255 ? full.substring(0, 255) : full;</span>
+    }
+
+    private void changed() {
+<span class="fc" id="L190">        events.publishEvent(new LiveTopic.Changed(LiveTopic.BALANCES));</span>
+<span class="fc" id="L191">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
