@@ -44,7 +44,24 @@ describe("EventResetPanel (issue #34)", () => {
     expect(clearDown).toBeDisabled();
   });
 
-  it("asks once more, then resets and turns the switch back off", async () => {
+  it("needs 'clear down' typed before the final confirm works", async () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("switch", { name: /reset the event/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear Down" }));
+    const dialog = await screen.findByRole("dialog");
+    const confirm = within(dialog).getByRole("button", { name: /yes, reset the event/i });
+    const field = within(dialog).getByLabelText(/type clear down to confirm/i);
+
+    expect(confirm).toBeDisabled();
+    fireEvent.change(field, { target: { value: "clear" } });
+    expect(confirm).toBeDisabled();
+    fireEvent.change(field, { target: { value: " Clear Down " } });
+    expect(confirm).toBeEnabled();
+    expect(mocks.resetEvent).not.toHaveBeenCalled();
+  });
+
+  it("then resets and turns the switch back off", async () => {
     mocks.resetEvent.mockResolvedValue({ deletedAdverts: 3 });
     renderPanel();
 
@@ -53,6 +70,7 @@ describe("EventResetPanel (issue #34)", () => {
     expect(mocks.resetEvent).not.toHaveBeenCalled();
 
     const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/type clear down to confirm/i), { target: { value: "clear down" } });
     fireEvent.click(within(dialog).getByRole("button", { name: /yes, reset the event/i }));
 
     await waitFor(() => expect(mocks.resetEvent).toHaveBeenCalledTimes(1));

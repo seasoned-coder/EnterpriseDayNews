@@ -53,7 +53,7 @@ Settings are validated server-side (`DisplaySettingsService`: interval 0–3600,
 -   **Students control `display` on their own approved adverts** (Publish now / Withdraw); before approval they can change `publishOnApproval`. Rejected adverts can't be published. Staff Hide/Display still works, but a student can re-publish a hidden advert, so **Reject** is the way to keep something off screen.
 -   **Hide/Display** (approved items only) and **Reject** take an item off screen. Items can't go back to NEW.
 -   Staff content is auto-approved and **hidden by default**. Ticking **Flash Mode** makes it take over immediately, which is why the checkbox is unticked by default.
--   **Reset the event** (End of Day, #34) deletes every student advert and its file and restores the default projector settings, in one transaction (`EventResetService`). It keeps staff content and all accounts. In the staff app the Clear Down button only works after an "ARE YOU SURE?" switch is turned on, then asks once more.
+-   **Reset the event** (End of Day, #34) deletes every student advert and its file and restores the default projector settings, in one transaction (`EventResetService`). It keeps staff content and all accounts. In the staff app it takes three deliberate steps: an "ARE YOU SURE?" switch enables the Clear Down button, which then asks for "clear down" to be typed before confirming.
 -   The in-browser image checker (NSFWJS) is a helper, not a gate: it **fails open** if the model can't run. Staff approval is the real control.
 
 ## Security model

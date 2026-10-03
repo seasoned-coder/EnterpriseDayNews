@@ -164,7 +164,9 @@ Use this once the event is over, or before the next one if the system wasn't fre
 1. Open the **End of Day** tab.
 2. Turn on the switch **ARE YOU SURE? Yes, I want to reset the event**. The red **Clear Down** button stays greyed out until you do.
 3. Select **Clear Down**.
-4. Select **Yes, reset the event** to confirm (or **Cancel**).
+4. Type `clear down` in the box, then select **Yes, reset the event** (or **Cancel**).
+
+Three deliberate steps (switch, button, typed words) so it can't happen by accident.
 
 **What it does:**
 

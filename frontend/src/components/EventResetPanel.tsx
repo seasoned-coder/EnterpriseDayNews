@@ -4,9 +4,13 @@ import { CalendarX, Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
+
+/** Typed in the final step, so a reset never happens by accident. */
+const CONFIRM_PHRASE = "clear down";
 
 const WILL = [
   "Delete every student advert (new, approved and rejected) and its picture",
@@ -15,13 +19,19 @@ const WILL = [
 const WONT = ["Event Communications items (staff images and messages)", "Student and staff accounts"];
 
 /**
- * End of Day (issue #34): reset the event. The red Clear Down button only works once the
- * "Yes, I want to reset the event" switch is on, and then asks once more before doing anything.
+ * End of Day (issue #34): reset the event. Three deliberate steps: turn on the "Yes, I want to reset
+ * the event" switch, select the red Clear Down button, then type "clear down" and confirm.
  */
 export const EventResetPanel = () => {
   const queryClient = useQueryClient();
   const [armed, setArmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [typed, setTyped] = useState("");
+
+  const openConfirm = () => {
+    setTyped("");
+    setConfirming(true);
+  };
 
   const reset = useMutation({
     mutationFn: api.resetEvent,
@@ -79,7 +89,7 @@ export const EventResetPanel = () => {
           <Switch id="arm-reset" checked={armed} onCheckedChange={setArmed} />
           ARE YOU SURE? Yes, I want to reset the event
         </label>
-        <Button variant="destructive" disabled={!armed || reset.isPending} onClick={() => setConfirming(true)}>
+        <Button variant="destructive" disabled={!armed || reset.isPending} onClick={openConfirm}>
           Clear Down
         </Button>
       </div>
@@ -90,14 +100,28 @@ export const EventResetPanel = () => {
             <DialogTitle className="text-destructive">Reset the event now?</DialogTitle>
             <DialogDescription>
               All student adverts will be deleted and the projector settings restored to their defaults. Staff
-              messages and accounts are kept.
+              messages and accounts are kept. To confirm, type{" "}
+              <span className="font-bold text-foreground">{CONFIRM_PHRASE}</span> below.
             </DialogDescription>
           </DialogHeader>
+          <Input
+            aria-label={`Type ${CONFIRM_PHRASE} to confirm`}
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+            placeholder={`Type '${CONFIRM_PHRASE}' to confirm`}
+            autoComplete="off"
+            autoCapitalize="none"
+            className="h-12 border-destructive/30 text-base focus-visible:ring-destructive"
+          />
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button variant="outline" onClick={() => setConfirming(false)} disabled={reset.isPending}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => reset.mutate()} disabled={reset.isPending}>
+            <Button
+              variant="destructive"
+              onClick={() => reset.mutate()}
+              disabled={reset.isPending || typed.trim().toLowerCase() !== CONFIRM_PHRASE}
+            >
               {reset.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Yes, reset the event
             </Button>
