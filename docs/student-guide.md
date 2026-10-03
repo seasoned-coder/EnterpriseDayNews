@@ -82,6 +82,12 @@ To pick a different picture before sending, tap the **X** on the preview.
 - **Duration** is how long your advert stays on screen each time: 10, 20 or 30 seconds.
 - The page shows a **Total Cost** for your choices. Ask your teacher how costs work at your event.
 
+### Sales and rush hours
+
+Sometimes prices change for a while: a **sale** (e.g. "Half price!") or a **rush** (e.g. "Prices doubled!"). A coloured box above the choices says what's happening and until when. The prices shown already include the change.
+
+**You pay the price shown when you send your advert**, and it never changes after that. Spot a sale? It could be a good moment to send that next advert!
+
 ### What pictures are allowed
 
 | Rule | What happens |

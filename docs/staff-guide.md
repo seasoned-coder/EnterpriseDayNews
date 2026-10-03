@@ -163,6 +163,22 @@ Staff items take turns, so with several displayed, each slot shows the next one.
 
 ---
 
+## Prices: price wobble
+
+The **Prices** tab lets you make screen time cheaper or dearer for a while, so teams make real supply-and-demand decisions. For example, a **half-price sale** at a quiet time, or **double prices** in the lunchtime rush.
+
+1. Choose how much: **Half price**, **25% off**, **Up 50%**, **Double**, or type any amount from 25% to 300% of normal. A table shows each choice's normal price and the new one.
+2. Add a short **message for students** if you like, e.g. "Lunchtime rush!".
+3. **Starts:** leave it empty to start now, or pick a time today. **Ends:** pick a time, or leave it empty to run until you stop it.
+4. Select **Change prices now** (or **Schedule the price change**).
+
+- Students see the change on their upload page within half a minute, with a banner like "Prices doubled! until 12:45".
+- **The price is locked in when a team sends an advert.** A later change never alters what they paid.
+- The box at the top shows what's in force. **Back to normal prices** ends it straight away.
+- Setting a new change replaces the current one. **End of Day** also puts prices back to normal.
+
+---
+
 ## Results: screen time and leaderboard
 
 Open the **Results** tab to see what each team got for its money:

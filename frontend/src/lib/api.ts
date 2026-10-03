@@ -62,6 +62,28 @@ export interface PriceOption {
 export interface PriceList {
   priority: PriceOption[];
   durationSeconds: PriceOption[];
+  /** The price wobble in force (issue #41); the costs above already include it. */
+  wobble?: PriceWobble | null;
+}
+
+/** Prices up or down for a while (issue #41). */
+export interface PriceWobble {
+  /** Prices as a percentage of normal: 50 = half price, 200 = double. */
+  percent: number;
+  message: string | null;
+  /** null: started straight away. */
+  startsAt: string | null;
+  /** null: until staff end it. */
+  endsAt: string | null;
+  /** false while it's scheduled to start later. */
+  activeNow: boolean;
+}
+
+export interface PriceWobbleRequest {
+  percent: number;
+  message: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
 }
 
 export interface ApiUser {
@@ -400,6 +422,25 @@ export const api = {
 
   studentResults() {
     return student<StudentResults>("/api/student/results");
+  },
+
+  // ── Price wobble (issue #41) ──
+  /** The wobble in force or scheduled; undefined at normal prices. */
+  priceWobble() {
+    return staff<PriceWobble | undefined>("/api/staff/price-wobble");
+  },
+
+  setPriceWobble(request: PriceWobbleRequest) {
+    return staff<PriceWobble>("/api/staff/price-wobble", { method: "PUT", body: request });
+  },
+
+  stopPriceWobble() {
+    return staff<void>("/api/staff/price-wobble", { method: "DELETE" });
+  },
+
+  /** The price list at a percentage of normal, to preview a wobble. */
+  staffPrices(percent: number) {
+    return staff<PriceList>(`/api/staff/prices?percent=${percent}`);
   },
 
   /** A key so the projector can record what it shows; see lib/playRecorder.ts. */

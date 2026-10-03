@@ -23,6 +23,14 @@ When uploading, a student chooses (and pays for):
 
 The cost is `priorityCost + durationCost` (priority 5/10/15/20, duration 5/10/15). **The only copy of the price list is the backend's `PriceList`** (#35): it calculates the stored `totalCost`, refuses any priority or duration that isn't on the list, and is served to the student page (`GET /api/student/prices`), which builds its sliders and total from it. **Paid choices must translate exactly into screen time**, because that is what students are buying.
 
+**Price wobble** (#41): staff can scale every price to 25–300% of normal for a while, starting now or at a set time and ending at a set time or when stopped (`PriceWobbleService`, at most one, `price_wobble` table).
+
+-   **Rounding:** each option's cost is scaled and rounded on its own, never below 1, and the total is the sum of the two, so it always equals the prices the student sees.
+-   **Locked in:** the price is fixed at upload (`totalCost`), so a later wobble never changes what a team paid. "Spent" in the results (#40) uses those stored costs.
+-   **Students:** they get the scaled list and the wobble from `GET /api/student/prices` (checked every 30 s) and see a banner. A scheduled wobble is invisible to them until it starts.
+-   **Staff:** they preview any percentage via `GET /api/staff/prices?percent=`, so the frontend never re-implements the pricing.
+-   **End of Day** ends any wobble.
+
 ## Projector scheduling
 
 Implemented in `frontend/src/lib/projectorSchedule.ts` (pure functions, unit-tested) and driven by `pages/Projector.tsx`.

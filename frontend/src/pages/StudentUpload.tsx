@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { StudentUploadCard } from "@/components/StudentUploadCard";
+import { PriceWobbleBanner } from "@/components/PriceWobbleBanner";
 import { TeamResultsSummary } from "@/components/TeamResultsSummary";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
@@ -108,7 +109,8 @@ const StudentUpload = () => {
     document.title = "Submit your advert · BT Enterprise Day News";
   }, []);
 
-  const pricesQ = useQuery({ queryKey: ["prices"], queryFn: api.studentPrices, staleTime: 5 * 60_000 });
+  // Checked every 30s so a price wobble (issue #41) shows up, and goes away, without a reload.
+  const pricesQ = useQuery({ queryKey: ["prices"], queryFn: api.studentPrices, refetchInterval: 30_000 });
 
   const myUploadsQ = useQuery({
     queryKey: ["my-uploads", name],
@@ -243,6 +245,8 @@ const StudentUpload = () => {
 
           <div className="mt-10 space-y-6 fade-in" style={{ animationDelay: "120ms" }}>
             <UploadDropzone file={file} onFileChange={handleFileChange} scanStatus={scanStatus} />
+
+            {pricesQ.data?.wobble && <PriceWobbleBanner wobble={pricesQ.data.wobble} />}
 
             {/* Choices and prices come from the server's price list (issue #35). */}
             <PriceChoice

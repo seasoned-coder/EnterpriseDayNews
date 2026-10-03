@@ -39,5 +39,28 @@ class PriceListTests {
         PriceList.Prices prices = PriceList.prices();
         assertEquals(PriceList.PRIORITY, prices.priority());
         assertEquals(PriceList.DURATION_SECONDS, prices.durationSeconds());
+        assertNull(prices.wobble());
+    }
+
+    /** Issue #41: a price wobble scales every price; the total is always the two shown prices added up. */
+    @Test
+    void wobbledTotalsMatchTheWobbledPricesShown() {
+        for (int percent : new int[]{25, 50, 75, 125, 150, 200, 300}) {
+            PriceList.Prices prices = PriceList.prices(percent, null);
+            for (PriceList.Option p : prices.priority()) {
+                for (PriceList.Option d : prices.durationSeconds()) {
+                    assertEquals(p.cost() + d.cost(), PriceList.totalCost(p.value(), d.value(), percent),
+                            percent + "%: priority " + p.value() + ", " + d.value() + "s");
+                }
+            }
+        }
+    }
+
+    @Test
+    void wobbledPricesRoundSensiblyAndAreNeverFree() {
+        assertEquals(40 + 30, PriceList.totalCost(4, 30, 200));
+        assertEquals(10 + 8, PriceList.totalCost(4, 30, 50));   // 7.5 rounds up to 8
+        assertEquals(1 + 1, PriceList.totalCost(1, 10, 25));    // 1.25 → 1, never 0
+        assertEquals(PriceList.totalCost(2, 20), PriceList.totalCost(2, 20, PriceList.FULL_PRICE));
     }
 }

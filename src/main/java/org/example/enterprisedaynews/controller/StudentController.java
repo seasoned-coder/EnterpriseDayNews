@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
 import org.example.enterprisedaynews.service.ImageService;
 import org.example.enterprisedaynews.service.PriceList;
+import org.example.enterprisedaynews.service.PriceWobbleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +22,8 @@ public class StudentController {
 
     private final ImageViews imageViews;
 
+    private final PriceWobbleService priceWobbleService;
+
     @PostMapping("/upload")
     public ResponseEntity<ImageView> upload(@RequestParam("file") MultipartFile file,
                                             @RequestParam(value = "priority", defaultValue = "1") int priority,
@@ -32,10 +35,10 @@ public class StudentController {
                 imageService.uploadImage(file, username, priority, durationSeconds, publishOnApproval)));
     }
 
-    /** The priority and duration choices and what each costs (issue #35). */
+    /** The priority and duration choices and what each costs now (issue #35), with any price wobble (#41). */
     @GetMapping("/prices")
     public PriceList.Prices prices() {
-        return PriceList.prices();
+        return priceWobbleService.studentPrices();
     }
 
     /** Publish (put on screen) or withdraw one of your own adverts; see ImageService#setPublishedByStudent. */

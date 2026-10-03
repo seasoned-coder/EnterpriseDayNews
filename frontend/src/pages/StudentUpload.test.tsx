@@ -117,6 +117,29 @@ describe("StudentUpload wording and checks", () => {
     mocks.formatRelative.mockReturnValue("just now");
   });
 
+  it("tells students when prices are up or down, and until when (issue #41)", async () => {
+    const end = new Date();
+    end.setHours(12, 45, 0, 0);
+    mocks.studentPrices.mockResolvedValue({
+      ...PRICES,
+      wobble: { percent: 200, message: "Lunchtime rush!", startsAt: null, endsAt: end.toISOString(), activeNow: true },
+    });
+    renderPage();
+
+    const banner = await screen.findByText("Prices doubled!");
+    const box = banner.closest('[role="status"]') as HTMLElement;
+    expect(within(box).getByText(/until 12:45/)).toBeInTheDocument();
+    expect(within(box).getByText("Lunchtime rush!")).toBeInTheDocument();
+    expect(within(box).getByText(/You pay the price shown when you send/)).toBeInTheDocument();
+  });
+
+  it("shows no price banner at normal prices", async () => {
+    renderPage();
+    await screen.findAllByRole("radio");
+
+    expect(screen.queryByText(/Prices doubled|Half price|% off/)).not.toBeInTheDocument();
+  });
+
   it("shows the team's spend and screen time above their uploads (issue #40)", async () => {
     renderPage();
 

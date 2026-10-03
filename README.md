@@ -319,7 +319,9 @@ The frontend automatically handles login and token management when navigating to
 
 -   `POST /api/auth/login`: Authenticate and receive a JWT token.
 -   `POST /api/student/upload`: Upload an image (role: STUDENT). Form fields: `file`, `priority` (1-4), `durationSeconds` (10, 20 or 30), `publishOnApproval` (default `true`; `false` = wait after approval until the student publishes). Anything not on the price list is refused (`400`).
--   `GET  /api/student/prices`: The price list (priority and duration choices and their costs). The student page builds its choices and total from this; the only copy is `PriceList.java`.
+-   `GET  /api/student/prices`: The price list (priority and duration choices and their costs) as it is now, including any price wobble (`wobble`: percent, message, until when). The student page builds its choices and total from this; the only copy is `PriceList.java`.
+-   `GET|PUT|DELETE /api/staff/price-wobble`: The price wobble (staff): get it (`204` at normal prices), set it (`{"percent": 50, "message": "...", "startsAt": null, "endsAt": "..."}`, 25–300%), or end it now.
+-   `GET  /api/staff/prices?percent=150`: The price list at a percentage of normal, to preview a wobble.
 -   `GET  /api/student/uploads`: List current user's uploads.
 -   `DELETE /api/student/uploads/{id}`: Delete one of the current user's own uploads.
 -   `POST /api/student/uploads/{id}/publish?published=true|false`: For your own approved advert, put it on screen or take it off; while it's awaiting review, choose whether it goes on screen when approved. Refused (`409`) for rejected adverts.

@@ -21,11 +21,12 @@ import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
 import { EventResetPanel } from "@/components/EventResetPanel";
 import { ProjectorSettingsPanel } from "@/components/ProjectorSettingsPanel";
+import { PricesPanel } from "@/components/PricesPanel";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { StaffFooter } from "@/components/StaffFooter";
 import { STAFF_NAV } from "@/lib/staffNav";
 
-type Tab = "new" | "approved" | "rejected" | "comm" | "projector" | "results" | "eod";
+type Tab = "new" | "approved" | "rejected" | "comm" | "projector" | "prices" | "results" | "eod";
 
 const TAB_LABELS: Record<Tab, string> = {
   new: "New",
@@ -33,6 +34,7 @@ const TAB_LABELS: Record<Tab, string> = {
   rejected: "Rejected",
   comm: "Event Communications",
   projector: "Projector",
+  prices: "Prices",
   results: "Results",
   eod: "End of Day",
 };
@@ -83,6 +85,7 @@ const StaffDashboard = () => {
     rejected: rejectedQ.data?.length ?? 0,
     comm: commQ.data?.length ?? 0,
     projector: 0,
+    prices: 0,
     results: 0,
     eod: 0,
   };
@@ -313,14 +316,14 @@ const StaffDashboard = () => {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-8">
           <TabsList className="h-12 rounded-full bg-secondary p-1">
-            {(["new", "approved", "rejected", "comm", "projector", "results", "eod"] as Tab[]).map((k) => (
+            {(["new", "approved", "rejected", "comm", "projector", "prices", "results", "eod"] as Tab[]).map((k) => (
               <TabsTrigger
                 key={k}
                 value={k}
                 className="gap-2 rounded-full px-4 capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
               >
                 {TAB_LABELS[k]}
-                {k !== "eod" && k !== "projector" && k !== "results" && (
+                {k !== "eod" && k !== "projector" && k !== "prices" && k !== "results" && (
                   <Badge
                     variant="secondary"
                     className="h-5 min-w-[1.25rem] justify-center rounded-full bg-foreground/10 px-1.5 text-[10px] font-semibold"
@@ -461,6 +464,10 @@ const StaffDashboard = () => {
 
           <TabsContent value="projector" className="mt-6">
             <ProjectorSettingsPanel />
+          </TabsContent>
+
+          <TabsContent value="prices" className="mt-6">
+            <PricesPanel />
           </TabsContent>
 
           <TabsContent value="results" className="mt-6">

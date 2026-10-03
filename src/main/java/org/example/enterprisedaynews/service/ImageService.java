@@ -35,6 +35,7 @@ public class ImageService {
     );
 
     private final ImageRepository imageRepository;
+    private final PriceWobbleService priceWobbleService;
 
     @Value("${app.upload-dir:./uploads}")
     private String uploadDir;
@@ -49,8 +50,9 @@ public class ImageService {
     public ImageMetadata uploadImage(MultipartFile file, String username, int priority, int durationSeconds,
                                      boolean publishOnApproval) throws IOException {
         validateFile(file);
-        // Checked before anything is written: only choices on the price list are accepted.
-        int totalCost = PriceList.totalCost(priority, durationSeconds);
+        // Checked before anything is written: only choices on the price list are accepted. The price, including
+        // any price wobble in force now (#41), is locked in here.
+        int totalCost = PriceList.totalCost(priority, durationSeconds, priceWobbleService.currentPercent());
 
         // The name comes from the user's browser: never let it choose where the file goes.
         String originalName = UploadFileNames.displayName(file.getOriginalFilename());

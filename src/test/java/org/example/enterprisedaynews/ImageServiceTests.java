@@ -5,6 +5,8 @@ import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.service.ImageNotFoundException;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.PriceList;
+import org.example.enterprisedaynews.service.PriceWobbleService;
 import org.example.enterprisedaynews.service.UploadFileNames;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,9 @@ class ImageServiceTests {
     @Mock
     private ImageRepository imageRepository;
 
+    @Mock
+    private PriceWobbleService priceWobbleService;
+
     @InjectMocks
     private ImageService imageService;
 
@@ -43,6 +48,19 @@ class ImageServiceTests {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(imageService, "uploadDir", tempDir.toAbsolutePath().toString());
+        lenient().when(priceWobbleService.currentPercent()).thenReturn(PriceList.FULL_PRICE); // normal prices
+    }
+
+    /** Issue #41: an upload during a price wobble pays the wobbled price, locked in for good. */
+    @Test
+    void uploadPaysThePriceInForceAtTheTime() throws IOException {
+        when(priceWobbleService.currentPercent()).thenReturn(200);
+        when(imageRepository.save(any(ImageMetadata.class))).thenAnswer(i -> i.getArguments()[0]);
+        MockMultipartFile file = new MockMultipartFile("file", "advert.png", "image/png", new byte[]{1, 2, 3});
+
+        ImageMetadata saved = imageService.uploadImage(file, "rushco", 4, 30, true);
+
+        assertEquals(2 * (20 + 15), saved.getTotalCost());
     }
 
     @Test
