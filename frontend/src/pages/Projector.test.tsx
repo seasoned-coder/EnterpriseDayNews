@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiSubmission } from "@/lib/api";
-import Projector from "@/pages/Projector";
+import Projector, { FADE_MS } from "@/pages/Projector";
 import { makeSubmission } from "@/test/fixtures";
 
 const mocks = vi.hoisted(() => ({
@@ -36,6 +36,11 @@ const tick = async (seconds: number) => {
     await vi.advanceTimersByTimeAsync(seconds * 1000);
   });
 };
+/**
+ * A slide change shows the next slide once the old one has faded out (issue #49). Tick it separately: React
+ * starts the fade's timer when it renders, which happens at the end of each tick.
+ */
+const FADE = FADE_MS / 1000;
 
 describe("Projector", () => {
   beforeEach(() => {
@@ -63,11 +68,42 @@ describe("Projector", () => {
 
     expect(currentAlt()).toBe("Alpha submission");
     await tick(10);
+    await tick(FADE);
     expect(currentAlt()).toBe("Bravo submission");
     await tick(10); // Bravo paid for 20s: still showing
     expect(currentAlt()).toBe("Bravo submission");
-    await tick(10);
+    await tick(10); // its full 20 s on screen, counted from when it appeared...
+    await tick(FADE); // ...then the change
     expect(currentAlt()).toBe("Alpha submission");
+  });
+
+  it("fades one slide out before the next fades in: never two at once, within 1.5 s (issue #49)", async () => {
+    mocks.projectorImages.mockResolvedValue([advert("Alpha", 1, 10), advert("Bravo", 1, 10)]);
+    renderProjector();
+    await tick(0.1);
+    expect(screen.getAllByTestId("current-slide")).toHaveLength(1);
+
+    await tick(10); // Alpha's time is up: it fades out...
+    expect(screen.getAllByTestId("current-slide")).toHaveLength(1);
+    expect(currentAlt()).toBe("Alpha submission");
+    expect(screen.getByTestId("current-slide")).toHaveClass("opacity-0");
+    expect(screen.queryByAltText("Bravo submission")).not.toBeInTheDocument();
+
+    await tick(FADE); // ...then Bravo fades in
+    expect(screen.getAllByTestId("current-slide")).toHaveLength(1);
+    expect(currentAlt()).toBe("Bravo submission");
+    expect(screen.getByTestId("current-slide")).toHaveClass("slide-fade-in");
+    expect(screen.queryByAltText("Alpha submission")).not.toBeInTheDocument();
+    expect(2 * FADE_MS).toBeLessThanOrEqual(1500);
+  });
+
+  it("just shows the picture: no zooming (issue #49)", async () => {
+    mocks.projectorImages.mockResolvedValue([advert("Alpha")]);
+    renderProjector();
+    await tick(0.1);
+
+    const img = screen.getByAltText("Alpha submission");
+    expect(img.className).not.toMatch(/ken-burns|scale|zoom/);
   });
 
   it("moves on straight away when staff hide what's on screen", async () => {
@@ -79,7 +115,8 @@ describe("Projector", () => {
     expect(currentAlt()).toBe("Alpha submission");
 
     mocks.projectorImages.mockResolvedValue([b]); // Alpha hidden/rejected
-    await tick(3.1); // next refresh
+    await tick(3.1); // next refresh...
+    await tick(FADE); // ...then the fade
 
     expect(currentAlt()).toBe("Bravo submission");
   });
@@ -108,6 +145,7 @@ describe("Projector", () => {
       await tick(3);
       expect(screen.getByRole("status")).toHaveTextContent(/offline mode/i);
       await tick(4);
+      await tick(FADE);
       expect(currentAlt()).toBe("Bravo submission"); // still rotating
 
       mocks.projectorImages.mockResolvedValue([a, b]);
@@ -169,6 +207,7 @@ describe("Projector", () => {
       await act(async () => {
         img.dispatchEvent(new Event("error"));
       });
+      await tick(FADE);
 
       expect(currentAlt()).toBe("Bravo submission");
     });

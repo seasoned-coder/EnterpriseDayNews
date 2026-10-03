@@ -178,7 +178,7 @@ These tips come from the guidance on the upload page.
 
 - **Go big and sharp.** A 4K picture (3840 × 2160 pixels) looks crisp on the big screen.
 - **Use landscape (wide) pictures.** The big screen is wide. It fills the whole screen with your picture, so tall pictures get cut off at the top and bottom.
-- **Keep important words away from the edges.** The edges may be cut off, and the picture slowly zooms.
+- **Keep important words away from the edges.** The edges may be cut off to fill the big screen.
 - **Save as a high-quality JPEG.** Aim for 3 MB to 10 MB.
 - **Ask first.** By uploading, you confirm everyone in the photo is happy to be featured.
 

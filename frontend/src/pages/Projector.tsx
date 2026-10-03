@@ -13,7 +13,7 @@ import {
   type ScheduleState,
 } from "@/lib/projectorSchedule";
 
-/** A slide on screen; `slot` increases with every change so each new slide fades in. */
+/** A slide on screen; `slot` increases with every change, so a new slide fades in even if it's the same item. */
 interface Shown {
   item: ApiSubmission;
   slot: number;
@@ -24,12 +24,17 @@ const HISTORY_LIMIT = 50;
 const REQUEST_TIMEOUT_MS = 5000;
 /** How often recorded showings are sent to the server (issue #40). */
 const PLAYS_SEND_MS = 30_000;
+/** Fade out, then fade in, each this long: a slide change takes 1.2 s, within 1.5 s (issue #49). */
+export const FADE_MS = 600;
 
 const Projector = () => {
   const [paused, setPaused] = useState(false);
   const [showToolbar, setShowToolbar] = useState(true);
   const [current, setCurrent] = useState<Shown | null>(null);
-  const [previous, setPrevious] = useState<Shown | null>(null);
+  // The slide being drawn, and whether it's fading out (issue #49): the next slide only appears once the old
+  // one has gone, so two slides never show at once.
+  const [displayed, setDisplayed] = useState<Shown | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const schedule = useRef<ScheduleState>(INITIAL_SCHEDULE_STATE);
   const history = useRef<ApiSubmission[]>([]);
   const slotCounter = useRef(0);
@@ -153,7 +158,6 @@ const Projector = () => {
     (item: ApiSubmission | null) => {
       if (!item) {
         recordOutgoing(current);
-        setPrevious(null);
         setCurrent(null);
         return;
       }
@@ -162,9 +166,7 @@ const Projector = () => {
         return;
       }
       recordOutgoing(current);
-      shownAt.current = Date.now();
       slotCounter.current += 1;
-      setPrevious(current);
       setCurrent({ item, slot: slotCounter.current });
     },
     [current, recordOutgoing],
@@ -202,12 +204,37 @@ const Projector = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playable]);
 
-  // Auto-advance after the current slide's time: what the student paid for, or the staff item time.
+  // Changing slide: fade the old one out, then swap in the new one, which fades in (FADE_MS each, 1.2 s in all).
   useEffect(() => {
-    if (paused || !current) return;
+    if (!current) {
+      setDisplayed(null);
+      setLeaving(false);
+      return;
+    }
+    if (!displayed || displayed.slot === current.slot) {
+      if (!displayed) shownAt.current = Date.now();
+      setDisplayed(current); // first slide, or fresh data for the same slide
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    const t = setTimeout(() => {
+      shownAt.current = Date.now(); // its paid time starts now that it's on screen
+      setDisplayed(current);
+      setLeaving(false);
+    }, FADE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current]);
+
+  // Auto-advance after the slide's time (what the student paid for, or the staff item time), counted from
+  // when it's actually on screen, so the fades never eat into paid time (issue #49).
+  const onScreen = !leaving && displayed !== null && current !== null && displayed.slot === current.slot;
+  useEffect(() => {
+    if (paused || !current || !onScreen) return;
     const t = setTimeout(advance, slideSeconds(current.item, settings) * 1000);
     return () => clearTimeout(t);
-  }, [paused, current, settings, advance]);
+  }, [paused, current, settings, advance, onScreen]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -257,20 +284,22 @@ const Projector = () => {
     );
   }
 
-  const layers = [previous, current].filter((s): s is Shown => s !== null && (s === current || s.slot !== current.slot));
+  // What's actually drawn (issue #49): one slide at a time. It lags `current` by the fade-out, so two slides
+  // never show at once.
+  const slide = displayed ?? current;
+  const it = slide.item;
 
   return (
     <div
       className="relative h-screen w-screen overflow-hidden bg-gradient-projector text-white"
       onMouseMove={handleMouseMove}
     >
-      {layers.map(({ item: it, slot }) => (
-        <div
-          key={slot}
-          data-testid={slot === current.slot ? "current-slide" : "previous-slide"}
-          className={`absolute inset-0 ${slot === current.slot ? "crossfade-in" : ""}`}
-          aria-hidden={slot !== current.slot}
-        >
+      <div
+        key={slide.slot}
+        data-testid="current-slide"
+        className={`absolute inset-0 ${leaving ? "opacity-0 transition-opacity ease-in" : "slide-fade-in"}`}
+        style={{ transitionDuration: `${FADE_MS}ms`, animationDuration: `${FADE_MS}ms` }}
+      >
           {it.messageText ? (
             <div className="flex h-full w-full items-center justify-center bg-indigo-950 p-12 text-center">
                <div className="max-w-5xl">
@@ -288,25 +317,23 @@ const Projector = () => {
             <img
               src={api.imageUrl(it)}
               alt={`${it.uploadedBy} submission`}
-              className="ken-burns h-full w-full object-cover"
+              className="h-full w-full object-cover"
               onError={() => skipBroken(it)}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-        </div>
-      ))}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-10 sm:p-16">
-        <div key={current.slot} className="fade-in max-w-4xl">
-          <p className="text-sm font-medium uppercase tracking-[0.3em] text-white/70">
-            Enterprise Day · Live
-          </p>
-          {!current.item.isInfoMessage && (
-            <h2 className="mt-3 font-serif-display text-xl leading-none sm:text-2xl">
-              {current.item.uploadedBy}
-            </h2>
-          )}
-        </div>
+          {/* The caption belongs to its slide, so it fades out and in with it. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 p-10 sm:p-16">
+            <div className="max-w-4xl">
+              <p className="text-sm font-medium uppercase tracking-[0.3em] text-white/70">
+                Enterprise Day · Live
+              </p>
+              {!it.isInfoMessage && (
+                <h2 className="mt-3 font-serif-display text-xl leading-none sm:text-2xl">{it.uploadedBy}</h2>
+              )}
+            </div>
+          </div>
       </div>
 
       <div className={`pointer-events-auto absolute right-6 top-6 flex items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1 backdrop-blur transition-opacity duration-500 ${showToolbar ? 'opacity-100' : 'opacity-0'}`}>

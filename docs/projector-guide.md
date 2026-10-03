@@ -24,7 +24,7 @@ The projector shows:
 - **Student adverts** that staff have **approved** and that are on screen (straight away, or when the student taps **Publish now**), and
 - **Staff content**: **Event Communications** items (information images and messages) set to **Display**, which slip in between the adverts.
 
-Each item fills the screen. Wide (landscape) images fit best, and tall images are cropped. Images slowly zoom, and items fade from one to the next.
+Each item fills the screen. Wide (landscape) images fit best, and tall images are cropped. Pictures are shown still (no zooming). Between items, the old one fades out completely before the next fades in (about 1 second in all), so two adverts never show at once. Each advert's paid time starts once it's fully on screen.
 
 Along the bottom you'll see **Enterprise Day · Live** and, for student adverts, the username of the student company that uploaded it.
 

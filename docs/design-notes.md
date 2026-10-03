@@ -35,6 +35,8 @@ The cost is `priorityCost + durationCost` (priority 5/10/15/20, duration 5/10/15
 
 Implemented in `frontend/src/lib/projectorSchedule.ts` (pure functions, unit-tested) and driven by `pages/Projector.tsx`.
 
+**Transitions** (#49): only one slide is ever drawn. A change fades the old slide out (`FADE_MS`, 0.6 s), then swaps in the next, which fades in (0.6 s): 1.2 s in all, and two slides never show together. There's no zoom or movement. A slide's paid time (and its recorded screen time, #40) starts once it's on screen, so the fades don't eat into what the team paid for.
+
 **Inputs:**
 -   `GET /api/projector/images`: approved and displayed items in staff order (`displayOrder`), or only FLASH items while any are active.
 -   `GET /api/projector/settings`: three staff-tunable values (Projector tab on the Advert Dashboard).
