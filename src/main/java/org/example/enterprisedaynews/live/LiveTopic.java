@@ -10,7 +10,9 @@ public enum LiveTopic {
     /** Projector timing settings. */
     PROJECTOR_SETTINGS("projector-settings"),
     /** A price wobble started, changed or ended (#41). */
-    PRICES("prices");
+    PRICES("prices"),
+    /** A team was charged, credited or paid (#48). */
+    BALANCES("balances");
 
     private final String eventName;
 

@@ -212,18 +212,20 @@ Screen time is wiped by **End of Day** along with the adverts. Print the results
 
 Use this once the event is over, or before the next one if the system wasn't freshly installed.
 
-1. Open the **End of Day** tab.
-2. Turn on the switch **ARE YOU SURE? Yes, I want to reset the event**. The red **Clear Down** button stays greyed out until you do.
-3. Select **Clear Down**.
-4. Type `clear down` in the box, then select **Yes, reset the event** (or **Cancel**).
+1. Open the **End of Day** tab. (Print the **Results** first if you want them.)
+2. **Print the End of Day report** (**Till printer** or **A4 paper**): for each company, how many adverts it made, what it paid and what it still owes, with totals. The reset switch stays locked until you've printed it.
+3. Turn on the switch **ARE YOU SURE? Yes, I want to reset the event**. The red **Clear Down** button stays greyed out until you do.
+4. Select **Clear Down**.
+5. Type `clear down` in the box, then select **Yes, reset the event** (or **Cancel**).
 
-Three deliberate steps (switch, button, typed words) so it can't happen by accident.
+Report first, then three deliberate steps (switch, button, typed words), so nothing is lost by accident.
 
 **What it does:**
 
 - Deletes every student advert (new, approved and rejected) and its picture.
-- Deletes the recorded **screen time** (the Results tab starts again from zero). Print the results first.
-- Puts the **projector settings** back to their defaults.
+- Deletes the recorded **screen time** (the Results tab starts again from zero).
+- Clears every team's **balance and payments** (that's why the report is printed first).
+- Puts **prices** and the **projector settings** back to normal.
 
 **What it keeps:**
 
@@ -251,8 +253,20 @@ The **Student accounts** table shows, for each account:
 
 - **Username** and when it was created
 - **Status**: **Active** or **Locked**, plus **Temp lock until …** after too many failed sign-ins
-- **Last login**: date and time ("Never" if never used)
-- **IP address**: the address of the device used for the most recent sign-in
+- **Last login (IP)**: date and time ("Never" if never used), and the address of the device used
+- **Balance**: what the team owes for its adverts (see below)
+
+### Balances: what each team owes
+
+Teams pay (in event money) for their adverts **once they're approved**, at the price shown on the card (the price when they uploaded it).
+
+- **Rejected adverts** are never charged. If you reject an advert you'd already approved, its price is **refunded** to the team.
+- If a team **deletes** one of its own approved adverts, it still owes for it: **no refunds** (they're warned when they delete it).
+- The **Balance** column shows **Owes 35**, **Nothing owed** or **In credit** (after a refund). Select it to see every charge, refund and payment.
+
+**Taking payment:** go to the (virtual) bank and take the team's **whole** balance from its account. Then select the balance, check the amount, and select **Yes, mark 35 as paid**. The balance goes to 0. There are no part-payments. If the balance changed while you were at the bank (for example, another advert was approved), you'll be told the new amount and nothing is recorded: take the difference, then mark it paid again.
+
+Teams see their own balance on their upload page. **End of Day** prints everyone's balances and payments, then clears them.
 
 The list refreshes every 15 seconds.
 

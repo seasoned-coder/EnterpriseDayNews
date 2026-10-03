@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarX, Check, Loader2, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarX, Check, FileText, Loader2, Printer, X } from "lucide-react";
 import { AsciiExplosion } from "@/components/AsciiExplosion";
+import { EndOfDayReport } from "@/components/EndOfDayReport";
+import { PrintArea, printPages, type PrintLayout } from "@/components/PrintArea";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +19,8 @@ const CONFIRM_PHRASE = "clear down";
 const WILL = [
   "Delete every student advert (new, approved and rejected) and its picture",
   "Delete the recorded screen time (print the Results first)",
-  "Put the projector settings back to their defaults",
+  "Clear every team's balance and payments (print the report first)",
+  "Put prices and the projector settings back to normal",
 ];
 const WONT = ["Event Communications items (staff images and messages)", "Student and staff accounts"];
 
@@ -34,6 +37,19 @@ export const EventResetPanel = () => {
   const [lastReset, setLastReset] = useState<number | null>(null);
 
   const resultRef = useRef<HTMLDivElement>(null);
+
+  // The End of Day report (issue #48): Clear Down only unlocks once it has been printed.
+  const balancesQ = useQuery({ queryKey: ["balances"], queryFn: api.balances });
+  const [reportJob, setReportJob] = useState<PrintLayout | null>(null);
+  const [reportPrinted, setReportPrinted] = useState(false);
+  useEffect(() => {
+    if (!reportJob) return;
+    printPages(reportJob);
+    setReportPrinted(true);
+    const done = () => setReportJob(null);
+    window.addEventListener("afterprint", done, { once: true });
+    return () => window.removeEventListener("afterprint", done);
+  }, [reportJob]);
 
   // On narrow screens the result sits below the controls: bring it into view when it appears.
   useEffect(() => {
@@ -54,6 +70,7 @@ export const EventResetPanel = () => {
       });
       setConfirming(false);
       setArmed(false);
+      setReportPrinted(false); // a fresh start: the next reset needs a fresh report
       setLastReset(deletedAdverts);
       queryClient.invalidateQueries();
     },
@@ -99,17 +116,46 @@ export const EventResetPanel = () => {
 
         <p className="text-sm font-medium text-destructive">This can't be undone.</p>
 
+        {/* Step 1 (issue #48): print what each company owes and paid, before it's wiped. */}
+        <div className="rounded-xl border border-border p-4">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <FileText className="h-4 w-4 text-primary" /> 1. Print the End of Day report
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Each company's adverts, what it paid and what it still owes. Clear Down wipes all of this, so print it
+            first.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button size="sm" disabled={!balancesQ.data} onClick={() => setReportJob("receipt-roll")}>
+              <Printer className="mr-2 h-4 w-4" /> Till printer
+            </Button>
+            <Button size="sm" variant="outline" disabled={!balancesQ.data} onClick={() => setReportJob("a4-sheet")}>
+              A4 paper
+            </Button>
+            {reportPrinted && (
+              <span className="flex items-center gap-1 text-xs text-success">
+                <Check className="h-3.5 w-3.5" /> Printed
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <label htmlFor="arm-reset" className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+          <label
+            htmlFor="arm-reset"
+            className={`flex items-center gap-3 text-sm font-semibold ${reportPrinted ? "cursor-pointer" : "opacity-60"}`}
+            title={reportPrinted ? undefined : "Print the End of Day report first"}
+          >
             <Switch
               id="arm-reset"
+              disabled={!reportPrinted}
               checked={armed}
               onCheckedChange={(on) => {
                 setArmed(on);
                 if (on) setLastReset(null);
               }}
             />
-            ARE YOU SURE? Yes, I want to reset the event
+            2. ARE YOU SURE? Yes, I want to reset the event
           </label>
           <Button variant="destructive" disabled={!armed || reset.isPending} onClick={openConfirm}>
             Clear Down
@@ -140,8 +186,8 @@ export const EventResetPanel = () => {
           <DialogHeader>
             <DialogTitle className="text-destructive">Reset the event now?</DialogTitle>
             <DialogDescription>
-              All student adverts will be deleted and the projector settings restored to their defaults. Staff
-              messages and accounts are kept. To confirm, type{" "}
+              All student adverts, screen time, balances and payments will be deleted, and prices and the
+              projector settings restored to normal. Staff messages and accounts are kept. To confirm, type{" "}
               <span className="font-bold text-foreground">{CONFIRM_PHRASE}</span> below.
             </DialogDescription>
           </DialogHeader>
@@ -169,6 +215,12 @@ export const EventResetPanel = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {reportJob && balancesQ.data && (
+        <PrintArea>
+          <EndOfDayReport teams={balancesQ.data} />
+        </PrintArea>
+      )}
     </Card>
   );
 };

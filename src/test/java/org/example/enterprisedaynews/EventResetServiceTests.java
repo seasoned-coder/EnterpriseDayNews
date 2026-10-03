@@ -7,6 +7,7 @@ import org.example.enterprisedaynews.service.EventResetService;
 import org.example.enterprisedaynews.service.ImageService;
 import org.example.enterprisedaynews.service.PriceWobbleService;
 import org.example.enterprisedaynews.service.ResultsService;
+import org.example.enterprisedaynews.service.TeamBalanceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.ArgumentCaptor;
@@ -21,10 +22,11 @@ class EventResetServiceTests {
     private final ImageService imageService = mock(ImageService.class);
     private final ResultsService resultsService = mock(ResultsService.class);
     private final PriceWobbleService priceWobbleService = mock(PriceWobbleService.class);
+    private final TeamBalanceService teamBalanceService = mock(TeamBalanceService.class);
     private final DisplaySettingsRepository settingsRepository = mock(DisplaySettingsRepository.class);
     private final EventResetService eventResetService =
             new EventResetService(imageService, new DisplaySettingsService(settingsRepository, mock(ApplicationEventPublisher.class)), resultsService,
-                    priceWobbleService);
+                    priceWobbleService, teamBalanceService);
 
     @Test
     void deletesAllAdvertsAndScreenTimeAndRestoresDefaultSettings() {
@@ -38,6 +40,7 @@ class EventResetServiceTests {
         assertEquals(120L, result.deletedPlays()); // issue #40
         verify(imageService).deleteAllAdverts();
         verify(priceWobbleService).stop(); // back to normal prices (issue #41)
+        verify(teamBalanceService).deleteAll(); // balances and payments (issue #48)
         ArgumentCaptor<DisplaySettings> saved = ArgumentCaptor.forClass(DisplaySettings.class);
         verify(settingsRepository).save(saved.capture());
         assertEquals(DisplaySettings.DEFAULT_ID, saved.getValue().getId());

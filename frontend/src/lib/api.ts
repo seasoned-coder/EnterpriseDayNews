@@ -153,6 +153,36 @@ export interface StudentResults {
   adverts: { imageId: number; plays: number; seconds: number }[];
 }
 
+/** A team's account, in event money (issue #48). */
+export interface TeamBalance {
+  team: string;
+  /** Approved adverts' prices. */
+  charged: number;
+  /** Given back for approved adverts later rejected. */
+  credited: number;
+  /** Taken from the team's bank by staff. */
+  paid: number;
+  /** charged - credited - paid; negative = in credit. */
+  owed: number;
+  /** Adverts the team has in the system now. */
+  advertsUploaded: number;
+  /** Adverts it has been charged for (approved), net of any rejected later. */
+  advertsCharged: number;
+}
+
+export interface LedgerLine {
+  kind: "CHARGE" | "CREDIT" | "PAYMENT";
+  amount: number;
+  description: string | null;
+  at: string;
+  recordedBy: string | null;
+}
+
+export interface TeamAccount {
+  balance: TeamBalance;
+  entries: LedgerLine[];
+}
+
 // ── Sessions ────────────────────────────────────────────────────────────────
 // Students and staff each have their own stored session, so signing in to one app in this browser
 // doesn't sign you out of the other (handy when testing both on one machine).
@@ -435,6 +465,27 @@ export const api = {
 
   studentResults() {
     return student<StudentResults>("/api/student/results");
+  },
+
+  // ── Balances (issue #48) ──
+  balances() {
+    return staff<TeamBalance[]>("/api/staff/balances");
+  },
+
+  teamAccount(team: string) {
+    return staff<TeamAccount>(`/api/staff/balances/${encodeURIComponent(team)}`);
+  },
+
+  /** Staff took the whole balance (the amount shown) from the team's bank. */
+  markPaid(team: string, amount: number) {
+    return staff<TeamBalance>(`/api/staff/balances/${encodeURIComponent(team)}/paid`, {
+      method: "POST",
+      body: { amount },
+    });
+  },
+
+  myBalance() {
+    return student<TeamAccount>("/api/student/balance");
   },
 
   // ── Price wobble (issue #41) ──

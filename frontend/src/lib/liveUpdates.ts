@@ -8,8 +8,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/api";
 
-export type LiveTopic = "adverts" | "projector-settings" | "prices";
-const TOPICS: LiveTopic[] = ["adverts", "projector-settings", "prices"];
+export type LiveTopic = "adverts" | "projector-settings" | "prices" | "balances";
+const TOPICS: LiveTopic[] = ["adverts", "projector-settings", "prices", "balances"];
 
 /** How often to check anyway while the stream is connected (in case an event was missed). */
 export const SAFETY_NET_MS = 60_000;

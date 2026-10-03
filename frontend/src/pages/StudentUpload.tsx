@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { StudentUploadCard } from "@/components/StudentUploadCard";
 import { PriceWobbleBanner } from "@/components/PriceWobbleBanner";
+import { StudentBalance } from "@/components/StudentBalance";
 import { TeamResultsSummary } from "@/components/TeamResultsSummary";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,19 @@ const StudentUpload = () => {
 
   // Approvals, rejections and price changes arrive the moment they happen (issue #43); the polling below is
   // a slow safety net while that's connected, and the normal rate when it isn't.
-  const live = useLiveRefresh({ adverts: [["my-uploads"]], prices: [["prices"]] });
+  const live = useLiveRefresh({
+    adverts: [["my-uploads"], ["my-balance"]],
+    prices: [["prices"]],
+    balances: [["my-balance"]],
+  });
+
+  // What the team owes for its approved adverts (issue #48).
+  const balanceQ = useQuery({
+    queryKey: ["my-balance", name],
+    queryFn: api.myBalance,
+    enabled: name.length > 0,
+    refetchInterval: pollEvery(live, 30_000),
+  });
 
   // Prices change with a price wobble (issue #41).
   const pricesQ = useQuery({ queryKey: ["prices"], queryFn: api.studentPrices, refetchInterval: pollEvery(live, 30_000) });
@@ -344,6 +357,7 @@ const StudentUpload = () => {
             <div className="mt-16 space-y-4 fade-in" style={{ animationDelay: "240ms" }}>
               <h2 className="font-display text-2xl font-bold">Your uploads</h2>
 
+              {balanceQ.data && <StudentBalance account={balanceQ.data} />}
               {resultsQ.data && <TeamResultsSummary result={resultsQ.data.team} />}
 
               {myUploadsQ.isLoading ? (
@@ -376,6 +390,16 @@ const StudentUpload = () => {
                 <AlertDialogDescription>
                   This cannot be undone. The file will be permanently removed from the system and will stop showing on the projector if it is currently live.
                 </AlertDialogDescription>
+                {/* Issue #48: approved adverts stay paid for. */}
+                {deleteTarget?.status === "APPROVED" && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-medium text-student-ink"
+                  >
+                    💸 This advert was approved, so your team still owes its price of <b>{deleteTarget.totalCost}</b>.
+                    Deleting it won't give you the money back: <b>no refunds!</b>
+                  </p>
+                )}
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={deleteUpload.isPending}>Keep upload</AlertDialogCancel>

@@ -8,6 +8,7 @@ import org.example.enterprisedaynews.service.ImageNotFoundException;
 import org.example.enterprisedaynews.service.ImageService;
 import org.example.enterprisedaynews.service.PriceList;
 import org.example.enterprisedaynews.service.PriceWobbleService;
+import org.example.enterprisedaynews.service.TeamBalanceService;
 import org.example.enterprisedaynews.service.ThumbnailService;
 import org.example.enterprisedaynews.service.UploadFileNames;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,9 @@ class ImageServiceTests {
 
     @Mock
     private ApplicationEventPublisher events;
+
+    @Mock
+    private TeamBalanceService teamBalanceService;
 
     @InjectMocks
     private ImageService imageService;

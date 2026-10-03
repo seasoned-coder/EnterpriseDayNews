@@ -33,6 +33,13 @@ public interface ImageRepository extends JpaRepository<ImageMetadata, Long> {
             + "from ImageMetadata m where m.isInfoMessage = false and m.status = :status group by m.uploadedBy")
     List<TeamSpend> spendByTeam(@Param("status") ImageMetadata.ApprovalStatus status);
 
+    /** Each team's adverts still in the system, and how many are approved (End of Day report, issue #48). */
+    @Query("select new org.example.enterprisedaynews.repository.TeamAdvertCounts(m.uploadedBy, count(m), "
+            + "sum(case when m.status = org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus.APPROVED "
+            + "then 1L else 0L end)) "
+            + "from ImageMetadata m where m.isInfoMessage = false and m.uploadedBy is not null group by m.uploadedBy")
+    List<TeamAdvertCounts> advertCountsByTeam();
+
     /** Every team that has uploaded an advert (issue #40). */
     @Query("select distinct m.uploadedBy from ImageMetadata m where m.isInfoMessage = false and m.uploadedBy is not null")
     List<String> studentUploaders();

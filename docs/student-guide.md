@@ -170,6 +170,18 @@ You can only delete your own uploads.
 3. Read the message. Deleting **cannot be undone**. If it is on the big screen, it will stop showing.
 4. Tap **Delete permanently**. (Or tap **Keep upload** if you changed your mind.)
 
+**Deleting an approved advert doesn't get your money back.** Once an advert is approved, your team owes its price, and deleting it later still counts: **no refunds!** The message warns you before you delete.
+
+---
+
+## 7. What you owe
+
+At the top of **Your uploads**, a box shows what your team owes the bank:
+
+- You pay for an advert **once a teacher approves it**, at the price shown on its card (the price when you sent it).
+- If an advert isn't approved, you don't pay for it. If it was approved and a teacher changes their mind and rejects it, you get the money back.
+- A teacher takes what you owe from your team's bank account, and the box then says **Nothing owed ✓**.
+
 ---
 
 ## Tips for a great advert

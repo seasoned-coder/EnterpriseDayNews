@@ -39,6 +39,7 @@ public class ImageService {
     private final ImageRepository imageRepository;
     private final PriceWobbleService priceWobbleService;
     private final ThumbnailService thumbnailService;
+    private final TeamBalanceService teamBalanceService;
     private final ApplicationEventPublisher events;
 
     @Value("${app.upload-dir:./uploads}")
@@ -219,6 +220,8 @@ public class ImageService {
         ImageMetadata metadata = findOrThrow(id);
         // Enforce the approval state machine — see ImageStateMachine for allowed transitions.
         ImageStateMachine.assertCanTransition(metadata.getStatus(), status);
+        // The team owes for it once approved, and gets it back if it's rejected after all (issue #48).
+        teamBalanceService.onStatusChange(metadata, metadata.getStatus(), status, vettedBy);
         metadata.setStatus(status);
         metadata.setVettedBy(vettedBy);
         metadata.setVettedAt(LocalDateTime.now());

@@ -34,6 +34,8 @@ export interface AccountsDashboardConfig {
   protectSelf: boolean;
   /** Extra panel above "Add an account", given the accounts (students: team setup and slips, #37). */
   sidePanel?: (accounts: ApiAccount[]) => ReactNode;
+  /** An extra column (cards on phones) per account (students: balance owed, #48). */
+  extraColumn?: { header: string; render: (account: ApiAccount) => ReactNode };
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -263,6 +265,12 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                       Last login: {formatDateTime(account.lastLoginAt)}
                       {account.lastLoginIp && <span className="font-mono"> · {account.lastLoginIp}</span>}
                     </p>
+                    {config.extraColumn && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">{config.extraColumn.header}: </span>
+                        {config.extraColumn.render(account)}
+                      </div>
+                    )}
                     {actionsFor(account, true)}
                   </li>
                 ))}
@@ -274,8 +282,8 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                     <TableRow>
                       <TableHead>Username</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Last login</TableHead>
-                      <TableHead>IP address</TableHead>
+                      <TableHead>Last login (IP)</TableHead>
+                      {config.extraColumn && <TableHead>{config.extraColumn.header}</TableHead>}
                       <TableHead className="w-[300px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -287,16 +295,19 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                           <StatusBadge account={account} />
                         </TableCell>
                         <TableCell className="py-3">
-                          <div className="min-w-[180px]">
+                          <div className="min-w-[160px]">
                             <div>{formatDateTime(account.lastLoginAt)}</div>
                             {account.lastLoginAt && (
-                              <div className="text-xs text-muted-foreground">{formatRelative(account.lastLoginAt)}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatRelative(account.lastLoginAt)}
+                                {account.lastLoginIp && <span className="font-mono"> · {account.lastLoginIp}</span>}
+                              </div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-3">
-                          <span className="font-mono text-xs text-muted-foreground">{account.lastLoginIp ?? "—"}</span>
-                        </TableCell>
+                        {config.extraColumn && (
+                          <TableCell className="whitespace-nowrap py-3">{config.extraColumn.render(account)}</TableCell>
+                        )}
                         <TableCell className="py-3">{actionsFor(account)}</TableCell>
                       </TableRow>
                     ))}

@@ -31,6 +31,15 @@ The cost is `priorityCost + durationCost` (priority 5/10/15/20, duration 5/10/15
 -   **Staff:** they preview any percentage via `GET /api/staff/prices?percent=`, so the frontend never re-implements the pricing.
 -   **End of Day** ends any wobble.
 
+**Balances** (#48): what each team owes, in a ledger (`team_ledger`, `TeamBalanceService`). Charges, credits and payments are kept with a description, the team, when and by whom, so the record stands if an advert is deleted. Owed = charges − credits − payments. The rules were agreed for the event:
+
+-   **Charge on approval** (`ImageService.updateStatus` → `onStatusChange`, same transaction), at the stored price. Rejected adverts are never charged.
+-   **Credit** when an approved advert is later rejected. Approving it again charges again.
+-   **No refund** when a team deletes its own approved advert.
+-   **Paying:** staff take the whole balance from the team's (virtual) bank and mark it paid: one `PAYMENT` of exactly the balance they saw. There are no part-payments. If the balance changed meanwhile, the server refuses with 409. Payments are serialised, so two staff can't both record one.
+-   **End of Day:** prints a report (companies, adverts, paid, owed; the reset is locked until it's printed), then clears the ledger.
+-   **Not yet:** a printable invoice for teams (#50).
+
 ## Projector scheduling
 
 Implemented in `frontend/src/lib/projectorSchedule.ts` (pure functions, unit-tested) and driven by `pages/Projector.tsx`.

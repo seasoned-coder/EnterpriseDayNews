@@ -1,5 +1,7 @@
 import { AccountsDashboard, type AccountsDashboardConfig } from "@/components/AccountsDashboard";
+import { TeamBalanceCell } from "@/components/TeamBalanceCell";
 import { TeamSetupPanel } from "@/components/TeamSetupPanel";
+import { useLiveRefresh } from "@/lib/liveUpdates";
 
 const STUDENT_ACCOUNTS: AccountsDashboardConfig = {
   kind: "student",
@@ -12,8 +14,13 @@ const STUDENT_ACCOUNTS: AccountsDashboardConfig = {
   renameNote: "Their adverts move to the new name. If they're signed in, they'll need to sign in again with it.",
   protectSelf: false,
   sidePanel: (accounts) => <TeamSetupPanel accounts={accounts} />,
+  extraColumn: { header: "Balance", render: (account) => <TeamBalanceCell team={account.username} /> },
 };
 
-const StudentAccountsDashboard = () => <AccountsDashboard config={STUDENT_ACCOUNTS} />;
+const StudentAccountsDashboard = () => {
+  // Balances change as staff approve adverts and mark them paid (issue #48): keep them current.
+  useLiveRefresh({ balances: [["balances"]], adverts: [["balances"]] });
+  return <AccountsDashboard config={STUDENT_ACCOUNTS} />;
+};
 
 export default StudentAccountsDashboard;

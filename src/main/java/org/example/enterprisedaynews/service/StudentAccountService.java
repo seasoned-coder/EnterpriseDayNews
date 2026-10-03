@@ -5,6 +5,7 @@ import org.example.enterprisedaynews.dto.TeamLogin;
 import org.example.enterprisedaynews.model.StudentAccount;
 import org.example.enterprisedaynews.repository.AdvertPlayRepository;
 import org.example.enterprisedaynews.repository.ImageRepository;
+import org.example.enterprisedaynews.repository.LedgerRepository;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -39,14 +40,16 @@ public class StudentAccountService extends AccountService<StudentAccount> {
 
     private final ImageRepository imageRepository;
     private final AdvertPlayRepository playRepository;
+    private final LedgerRepository ledgerRepository;
     private final FriendlyPasswords friendlyPasswords;
 
     public StudentAccountService(StudentAccountRepository repository, LoginGuard loginGuard,
                                  ImageRepository imageRepository, AdvertPlayRepository playRepository,
-                                 FriendlyPasswords friendlyPasswords) {
+                                 LedgerRepository ledgerRepository, FriendlyPasswords friendlyPasswords) {
         super(repository, loginGuard, PasswordPolicy.STUDENT_MIN_LENGTH, "student");
         this.imageRepository = imageRepository;
         this.playRepository = playRepository;
+        this.ledgerRepository = ledgerRepository;
         this.friendlyPasswords = friendlyPasswords;
     }
 
@@ -103,6 +106,7 @@ public class StudentAccountService extends AccountService<StudentAccount> {
     protected void onRenamed(String oldUsername, String newUsername) {
         imageRepository.renameUploader(oldUsername, newUsername);
         playRepository.renameTeam(oldUsername, newUsername);
+        ledgerRepository.renameTeam(oldUsername, newUsername); // its balance and payments (#48)
     }
 
     /** Locks any account still using a password published in this repository. Returns how many were locked. */

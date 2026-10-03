@@ -50,6 +50,10 @@ vi.mock("@/lib/api", () => ({
     studentDeleteMyUpload: mocks.studentDeleteMyUpload,
     studentSetPublished: mocks.studentSetPublished,
     studentPrices: mocks.studentPrices,
+    myBalance: async () => ({
+      balance: { team: "student1", charged: 35, credited: 0, paid: 10, owed: 25, advertsUploaded: 2, advertsCharged: 2 },
+      entries: [],
+    }),
     studentResults: async () => ({
       team: { team: "year10-team1", adverts: 1, spent: 25, plays: 4, seconds: 80, costPerMinute: 18.8 },
       adverts: [{ imageId: 101, plays: 4, seconds: 80 }],
@@ -162,6 +166,14 @@ describe("StudentUpload wording and checks", () => {
     await screen.findAllByRole("radio");
 
     expect(screen.queryByText(/Prices doubled|Half price|% off/)).not.toBeInTheDocument();
+  });
+
+  it("shows what the team owes the bank (issue #48)", async () => {
+    renderPage();
+
+    const balance = await screen.findByLabelText("Your balance");
+    expect(balance).toHaveTextContent("You owe 25");
+    expect(balance).toHaveTextContent("you've paid 10 so far");
   });
 
   it("shows the team's spend and screen time above their uploads (issue #40)", async () => {
@@ -279,6 +291,27 @@ describe("StudentUpload delete flow", () => {
     mocks.studentDeleteMyUpload.mockResolvedValue(undefined);
     mocks.imageUrl.mockImplementation((item: { filePath: string }) => `/uploads/${item.filePath}`);
     mocks.formatRelative.mockReturnValue("just now");
+  });
+
+  it("warns there are no refunds when deleting an approved advert (issue #48)", async () => {
+    mocks.studentGetMyUploads.mockResolvedValue([{ ...sampleUpload, status: "APPROVED", totalCost: 25 }]);
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /delete/i }));
+
+    const warning = screen.getByRole("alert");
+    expect(warning).toHaveTextContent("still owes its price of 25");
+    expect(warning).toHaveTextContent("no refunds!");
+  });
+
+  it("doesn't mention money when deleting an advert that wasn't approved", async () => {
+    mocks.studentGetMyUploads.mockResolvedValue([{ ...sampleUpload, status: "NEW" }]);
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /delete/i }));
+
+    expect(screen.getByText("Permanently delete this upload?")).toBeInTheDocument();
+    expect(screen.queryByText(/no refunds/)).not.toBeInTheDocument();
   });
 
   it("opens a confirmation dialog and does not delete when cancelled", async () => {

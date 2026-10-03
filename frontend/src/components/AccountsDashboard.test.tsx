@@ -27,6 +27,8 @@ vi.mock("@/hooks/use-toast", () => ({ toast: mocks.toast }));
 vi.mock("@/components/BrandNav", () => ({ BrandNav: () => <nav /> }));
 // Tested on its own (TeamSetupPanel.test.tsx); its team picker would repeat the names checked here.
 vi.mock("@/components/TeamSetupPanel", () => ({ TeamSetupPanel: () => <div data-testid="team-setup" /> }));
+// Tested on its own (TeamBalanceCell.test.tsx).
+vi.mock("@/components/TeamBalanceCell", () => ({ TeamBalanceCell: ({ team }: { team: string }) => <span>balance of {team}</span> }));
 
 const account = (id: number, username: string, locked = false): ApiAccount => ({
   id,
