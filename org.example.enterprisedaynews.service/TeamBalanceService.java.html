@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -59,28 +60,28 @@ public class TeamBalanceService {
      */
     @Transactional
     public void onStatusChange(ImageMetadata advert, ApprovalStatus from, ApprovalStatus to, String staff) {
-<span class="pc bpc" id="L62" title="2 of 6 branches missed.">        if (advert.isInfoMessage() || advert.getUploadedBy() == null || from == to) {</span>
-<span class="fc" id="L63">            return;</span>
+<span class="pc bpc" id="L63" title="2 of 6 branches missed.">        if (advert.isInfoMessage() || advert.getUploadedBy() == null || from == to) {</span>
+<span class="fc" id="L64">            return;</span>
         }
         Kind kind;
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (to == ApprovalStatus.APPROVED) {</span>
-<span class="fc" id="L67">            kind = Kind.CHARGE;</span>
-<span class="pc bpc" id="L68" title="1 of 4 branches missed.">        } else if (from == ApprovalStatus.APPROVED &amp;&amp; to == ApprovalStatus.REJECTED) {</span>
-<span class="fc" id="L69">            kind = Kind.CREDIT;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (to == ApprovalStatus.APPROVED) {</span>
+<span class="fc" id="L68">            kind = Kind.CHARGE;</span>
+<span class="pc bpc" id="L69" title="1 of 4 branches missed.">        } else if (from == ApprovalStatus.APPROVED &amp;&amp; to == ApprovalStatus.REJECTED) {</span>
+<span class="fc" id="L70">            kind = Kind.CREDIT;</span>
         } else {
-<span class="fc" id="L71">            return; // e.g. NEW -&gt; REJECTED: never charged, nothing to give back</span>
+<span class="fc" id="L72">            return; // e.g. NEW -&gt; REJECTED: never charged, nothing to give back</span>
         }
-<span class="fc" id="L73">        ledgerRepository.save(LedgerEntry.builder()</span>
-<span class="fc" id="L74">                .team(advert.getUploadedBy())</span>
-<span class="fc" id="L75">                .kind(kind)</span>
-<span class="fc" id="L76">                .amount(advert.getTotalCost())</span>
-<span class="fc" id="L77">                .imageId(advert.getId())</span>
-<span class="fc" id="L78">                .description(describe(advert, kind))</span>
-<span class="fc" id="L79">                .createdAt(LocalDateTime.now())</span>
-<span class="fc" id="L80">                .recordedBy(staff)</span>
-<span class="fc" id="L81">                .build());</span>
-<span class="fc" id="L82">        changed();</span>
-<span class="fc" id="L83">    }</span>
+<span class="fc" id="L74">        ledgerRepository.save(LedgerEntry.builder()</span>
+<span class="fc" id="L75">                .team(advert.getUploadedBy())</span>
+<span class="fc" id="L76">                .kind(kind)</span>
+<span class="fc" id="L77">                .amount(advert.getTotalCost())</span>
+<span class="fc" id="L78">                .imageId(advert.getId())</span>
+<span class="fc" id="L79">                .description(describe(advert, kind))</span>
+<span class="fc" id="L80">                .createdAt(LocalDateTime.now())</span>
+<span class="fc" id="L81">                .recordedBy(staff)</span>
+<span class="fc" id="L82">                .build());</span>
+<span class="fc" id="L83">        changed();</span>
+<span class="fc" id="L84">    }</span>
 
     /**
      * Staff have taken the team's whole balance from its bank: record the payment, bringing the balance to 0.
@@ -91,103 +92,119 @@ public class TeamBalanceService {
     public TeamBalance markPaid(String team, long expected, String staff) {
         // One payment at a time, each committed before the next is checked: two staff pressing &quot;paid&quot; at once
         // can't both record it.
-<span class="fc" id="L94">        synchronized (paymentLock) {</span>
-<span class="fc" id="L95">            return transactions.execute(status -&gt; recordPayment(team, expected, staff));</span>
+<span class="fc" id="L95">        synchronized (paymentLock) {</span>
+<span class="fc" id="L96">            return transactions.execute(status -&gt; recordPayment(team, expected, staff));</span>
         }
     }
 
     private TeamBalance recordPayment(String team, long expected, String staff) {
-<span class="fc" id="L100">        long owed = balanceOf(team).owed();</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (owed &lt;= 0) {</span>
-<span class="fc" id="L102">            throw new ResponseStatusException(HttpStatus.CONFLICT, team + &quot; doesn't owe anything&quot;);</span>
+<span class="fc" id="L101">        long owed = balanceOf(team).owed();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (owed &lt;= 0) {</span>
+<span class="fc" id="L103">            throw new ResponseStatusException(HttpStatus.CONFLICT, team + &quot; doesn't owe anything&quot;);</span>
         }
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (expected != owed) {</span>
-<span class="fc" id="L105">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (expected != owed) {</span>
+<span class="fc" id="L106">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
                     team + &quot; now owes &quot; + owed + &quot; (not &quot; + expected + &quot;): check, take that amount, and try again&quot;);
         }
-<span class="fc" id="L108">        ledgerRepository.save(LedgerEntry.builder()</span>
-<span class="fc" id="L109">                .team(team)</span>
-<span class="fc" id="L110">                .kind(Kind.PAYMENT)</span>
-<span class="fc" id="L111">                .amount(Math.toIntExact(owed))</span>
-<span class="fc" id="L112">                .description(&quot;Paid from the team's bank&quot;)</span>
-<span class="fc" id="L113">                .createdAt(LocalDateTime.now())</span>
-<span class="fc" id="L114">                .recordedBy(staff)</span>
-<span class="fc" id="L115">                .build());</span>
-<span class="fc" id="L116">        changed();</span>
-<span class="fc" id="L117">        return balanceOf(team);</span>
+<span class="fc" id="L109">        ledgerRepository.save(LedgerEntry.builder()</span>
+<span class="fc" id="L110">                .team(team)</span>
+<span class="fc" id="L111">                .kind(Kind.PAYMENT)</span>
+<span class="fc" id="L112">                .amount(Math.toIntExact(owed))</span>
+<span class="fc" id="L113">                .description(&quot;Paid from the team's bank&quot;)</span>
+<span class="fc" id="L114">                .createdAt(LocalDateTime.now())</span>
+<span class="fc" id="L115">                .recordedBy(staff)</span>
+<span class="fc" id="L116">                .build());</span>
+<span class="fc" id="L117">        changed();</span>
+<span class="fc" id="L118">        return balanceOf(team);</span>
     }
 
     /** Every team (all team accounts, plus any team with history), by name. */
     public List&lt;TeamBalance&gt; balances() {
-<span class="fc" id="L122">        Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; totals = totalsByTeam();</span>
-<span class="fc" id="L123">        Map&lt;String, TeamAdvertCounts&gt; counts = imageRepository.advertCountsByTeam().stream()</span>
-<span class="fc" id="L124">                .collect(Collectors.toMap(TeamAdvertCounts::team, Function.identity()));</span>
-<span class="fc" id="L125">        Set&lt;String&gt; teams = new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L126">        studentAccountRepository.findAllByOrderByUsernameAsc().stream().map(StudentAccount::getUsername).forEach(teams::add);</span>
-<span class="fc" id="L127">        teams.addAll(totals.keySet());</span>
-<span class="fc" id="L128">        teams.addAll(counts.keySet());</span>
-<span class="fc" id="L129">        return teams.stream().sorted()</span>
-<span class="fc" id="L130">                .map(team -&gt; balance(team, totals.getOrDefault(team, Map.of()), counts.get(team)))</span>
-<span class="fc" id="L131">                .toList();</span>
+<span class="fc" id="L123">        Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; totals = totalsByTeam();</span>
+<span class="fc" id="L124">        Map&lt;String, TeamAdvertCounts&gt; counts = imageRepository.advertCountsByTeam().stream()</span>
+<span class="fc" id="L125">                .collect(Collectors.toMap(TeamAdvertCounts::team, Function.identity()));</span>
+<span class="fc" id="L126">        Set&lt;String&gt; teams = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L127">        studentAccountRepository.findAllByOrderByUsernameAsc().stream().map(StudentAccount::getUsername).forEach(teams::add);</span>
+<span class="fc" id="L128">        teams.addAll(totals.keySet());</span>
+<span class="fc" id="L129">        teams.addAll(counts.keySet());</span>
+<span class="fc" id="L130">        return teams.stream().sorted()</span>
+<span class="fc" id="L131">                .map(team -&gt; balance(team, totals.getOrDefault(team, Map.of()), counts.get(team)))</span>
+<span class="fc" id="L132">                .toList();</span>
     }
 
     public TeamBalance balanceOf(String team) {
-<span class="fc" id="L135">        TeamAdvertCounts counts = imageRepository.advertCountsByTeam().stream()</span>
-<span class="fc" id="L136">                .filter(c -&gt; team.equals(c.team())).findFirst().orElse(null);</span>
-<span class="fc" id="L137">        return balance(team, totalsByTeam().getOrDefault(team, Map.of()), counts);</span>
+<span class="fc" id="L136">        TeamAdvertCounts counts = imageRepository.advertCountsByTeam().stream()</span>
+<span class="fc" id="L137">                .filter(c -&gt; team.equals(c.team())).findFirst().orElse(null);</span>
+<span class="fc" id="L138">        return balance(team, totalsByTeam().getOrDefault(team, Map.of()), counts);</span>
     }
 
     /** The balance and every line behind it. */
     public TeamAccount account(String team) {
-<span class="fc" id="L142">        return new TeamAccount(balanceOf(team),</span>
-<span class="fc" id="L143">                ledgerRepository.findByTeamOrderByCreatedAtAscIdAsc(team).stream().map(TeamAccount.Entry::from).toList());</span>
+<span class="fc" id="L143">        return new TeamAccount(balanceOf(team),</span>
+<span class="fc" id="L144">                ledgerRepository.findByTeamOrderByCreatedAtAscIdAsc(team).stream().map(TeamAccount.Entry::from).toList());</span>
+    }
+
+    /**
+     * Every team's account, for printing invoices in one go (issue #50), by name.
+     *
+     * @param owingOnly only teams that owe something
+     */
+    public List&lt;TeamAccount&gt; accounts(boolean owingOnly) {
+<span class="fc" id="L153">        Map&lt;String, List&lt;TeamAccount.Entry&gt;&gt; entries = ledgerRepository.findAll().stream()</span>
+<span class="fc" id="L154">                .sorted(Comparator.comparing(LedgerEntry::getCreatedAt).thenComparing(LedgerEntry::getId))</span>
+<span class="fc" id="L155">                .collect(Collectors.groupingBy(LedgerEntry::getTeam, Collectors.mapping(TeamAccount.Entry::from,</span>
+<span class="fc" id="L156">                        Collectors.toList())));</span>
+<span class="fc" id="L157">        return balances().stream()</span>
+<span class="fc bfc" id="L158" title="All 4 branches covered.">                .filter(b -&gt; !owingOnly || b.owed() &gt; 0)</span>
+<span class="fc" id="L159">                .map(b -&gt; new TeamAccount(b, entries.getOrDefault(b.team(), List.of())))</span>
+<span class="fc" id="L160">                .toList();</span>
     }
 
     /** Wipes every balance and payment (part of resetting the event, after printing the report). */
     @Transactional
     public long deleteAll() {
-<span class="fc" id="L149">        long count = ledgerRepository.count();</span>
-<span class="fc" id="L150">        ledgerRepository.deleteAllInBatch();</span>
-<span class="fc" id="L151">        changed();</span>
-<span class="fc" id="L152">        return count;</span>
+<span class="fc" id="L166">        long count = ledgerRepository.count();</span>
+<span class="fc" id="L167">        ledgerRepository.deleteAllInBatch();</span>
+<span class="fc" id="L168">        changed();</span>
+<span class="fc" id="L169">        return count;</span>
     }
 
     private Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; totalsByTeam() {
-<span class="fc" id="L156">        Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; byTeam = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (LedgerTotals t : ledgerRepository.totalsByTeamAndKind()) {</span>
-<span class="fc" id="L158">            byTeam.computeIfAbsent(t.team(), k -&gt; new EnumMap&lt;&gt;(Kind.class)).put(t.kind(), t);</span>
-<span class="fc" id="L159">        }</span>
-<span class="fc" id="L160">        return byTeam;</span>
+<span class="fc" id="L173">        Map&lt;String, Map&lt;Kind, LedgerTotals&gt;&gt; byTeam = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (LedgerTotals t : ledgerRepository.totalsByTeamAndKind()) {</span>
+<span class="fc" id="L175">            byTeam.computeIfAbsent(t.team(), k -&gt; new EnumMap&lt;&gt;(Kind.class)).put(t.kind(), t);</span>
+<span class="fc" id="L176">        }</span>
+<span class="fc" id="L177">        return byTeam;</span>
     }
 
     private static TeamBalance balance(String team, Map&lt;Kind, LedgerTotals&gt; totals, TeamAdvertCounts counts) {
-<span class="fc" id="L164">        long charged = sum(totals, Kind.CHARGE);</span>
-<span class="fc" id="L165">        long credited = sum(totals, Kind.CREDIT);</span>
-<span class="fc" id="L166">        long paid = sum(totals, Kind.PAYMENT);</span>
-<span class="fc" id="L167">        long chargedAdverts = count(totals, Kind.CHARGE) - count(totals, Kind.CREDIT);</span>
-<span class="fc" id="L168">        return new TeamBalance(team, charged, credited, paid, charged - credited - paid,</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">                counts == null ? 0 : counts.uploaded(), chargedAdverts);</span>
+<span class="fc" id="L181">        long charged = sum(totals, Kind.CHARGE);</span>
+<span class="fc" id="L182">        long credited = sum(totals, Kind.CREDIT);</span>
+<span class="fc" id="L183">        long paid = sum(totals, Kind.PAYMENT);</span>
+<span class="fc" id="L184">        long chargedAdverts = count(totals, Kind.CHARGE) - count(totals, Kind.CREDIT);</span>
+<span class="fc" id="L185">        return new TeamBalance(team, charged, credited, paid, charged - credited - paid,</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">                counts == null ? 0 : counts.uploaded(), chargedAdverts);</span>
     }
 
     private static long sum(Map&lt;Kind, LedgerTotals&gt; totals, Kind kind) {
-<span class="fc" id="L173">        LedgerTotals t = totals.get(kind);</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">        return t == null ? 0 : t.amount();</span>
+<span class="fc" id="L190">        LedgerTotals t = totals.get(kind);</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        return t == null ? 0 : t.amount();</span>
     }
 
     private static long count(Map&lt;Kind, LedgerTotals&gt; totals, Kind kind) {
-<span class="fc" id="L178">        LedgerTotals t = totals.get(kind);</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        return t == null ? 0 : t.count();</span>
+<span class="fc" id="L195">        LedgerTotals t = totals.get(kind);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        return t == null ? 0 : t.count();</span>
     }
 
     private static String describe(ImageMetadata advert, Kind kind) {
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        String what = (advert.getOriginalFileName() == null ? &quot;Advert&quot; : advert.getOriginalFileName())</span>
-<span class="fc" id="L184">                + &quot; (priority &quot; + advert.getPriority() + &quot;, &quot; + advert.getDurationSeconds() + &quot; s)&quot;;</span>
-<span class="fc bfc" id="L185" title="All 2 branches covered.">        String full = (kind == Kind.CREDIT ? &quot;Refund, not approved after all: &quot; : &quot;Approved: &quot;) + what;</span>
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        return full.length() &gt; 255 ? full.substring(0, 255) : full;</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        String what = (advert.getOriginalFileName() == null ? &quot;Advert&quot; : advert.getOriginalFileName())</span>
+<span class="fc" id="L201">                + &quot; (priority &quot; + advert.getPriority() + &quot;, &quot; + advert.getDurationSeconds() + &quot; s)&quot;;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        String full = (kind == Kind.CREDIT ? &quot;Refund, not approved after all: &quot; : &quot;Approved: &quot;) + what;</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        return full.length() &gt; 255 ? full.substring(0, 255) : full;</span>
     }
 
     private void changed() {
-<span class="fc" id="L190">        events.publishEvent(new LiveTopic.Changed(LiveTopic.BALANCES));</span>
-<span class="fc" id="L191">    }</span>
+<span class="fc" id="L207">        events.publishEvent(new LiveTopic.Changed(LiveTopic.BALANCES));</span>
+<span class="fc" id="L208">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

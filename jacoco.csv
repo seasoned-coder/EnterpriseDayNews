@@ -28,7 +28,7 @@ enterprise-day-news,org.example.enterprisedaynews.dto,AccountView,7,72,4,4,0,14,
 enterprise-day-news,org.example.enterprisedaynews.live,LiveUpdatesController,0,4,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.live,LiveTopic.Changed,0,6,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.live,LiveTopic,0,42,0,0,0,9,0,3,0,3
-enterprise-day-news,org.example.enterprisedaynews.live,LiveUpdates,45,163,0,6,9,36,4,12,4,9
+enterprise-day-news,org.example.enterprisedaynews.live,LiveUpdates,36,172,0,6,6,39,3,13,3,10
 enterprise-day-news,org.example.enterprisedaynews.repository,TeamPlayTotals,0,12,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.repository,AdvertPlayTotals,0,12,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.repository,TeamAdvertCounts,0,12,0,0,0,1,0,1,0,1
@@ -45,7 +45,7 @@ enterprise-day-news,org.example.enterprisedaynews.controller,StaffAccountControl
 enterprise-day-news,org.example.enterprisedaynews.controller,ResultsController,4,20,0,0,1,4,1,3,1,3
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentAccountController,0,18,0,0,0,5,0,3,0,3
 enterprise-day-news,org.example.enterprisedaynews.controller,AuthController,0,93,3,11,0,16,3,5,0,1
-enterprise-day-news,org.example.enterprisedaynews.controller,TeamBalanceController,5,19,0,0,1,3,1,3,1,3
+enterprise-day-news,org.example.enterprisedaynews.controller,TeamBalanceController,5,24,0,0,1,4,1,4,1,4
 enterprise-day-news,org.example.enterprisedaynews.controller,ImageViews,0,28,0,2,0,4,0,3,0,2
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentController,0,54,0,0,0,10,0,5,0,5
 enterprise-day-news,org.example.enterprisedaynews.controller,StaffController,0,126,0,2,0,20,0,14,0,13
@@ -64,7 +64,7 @@ enterprise-day-news,org.example.enterprisedaynews.service,UploadFileNames,0,51,0
 enterprise-day-news,org.example.enterprisedaynews.service,LoginGuard,7,207,6,26,3,47,6,22,0,12
 enterprise-day-news,org.example.enterprisedaynews.service,StaffAccountService,0,91,1,11,0,21,1,12,0,7
 enterprise-day-news,org.example.enterprisedaynews.service,ResultsService,8,337,4,24,2,61,4,23,0,13
-enterprise-day-news,org.example.enterprisedaynews.service,TeamBalanceService,7,380,5,25,0,75,5,27,0,17
+enterprise-day-news,org.example.enterprisedaynews.service,TeamBalanceService,7,430,5,29,0,83,5,32,0,20
 enterprise-day-news,org.example.enterprisedaynews.service,EventResetService.Result,0,9,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.service,ThumbnailBackfill,0,47,1,9,0,11,1,6,0,2
 enterprise-day-news,org.example.enterprisedaynews.service,StudentAccountService,9,219,2,22,2,47,2,17,0,7

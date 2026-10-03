@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
@@ -26,24 +27,30 @@ public class TeamBalanceController {
     /** Every team's balance, for the staff side and the End of Day report. */
     @GetMapping(&quot;/staff/balances&quot;)
     public List&lt;TeamBalance&gt; balances() {
-<span class="fc" id="L29">        return teamBalanceService.balances();</span>
+<span class="fc" id="L30">        return teamBalanceService.balances();</span>
     }
 
     @GetMapping(&quot;/staff/balances/{team}&quot;)
     public TeamAccount account(@PathVariable String team) {
-<span class="nc" id="L34">        return teamBalanceService.account(team);</span>
+<span class="nc" id="L35">        return teamBalanceService.account(team);</span>
+    }
+
+    /** Every team's account for printing invoices (issue #50); {@code owing=true}: only teams that owe. */
+    @GetMapping(&quot;/staff/invoices&quot;)
+    public List&lt;TeamAccount&gt; invoices(@RequestParam(defaultValue = &quot;true&quot;) boolean owing) {
+<span class="fc" id="L41">        return teamBalanceService.accounts(owing);</span>
     }
 
     /** Staff took the whole balance (the amount they saw) from the team's bank. */
     @PostMapping(&quot;/staff/balances/{team}/paid&quot;)
     public TeamBalance markPaid(@PathVariable String team, @RequestBody PaymentRequest payment, Principal principal) {
-<span class="fc" id="L40">        return teamBalanceService.markPaid(team, payment.amount(), ControllerSupport.usernameOf(principal));</span>
+<span class="fc" id="L47">        return teamBalanceService.markPaid(team, payment.amount(), ControllerSupport.usernameOf(principal));</span>
     }
 
     /** The signed-in team's own account. */
     @GetMapping(&quot;/student/balance&quot;)
     public TeamAccount myAccount(Principal principal) {
-<span class="fc" id="L46">        return teamBalanceService.account(ControllerSupport.usernameOf(principal));</span>
+<span class="fc" id="L53">        return teamBalanceService.account(ControllerSupport.usernameOf(principal));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
