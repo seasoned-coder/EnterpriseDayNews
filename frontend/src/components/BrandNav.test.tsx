@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BrandNav } from "@/components/BrandNav";
+import { STAFF_NAV } from "@/lib/staffNav";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
@@ -29,37 +30,45 @@ describe("BrandNav", () => {
     mocks.getCurrentUser.mockReturnValue({ username: "admin", role: "STAFF" });
   });
 
-  it("renders the secondary link with both the full and the phone-width label", () => {
-    renderNav({
-      secondaryLink: { to: "/staff/students", label: "Student accounts", shortLabel: "Students" },
-    });
+  it("shows every staff section with full and phone-width labels", () => {
+    renderNav({ links: STAFF_NAV });
 
-    const link = screen.getByRole("link", { name: /students/i });
-    expect(link).toHaveAttribute("href", "/staff/students");
-    // Phone-width label is visible by default; the full label takes over from the `sm` breakpoint.
-    expect(screen.getByText("Students")).toHaveClass("sm:hidden");
-    expect(screen.getByText("Student accounts")).toHaveClass("hidden", "sm:inline");
+    for (const [name, href] of [
+      [/adverts/i, "/staff"],
+      [/students/i, "/staff/students"],
+      [/^staff/i, "/staff/staff-accounts"],
+    ] as const) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+    }
+    expect(screen.getByText("Students")).toHaveClass("lg:hidden");
+    expect(screen.getByText("Student accounts")).toHaveClass("hidden", "lg:inline");
   });
 
-  it("keeps the secondary link visible on phone-width screens", () => {
-    renderNav({ secondaryLink: { to: "/staff", label: "Back to Advert Dashboard", shortLabel: "Adverts" } });
+  it("highlights only the current section", () => {
+    renderNav({ links: STAFF_NAV }, "/staff/staff-accounts");
 
-    const link = screen.getByRole("link", { name: /adverts/i });
-    expect(link).toHaveAttribute("href", "/staff");
-    expect(link).not.toHaveClass("hidden");
+    expect(screen.getByRole("link", { name: /^staff/i })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /adverts/i })).not.toHaveAttribute("aria-current");
   });
 
-  it("falls back to the full label when no short label is given", () => {
-    renderNav({ secondaryLink: { to: "/staff", label: "Back to Advert Dashboard" } });
+  it("keeps section links visible on phones and makes room by hiding the title", () => {
+    renderNav({ links: STAFF_NAV });
+
+    expect(screen.getByRole("link", { name: /adverts/i })).not.toHaveClass("hidden");
+    expect(screen.getByText(/BT Enterprise Day/)).toHaveClass("hidden", "md:inline");
+  });
+
+  it("uses the full label when there is no short one", () => {
+    renderNav({ links: [{ to: "/staff", label: "Back to Advert Dashboard" }] });
 
     expect(screen.getByRole("link", { name: "Back to Advert Dashboard" })).toHaveAttribute("href", "/staff");
   });
 
-  it("hides the secondary link and sign-out when nobody is signed in", () => {
+  it("hides links and sign-out when nobody is signed in", () => {
     mocks.getCurrentUser.mockReturnValue(null);
-    renderNav({ secondaryLink: { to: "/staff/students", label: "Student accounts" } });
+    renderNav({ links: STAFF_NAV });
 
-    expect(screen.queryByRole("link", { name: "Student accounts" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Sections" })).not.toBeInTheDocument();
     expect(screen.queryByTitle("Logout")).not.toBeInTheDocument();
   });
 

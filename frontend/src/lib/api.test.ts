@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError, navigation, type Role } from "@/lib/api";
+import { accountApi, api, ApiError, navigation, type Role } from "@/lib/api";
 
 function signIn(role: Role, token: string, username: string) {
   localStorage.setItem(`session.${role}`, JSON.stringify({ token, username, role }));
@@ -196,7 +196,33 @@ describe("api.login", () => {
   });
 });
 
-describe("api.createStudentAccount", () => {
+describe("accountApi", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+  });
+
+  it("uses the student and staff account endpoints with the staff session", async () => {
+    signIn("STAFF", "staff-token", "head.teacher");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }),
+    );
+
+    await accountApi("student").setLocked(3, true);
+    await accountApi("staff").changePassword(4, "NewPassword9");
+    await accountApi("staff").remove(5);
+
+    const calls = fetchMock.mock.calls.map(([url, init]) => [url, init?.method]);
+    expect(calls).toEqual([
+      ["/api/staff/students/3/lock?locked=true", "POST"],
+      ["/api/staff/staff-accounts/4/password", "PUT"],
+      ["/api/staff/staff-accounts/5", "DELETE"],
+    ]);
+    expect((fetchMock.mock.calls[1][1]?.headers as Record<string, string>).Authorization).toBe("Bearer staff-token");
+  });
+});
+
+describe("accountApi errors", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
@@ -211,7 +237,7 @@ describe("api.createStudentAccount", () => {
       new Response("Forbidden", { status: 403, statusText: "Forbidden" }),
     );
 
-    await expect(api.createStudentAccount("year10", "fred")).rejects.toThrow(/^Forbidden$/);
+    await expect(accountApi("student").create("year10", "fred")).rejects.toThrow(/^Forbidden$/);
 
     expect(window.location.pathname).toBe("/staff/students");
     expect(api.getCurrentUser("STAFF")).toEqual({ username: "head.teacher", role: "STAFF" });

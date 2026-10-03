@@ -12,10 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -45,12 +48,15 @@ class StaffControllerTests {
     @Autowired
     private JwtProvider jwtProvider;
 
+    @Autowired
+    private ApplicationContext context;
+
     private String staffToken;
     private String studentToken;
 
     @BeforeEach
     void setUp() {
-        staffToken = "Bearer " + jwtProvider.generateToken("staff1", Roles.STAFF);
+        staffToken = TestAccounts.staffBearer(context, "staff1");
         studentToken = "Bearer " + jwtProvider.generateToken("student", Roles.STUDENT);
     }
 
@@ -290,8 +296,8 @@ class StaffControllerTests {
     void testErrorReasonIsSentAsPlainText() throws Exception {
         // The UI shows this text as-is, so it must not be lost in Spring's default error body.
         when(studentAccountService.createAccount(eq("taken"), any()))
-                .thenThrow(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.CONFLICT, "A student account with that username already exists"));
+                .thenThrow(new ResponseStatusException(
+                        HttpStatus.CONFLICT, "A student account with that username already exists"));
 
         mockMvc.perform(post("/api/staff/students")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -304,7 +310,7 @@ class StaffControllerTests {
 
     @Test
     void testLockStudentAccount() throws Exception {
-        when(studentAccountService.setLocked(eq(4L), eq(true)))
+        when(studentAccountService.setLocked(eq(4L), eq(true), eq("staff1")))
                 .thenReturn(sampleStudentAccount(4L, "guest", true));
 
         mockMvc.perform(post("/api/staff/students/4/lock")
@@ -333,6 +339,6 @@ class StaffControllerTests {
                 .header("Authorization", staffToken))
                 .andExpect(status().isNoContent());
 
-        verify(studentAccountService).deleteAccount(4L);
+        verify(studentAccountService).deleteAccount(4L, "staff1");
     }
 }

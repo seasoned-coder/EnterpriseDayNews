@@ -1,7 +1,6 @@
 package org.example.enterprisedaynews.dto;
 
-public record UpdateStudentPasswordRequest(
+public record UpdatePasswordRequest(
         String password
 ) {
 }
-

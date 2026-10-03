@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -39,6 +40,9 @@ class StudentControllerTests {
     private JwtProvider jwtProvider;
 
     @Autowired
+    private ApplicationContext context;
+
+    @Autowired
     private StudentAccountService studentAccountService;
 
     @Autowired
@@ -56,7 +60,7 @@ class StudentControllerTests {
             studentAccountService.createAccount(STUDENT_USERNAME, "Upload42");
         }
         studentToken = "Bearer " + jwtProvider.generateToken(STUDENT_USERNAME, Roles.STUDENT);
-        staffToken = "Bearer " + jwtProvider.generateToken("staff1", Roles.STAFF);
+        staffToken = TestAccounts.staffBearer(context, "staff1");
     }
 
     @Test

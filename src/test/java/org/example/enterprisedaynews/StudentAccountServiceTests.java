@@ -27,6 +27,9 @@ class StudentAccountServiceTests {
     @Autowired
     private StudentAccountRepository studentAccountRepository;
 
+    /** The staff member performing account changes. */
+    private static final String STAFF = "staff.member";
+
     @Test
     void createAccountNormalisesUsernameAndHashesPassword() {
         StudentAccount account = studentAccountService.createAccount("  NewCo.Team-1 ", "Sunrise7");
@@ -50,7 +53,7 @@ class StudentAccountServiceTests {
     @Test
     void createAccountRejectsDuplicateOfLockedAccount() {
         StudentAccount locked = studentAccountService.createAccount("lockedco", "Sunrise7");
-        studentAccountService.setLocked(locked.getId(), true);
+        studentAccountService.setLocked(locked.getId(), true, STAFF);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> studentAccountService.createAccount("lockedco", "Another8"));
@@ -93,12 +96,12 @@ class StudentAccountServiceTests {
     void lockingBlocksLoginAndUnlockingRestoresIt() {
         StudentAccount account = studentAccountService.createAccount("toggleco", "Sunrise7");
 
-        studentAccountService.setLocked(account.getId(), true);
+        studentAccountService.setLocked(account.getId(), true, STAFF);
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> studentAccountService.authenticate("toggleco", "Sunrise7"));
         assertEquals(HttpStatus.LOCKED, ex.getStatusCode());
 
-        studentAccountService.setLocked(account.getId(), false);
+        studentAccountService.setLocked(account.getId(), false, STAFF);
         assertEquals("toggleco", studentAccountService.authenticate("toggleco", "Sunrise7").getUsername());
     }
 
@@ -111,7 +114,7 @@ class StudentAccountServiceTests {
         assertThrows(ResponseStatusException.class,
                 () -> studentAccountService.authenticate("templockco", "Sunrise7"));
 
-        studentAccountService.setLocked(account.getId(), false);
+        studentAccountService.setLocked(account.getId(), false, STAFF);
         assertEquals("templockco", studentAccountService.authenticate("templockco", "Sunrise7").getUsername());
     }
 
@@ -140,7 +143,7 @@ class StudentAccountServiceTests {
     void deleteAccountRemovesItAndFreesUsername() {
         StudentAccount account = studentAccountService.createAccount("deleteco", "Sunrise7");
 
-        studentAccountService.deleteAccount(account.getId());
+        studentAccountService.deleteAccount(account.getId(), STAFF);
 
         assertTrue(studentAccountRepository.findByUsername("deleteco").isEmpty());
         assertDoesNotThrow(() -> studentAccountService.createAccount("deleteco", "Sunrise7"));
@@ -169,10 +172,10 @@ class StudentAccountServiceTests {
     void operationsOnMissingAccountReturnNotFound() {
         long missingId = 999_999L;
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
-                () -> studentAccountService.setLocked(missingId, true)).getStatusCode());
+                () -> studentAccountService.setLocked(missingId, true, STAFF)).getStatusCode());
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
                 () -> studentAccountService.changePassword(missingId, "Sunrise7")).getStatusCode());
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
-                () -> studentAccountService.deleteAccount(missingId)).getStatusCode());
+                () -> studentAccountService.deleteAccount(missingId, STAFF)).getStatusCode());
     }
 }

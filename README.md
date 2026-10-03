@@ -11,9 +11,10 @@ A suite of three web applications designed for school students to upload news ar
 
 The system consists of three main components, each with a different audience:
 1.  **Student App** (`/student`) — used by 13/14-year-old students, mostly on phones and tablets. A simple, mobile-friendly interface for each student company to upload images of its adverts/news articles. Nothing a student uploads is shown until an adult has approved it.
-2.  **Staff App** (`/staff`) — used by adult staff to vet and check student uploads and to add their own content. It has two dashboards, switched from the top banner:
+2.  **Staff App** (`/staff`) — used by adult staff to vet and check student uploads and to add their own content. It has three sections, switched from the top banner (Adverts / Students / Staff):
     -   **Advert Dashboard**: review, approve, or reject uploaded images, manage display order, and add staff images and information messages.
     -   **Student Account Dashboard**: list the company/student accounts, add or delete accounts, lock/unlock them, reset passwords, and see when (and from which IP address) each account last signed in.
+    -   **Staff Account Dashboard**: the same for staff logins, so staff can add colleagues, reset passwords, and lock or remove accounts (but not their own).
 3.  **Projector App** (`/projector`) — runs unattended on a machine plugged into the event's screen projector. A full-screen rotation of approved student adverts (in staff order, with paid priority and duration) and staff content, with staff-configurable timing.
 
 Students run companies with virtual event money: they **pay for priority** (how often their advert appears) and **duration** (how long it stays up). How that turns into screen time is described in [docs/design-notes.md](docs/design-notes.md).
@@ -274,7 +275,8 @@ The system uses JWT (JSON Web Token) authentication.
 
 **Staff accounts** are stored in the database too (BCrypt-hashed, same 5-attempt / 15-minute lockout). Staff passwords must be at least 10 characters with a capital letter and a number.
 -   **First staff account:** set `APP_STAFF_BOOTSTRAP_USERNAME` and `APP_STAFF_BOOTSTRAP_PASSWORD` in `.env` and start the stack. The account is created **only if there are no staff accounts yet**, and is never reset from `.env` afterwards, so you can delete the password line once you've signed in. If no staff account exists and these are not set, the backend logs a warning and nobody can sign in to `/staff`.
--   Adding and managing further staff accounts from the staff app is tracked in #12.
+-   Further staff accounts are added and managed from the **Staff Account Dashboard** (`/staff/staff-accounts`). You can't lock or delete your own account, so there is always at least one working staff login.
+-   **Locking or deleting an account takes effect immediately** for students and staff: an existing sign-in stops working at once rather than when it expires.
 
 **No built-in accounts.** Older versions created `student` and `guest` student accounts with passwords published in this repository. They are no longer created. On startup, any existing account still using one of those passwords is **locked automatically** (logged as a warning). To reuse it, set a new password and unlock it from the Student Account Dashboard.
 
@@ -312,6 +314,7 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/students/{id}/lock?locked=true|false`: Lock or unlock a student account.
 -   `PUT  /api/staff/students/{id}/password`: Reset a student's password (JSON body: `{"password": "..."}`).
 -   `DELETE /api/staff/students/{id}`: Delete a student account.
+-   `/api/staff/staff-accounts`: the same five operations (`GET`, `POST`, `POST /{id}/lock`, `PUT /{id}/password`, `DELETE /{id}`) for staff accounts. Locking or deleting your own account is refused with `409`.
 -   `GET  /api/projector/images`: Items the projector may show: FLASH items if any, otherwise approved + displayed items (student adverts and staff content) in staff order. The projector page decides what to show next; see [docs/design-notes.md](docs/design-notes.md#projector-scheduling). Public.
 -   `GET  /api/projector/settings`: Current display settings. Public.
 -   `POST /api/projector/settings`: Update display settings (role: STAFF). JSON body: `intervalSpeedSeconds` (staff content interval, 0-3600), `displayDurationSeconds` (staff item display time, 3-120), `imageRefreshSeconds` (projector refresh, 2-60).

@@ -1,17 +1,18 @@
 package org.example.enterprisedaynews;
 
 import org.example.enterprisedaynews.model.DisplaySettings;
-import org.example.enterprisedaynews.security.JwtProvider;
-import org.example.enterprisedaynews.security.Roles;
 import org.example.enterprisedaynews.service.DisplaySettingsService;
 import org.example.enterprisedaynews.service.ImageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -36,7 +37,7 @@ class ProjectorControllerTests {
     private ImageService imageService;
 
     @Autowired
-    private JwtProvider jwtProvider;
+    private ApplicationContext context;
 
     @Test
     void testGetSettingsDefault() throws Exception {
@@ -80,7 +81,7 @@ class ProjectorControllerTests {
         String json = "{\"intervalSpeedSeconds\":20,\"displayDurationSeconds\":40,\"imageRefreshSeconds\":30}";
 
         mockMvc.perform(post("/api/projector/settings")
-                .header("Authorization", "Bearer " + jwtProvider.generateToken("staff.member", Roles.STAFF))
+                .header("Authorization", TestAccounts.staffBearer(context, "staff.member"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -103,7 +104,7 @@ class ProjectorControllerTests {
 
     @Test
     void testGetImagesEmpty() throws Exception {
-        when(imageService.getDisplayImages()).thenReturn(java.util.List.of());
+        when(imageService.getDisplayImages()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/projector/images"))
                 .andExpect(status().isOk());

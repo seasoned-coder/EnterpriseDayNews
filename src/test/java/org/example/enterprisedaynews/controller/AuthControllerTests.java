@@ -12,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -82,7 +84,7 @@ class AuthControllerTests {
     @Test
     void testLockedStudentAccountCannotLogin() throws Exception {
         var account = studentAccountService.createAccount("lockeduser", "Secret123");
-        studentAccountService.setLocked(account.getId(), true);
+        studentAccountService.setLocked(account.getId(), true, "staff.member");
 
         login("lockeduser", "Secret123", Roles.STUDENT)
                 .andExpect(status().isLocked());
@@ -111,8 +113,8 @@ class AuthControllerTests {
                 .andExpect(jsonPath("$.username").value("legacyuser"));
 
         var refreshed = studentAccountRepository.findByUsername("legacyuser").orElseThrow();
-        org.junit.jupiter.api.Assertions.assertNotEquals("Legacy1", refreshed.getPasswordHash());
-        org.junit.jupiter.api.Assertions.assertTrue(refreshed.getPasswordHash().startsWith("$2"));
+        assertNotEquals("Legacy1", refreshed.getPasswordHash());
+        assertTrue(refreshed.getPasswordHash().startsWith("$2"));
     }
 
     @Test

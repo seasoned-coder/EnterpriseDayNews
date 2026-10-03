@@ -1,13 +1,14 @@
 package org.example.enterprisedaynews.dto;
 
-import org.example.enterprisedaynews.model.StudentAccount;
+import org.example.enterprisedaynews.model.LoginAccount;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
 
-public record StudentAccountView(
+/** API view of a student or staff account. Never includes the password hash. */
+public record AccountView(
         Long id,
         String username,
         boolean locked,
@@ -19,10 +20,10 @@ public record StudentAccountView(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
-    public static StudentAccountView from(StudentAccount account) {
+    public static AccountView from(LoginAccount account) {
         boolean temporaryLocked = account.getTemporaryLockUntil() != null
                 && account.getTemporaryLockUntil().isAfter(LocalDateTime.now());
-        return new StudentAccountView(
+        return new AccountView(
                 account.getId(),
                 account.getUsername(),
                 account.isLocked() || temporaryLocked,
@@ -36,5 +37,3 @@ public record StudentAccountView(
         );
     }
 }
-
-

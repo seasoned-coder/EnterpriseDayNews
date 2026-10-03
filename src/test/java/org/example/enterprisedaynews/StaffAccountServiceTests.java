@@ -13,6 +13,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -122,6 +123,73 @@ class StaffAccountServiceTests {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> staffAccountService.authenticate("nobody", "Staffroom42"));
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+    }
+
+    @Test
+    void listsAccountsAlphabetically() {
+        staffAccountService.createAccount("zed.staff", "Staffroom42");
+        staffAccountService.createAccount("amy.staff", "Staffroom42");
+
+        assertEquals(List.of("amy.staff", "zed.staff"),
+                staffAccountService.listAccounts().stream().map(StaffAccount::getUsername).toList());
+    }
+
+    @Test
+    void staffCanLockAndUnlockOtherStaff() {
+        staffAccountService.createAccount("head.teacher", "Staffroom42");
+        StaffAccount other = staffAccountService.createAccount("supply.teacher", "Staffroom42");
+
+        staffAccountService.setLocked(other.getId(), true, "head.teacher");
+        assertTrue(staffAccountService.findActiveAccount("supply.teacher").isEmpty());
+        assertEquals(HttpStatus.LOCKED, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.authenticate("supply.teacher", "Staffroom42")).getStatusCode());
+
+        staffAccountService.setLocked(other.getId(), false, "head.teacher");
+        assertTrue(staffAccountService.findActiveAccount("Supply.Teacher").isPresent());
+    }
+
+    @Test
+    void youCannotLockOrDeleteYourself() {
+        StaffAccount me = staffAccountService.createAccount("head.teacher", "Staffroom42");
+
+        assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.setLocked(me.getId(), true, "Head.Teacher")).getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.deleteAccount(me.getId(), "head.teacher")).getStatusCode());
+        assertTrue(staffAccountService.findActiveAccount("head.teacher").isPresent());
+    }
+
+    @Test
+    void staffCanDeleteOtherStaff() {
+        staffAccountService.createAccount("head.teacher", "Staffroom42");
+        StaffAccount leaver = staffAccountService.createAccount("leaver", "Staffroom42");
+
+        staffAccountService.deleteAccount(leaver.getId(), "head.teacher");
+
+        assertTrue(staffAccountRepository.findByUsername("leaver").isEmpty());
+        assertTrue(staffAccountService.findActiveAccount("leaver").isEmpty());
+    }
+
+    @Test
+    void passwordResetUsesStaffRules() {
+        StaffAccount account = staffAccountService.createAccount("reset.me", "Staffroom42");
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.changePassword(account.getId(), "Short1")).getStatusCode());
+
+        staffAccountService.changePassword(account.getId(), "NewStaffroom7");
+        assertEquals("reset.me", staffAccountService.authenticate("reset.me", "NewStaffroom7").getUsername());
+    }
+
+    @Test
+    void missingStaffAccountIsNotFound() {
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.setLocked(999_999L, true, "someone")).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.changePassword(999_999L, "Staffroom42")).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
+                () -> staffAccountService.deleteAccount(999_999L, "someone")).getStatusCode());
+        assertTrue(staffAccountService.findActiveAccount("  ").isEmpty());
     }
 
     @Test

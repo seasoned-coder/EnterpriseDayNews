@@ -7,6 +7,8 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - **Audiences:** students are 13–14 and mostly on phones; keep their UI simple, friendly and touch-friendly. Staff are adults. The projector runs unattended.
 - **The event is offline** (private Wi-Fi, no internet). Don't add runtime dependencies on external URLs (CDNs, web fonts, remote models).
 - With every change: add tests, check coverage (JaCoCo + Vitest), and update the README and the user guides in `docs/`.
+- **Imports, never fully qualified class names** in Java code (e.g. `ApplicationContext`, not `org.springframework.context.ApplicationContext`; `List.of`, not `java.util.List.of`).
+- **Don't duplicate code** within an app. Extract reusable classes/components instead, e.g. `AccountService<T>`, `AccountManagementController<T>` and `LoginAccountRepository<T>` serve both student and staff accounts, and the frontend `AccountsDashboard` component serves both account pages.
 
 ## Environment - Windows PowerShell 5.1
 - Use PowerShell syntax (`;` to chain; `&&`/`||` are not available). Prefer direct tool output over `Select-String` where possible.

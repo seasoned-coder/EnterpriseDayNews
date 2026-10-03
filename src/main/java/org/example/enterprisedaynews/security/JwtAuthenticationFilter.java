@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.service.StaffAccountService;
 import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,6 +22,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final StudentAccountService studentAccountService;
+    private final StaffAccountService staffAccountService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,10 +37,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtProvider.getUsernameFromToken(token);
                 String role = jwtProvider.getRoleFromToken(token);
 
-                boolean activeStudent = !Roles.STUDENT.equals(role)
-                        || studentAccountService.findActiveAccount(username).isPresent();
+                // Tokens only count while their account still exists and isn't locked, so locking or
+                // deleting an account takes effect immediately rather than when the token expires.
+                boolean activeAccount = Roles.STUDENT.equals(role)
+                        ? studentAccountService.findActiveAccount(username).isPresent()
+                        : Roles.STAFF.equals(role) && staffAccountService.findActiveAccount(username).isPresent();
 
-                if (username != null && role != null && activeStudent) {
+                if (username != null && activeAccount) {
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(username, null, List.of(authority));

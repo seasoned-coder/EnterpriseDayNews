@@ -19,6 +19,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
 import { ProjectorSettingsPanel } from "@/components/ProjectorSettingsPanel";
+import { STAFF_NAV } from "@/lib/staffNav";
 
 type Tab = "new" | "approved" | "rejected" | "comm" | "projector" | "eod";
 
@@ -274,7 +275,7 @@ const StaffDashboard = () => {
     <div className="min-h-screen bg-background">
       <BrandNav
         variant="light"
-        secondaryLink={{ to: "/staff/students", label: "Student accounts", shortLabel: "Students" }}
+        links={STAFF_NAV}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">

@@ -3,8 +3,6 @@ package org.example.enterprisedaynews;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.repository.ImageRepository;
-import org.example.enterprisedaynews.security.JwtProvider;
-import org.example.enterprisedaynews.security.Roles;
 import org.example.enterprisedaynews.security.UploadUrlSigner;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -12,9 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,7 +45,7 @@ class UploadAccessTests {
     private UploadUrlSigner uploadUrlSigner;
 
     @Autowired
-    private JwtProvider jwtProvider;
+    private ApplicationContext context;
 
     @Value("${app.upload-dir}")
     private String uploadDir;
@@ -84,7 +85,7 @@ class UploadAccessTests {
     void projectorItemsArePublic() throws Exception {
         ImageMetadata live = storedImage(ApprovalStatus.APPROVED, true, false);
 
-        mockMvc.perform(get(java.net.URI.create(uploadUrlSigner.urlFor(live))))
+        mockMvc.perform(get(URI.create(uploadUrlSigner.urlFor(live))))
                 .andExpect(status().isOk());
     }
 
@@ -109,7 +110,7 @@ class UploadAccessTests {
     void signedLinkGivesAccessToPrivateUpload() throws Exception {
         ImageMetadata pending = storedImage(ApprovalStatus.NEW, false, false);
 
-        mockMvc.perform(get(java.net.URI.create(uploadUrlSigner.urlFor(pending))))
+        mockMvc.perform(get(URI.create(uploadUrlSigner.urlFor(pending))))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", containsString("private")));
     }
@@ -140,12 +141,12 @@ class UploadAccessTests {
     @Test
     void staffListingsCarrySignedLinksForPendingUploads() throws Exception {
         ImageMetadata pending = storedImage(ApprovalStatus.NEW, false, false);
-        String staffToken = "Bearer " + jwtProvider.generateToken("staff.member", Roles.STAFF);
+        String staffToken = TestAccounts.staffBearer(context, "staff.member");
 
         mockMvc.perform(get("/api/staff/new").header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == " + pending.getId() + ")].imageUrl")
-                        .value(org.hamcrest.Matchers.contains(matchesPattern("/uploads/.+\\?exp=\\d+&sig=[\\w-]+"))));
+                        .value(contains(matchesPattern("/uploads/.+\\?exp=\\d+&sig=[\\w-]+"))));
     }
 
     @Test

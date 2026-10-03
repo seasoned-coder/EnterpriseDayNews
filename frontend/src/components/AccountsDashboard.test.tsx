@@ -1,0 +1,161 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ApiAccount } from "@/lib/api";
+import StaffAccountsDashboard from "@/pages/StaffAccountsDashboard";
+import StudentAccountsDashboard from "@/pages/StudentAccountsDashboard";
+
+const mocks = vi.hoisted(() => ({
+  accountApi: vi.fn(),
+  list: vi.fn(),
+  create: vi.fn(),
+  setLocked: vi.fn(),
+  changePassword: vi.fn(),
+  remove: vi.fn(),
+  toast: vi.fn(),
+}));
+
+vi.mock("@/lib/api", () => ({
+  accountApi: mocks.accountApi,
+  api: { getCurrentUser: () => ({ username: "head.teacher", role: "STAFF" }) },
+  formatDateTime: (iso: string | null) => iso ?? "Never",
+  formatRelative: () => "just now",
+}));
+vi.mock("@/hooks/use-toast", () => ({ toast: mocks.toast }));
+vi.mock("@/components/BrandNav", () => ({ BrandNav: () => <nav /> }));
+
+const account = (id: number, username: string, locked = false): ApiAccount => ({
+  id,
+  username,
+  locked,
+  manuallyLocked: locked,
+  failedLoginAttempts: 0,
+  temporaryLockUntil: null,
+  lastLoginAt: null,
+  lastLoginIp: null,
+  createdAt: "2026-10-03T10:00:00Z",
+  updatedAt: "2026-10-03T10:00:00Z",
+});
+
+function renderPage(page: JSX.Element) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{page}</MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+const rowFor = async (username: string) => (await screen.findByText(username)).closest("tr") as HTMLElement;
+
+describe("AccountsDashboard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.accountApi.mockReturnValue({
+      list: mocks.list,
+      create: mocks.create,
+      setLocked: mocks.setLocked,
+      changePassword: mocks.changePassword,
+      remove: mocks.remove,
+    });
+  });
+
+  describe("for staff accounts", () => {
+    beforeEach(() => {
+      mocks.list.mockResolvedValue([account(1, "head.teacher"), account(2, "supply.teacher")]);
+    });
+
+    it("uses the staff account API and shows the staff wording and password policy", async () => {
+      renderPage(<StaffAccountsDashboard />);
+
+      expect(await screen.findByRole("heading", { name: "Staff Account Dashboard" })).toBeInTheDocument();
+      expect(mocks.accountApi).toHaveBeenCalledWith("staff");
+      expect(screen.getByText(/at least 10 characters/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /add staff account/i })).toBeInTheDocument();
+    });
+
+    it("won't let you lock or delete your own account", async () => {
+      renderPage(<StaffAccountsDashboard />);
+
+      const mine = await rowFor("head.teacher");
+      expect(within(mine).getByText("(you)")).toBeInTheDocument();
+      expect(within(mine).getByRole("button", { name: /lock/i })).toBeDisabled();
+      expect(within(mine).getByRole("button", { name: /delete/i })).toBeDisabled();
+      expect(within(mine).getByRole("button", { name: /password/i })).toBeEnabled();
+
+      const theirs = await rowFor("supply.teacher");
+      expect(within(theirs).getByRole("button", { name: /lock/i })).toBeEnabled();
+    });
+
+    it("locks another staff account", async () => {
+      mocks.setLocked.mockResolvedValue(account(2, "supply.teacher", true));
+      renderPage(<StaffAccountsDashboard />);
+
+      fireEvent.click(within(await rowFor("supply.teacher")).getByRole("button", { name: /lock/i }));
+
+      await waitFor(() => expect(mocks.setLocked).toHaveBeenCalledWith(2, true));
+      expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Account locked" }));
+    });
+
+    it("deletes another staff account after confirmation", async () => {
+      mocks.remove.mockResolvedValue(undefined);
+      renderPage(<StaffAccountsDashboard />);
+
+      fireEvent.click(within(await rowFor("supply.teacher")).getByRole("button", { name: /delete/i }));
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getByText(/Delete staff account\?/)).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole("button", { name: /delete account/i }));
+
+      await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith(2));
+    });
+
+    it("shows the server's reason when something is refused", async () => {
+      mocks.create.mockRejectedValue(new Error("Password must be at least 10 characters long"));
+      renderPage(<StaffAccountsDashboard />);
+
+      fireEvent.change(await screen.findByLabelText("Username"), { target: { value: "new.teacher" } });
+      fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Short1" } });
+      fireEvent.click(screen.getByRole("button", { name: /add staff account/i }));
+
+      await waitFor(() =>
+        expect(mocks.toast).toHaveBeenCalledWith(
+          expect.objectContaining({ description: "Password must be at least 10 characters long" }),
+        ),
+      );
+    });
+  });
+
+  describe("for student accounts", () => {
+    beforeEach(() => {
+      mocks.list.mockResolvedValue([account(7, "year10-team1"), account(8, "head.teacher")]);
+    });
+
+    it("uses the student account API and doesn't apply the 'not yourself' rule", async () => {
+      renderPage(<StudentAccountsDashboard />);
+
+      expect(await screen.findByRole("heading", { name: "Student Account Dashboard" })).toBeInTheDocument();
+      expect(mocks.accountApi).toHaveBeenCalledWith("student");
+      const sameNameAsStaff = await rowFor("head.teacher");
+      expect(within(sameNameAsStaff).queryByText("(you)")).not.toBeInTheDocument();
+      expect(within(sameNameAsStaff).getByRole("button", { name: /delete/i })).toBeEnabled();
+    });
+
+    it("creates an account and resets a password", async () => {
+      mocks.create.mockResolvedValue(account(9, "year10-team2"));
+      mocks.changePassword.mockResolvedValue(account(7, "year10-team1"));
+      renderPage(<StudentAccountsDashboard />);
+
+      fireEvent.change(await screen.findByLabelText("Username"), { target: { value: "year10-team2" } });
+      fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Sunrise7" } });
+      fireEvent.click(screen.getByRole("button", { name: /add student account/i }));
+      await waitFor(() => expect(mocks.create).toHaveBeenCalledWith("year10-team2", "Sunrise7"));
+
+      fireEvent.click(within(await rowFor("year10-team1")).getByRole("button", { name: /password/i }));
+      const dialog = await screen.findByRole("dialog");
+      fireEvent.change(within(dialog).getByLabelText("New password"), { target: { value: "Moonset9" } });
+      fireEvent.click(within(dialog).getByRole("button", { name: /save password/i }));
+      await waitFor(() => expect(mocks.changePassword).toHaveBeenCalledWith(7, "Moonset9"));
+    });
+  });
+});

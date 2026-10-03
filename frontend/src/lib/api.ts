@@ -53,7 +53,8 @@ export interface ApiUser {
   role: Role;
 }
 
-export interface ApiStudentAccount {
+/** A student or staff sign-in account, as staff see it. */
+export interface ApiAccount {
   id: number;
   username: string;
   locked: boolean;
@@ -285,26 +286,6 @@ export const api = {
     return staff<ApiSubmission>(`/api/staff/toggle-flash/${id}?flash=${flash}`, { method: "POST" });
   },
 
-  listStudentAccounts(_staffName = "staff") {
-    return staff<ApiStudentAccount[]>("/api/staff/students");
-  },
-
-  createStudentAccount(username: string, password: string, _staffName = "staff") {
-    return staff<ApiStudentAccount>("/api/staff/students", { method: "POST", body: { username, password } });
-  },
-
-  setStudentAccountLocked(id: number, locked: boolean, _staffName = "staff") {
-    return staff<ApiStudentAccount>(`/api/staff/students/${id}/lock?locked=${locked}`, { method: "POST" });
-  },
-
-  changeStudentAccountPassword(id: number, password: string, _staffName = "staff") {
-    return staff<ApiStudentAccount>(`/api/staff/students/${id}/password`, { method: "PUT", body: { password } });
-  },
-
-  deleteStudentAccount(id: number, _staffName = "staff") {
-    return staff<void>(`/api/staff/students/${id}`, { method: "DELETE" });
-  },
-
   projectorImages() {
     return fetch(`${API_BASE}/api/projector/images`).then((res) => handle<ApiSubmission[]>(res));
   },
@@ -318,6 +299,29 @@ export const api = {
   },
 };
 
+// ── Account management (staff only) ─────────────────────────────────────────
+
+export type AccountKind = "student" | "staff";
+
+const ACCOUNT_PATHS: Record<AccountKind, string> = {
+  student: "/api/staff/students",
+  staff: "/api/staff/staff-accounts",
+};
+
+/** The same five operations for student and staff accounts. */
+export function accountApi(kind: AccountKind) {
+  const base = ACCOUNT_PATHS[kind];
+  return {
+    list: () => staff<ApiAccount[]>(base),
+    create: (username: string, password: string) =>
+      staff<ApiAccount>(base, { method: "POST", body: { username, password } }),
+    setLocked: (id: number, locked: boolean) =>
+      staff<ApiAccount>(`${base}/${id}/lock?locked=${locked}`, { method: "POST" }),
+    changePassword: (id: number, password: string) =>
+      staff<ApiAccount>(`${base}/${id}/password`, { method: "PUT", body: { password } }),
+    remove: (id: number) => staff<void>(`${base}/${id}`, { method: "DELETE" }),
+  };
+}
 // Format a backend ISO timestamp into a friendly relative string.
 export function formatRelative(iso: string): string {
   const t = new Date(iso).getTime();

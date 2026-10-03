@@ -1,8 +1,7 @@
 package org.example.enterprisedaynews.dto;
 
-public record CreateStudentAccountRequest(
+public record CreateAccountRequest(
         String username,
         String password
 ) {
 }
-

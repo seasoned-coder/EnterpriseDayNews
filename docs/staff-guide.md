@@ -8,6 +8,7 @@ This guide is for adult staff running the event. It covers:
 - [Projector settings](#projector-settings)
 - [End of Day](#end-of-day-clear-down)
 - [Student Account Dashboard](#student-account-dashboard)
+- [Staff Account Dashboard](#staff-account-dashboard)
 - [Safeguarding](#safeguarding)
 
 ---
@@ -174,8 +175,8 @@ Delete info items individually if you don't want them next time. This cannot be 
 
 Students sign in to the upload portal with accounts you manage here.
 
-- **To open it:** select **Student accounts** in the top banner of the Advert Dashboard (shown as **Students** on a phone).
-- **To return:** select **Back to Advert Dashboard** in the top banner (shown as **Adverts** on a phone).
+- **To open it:** select **Student accounts** in the top banner (shown as **Students** on smaller screens).
+- The banner on every staff page also has **Advert Dashboard** (**Adverts**) and **Staff accounts** (**Staff**).
 
 ### The overview
 
@@ -230,6 +231,19 @@ This does not unlock a locked account. Select **Unlock** as well if needed.
 The student can no longer sign in. **Their existing uploads stay in the system.** Remove those from the Advert Dashboard if needed.
 
 **Note on old built-in accounts:** older versions created built-in `student` and `guest` accounts. They are no longer created, and if they still have their original passwords they are **locked automatically** when the system starts. If you need one, select **Password** to set a new password, then **Unlock** it. Otherwise you can delete it.
+
+---
+
+## Staff Account Dashboard
+
+Manage who can sign in to the staff app. Select **Staff accounts** in the top banner (**Staff** on smaller screens).
+
+It works like the Student Account Dashboard: the same totals, table, **Lock** / **Unlock**, **Password** and **Delete** buttons, and last login time and IP address.
+
+- **Adding a colleague:** enter a **Username** and **Password** under **Add a staff account** and select **Add staff account**. Staff passwords need at least 10 characters, with a capital letter and a number. Give them their login in person.
+- **You can't lock or delete your own account.** Your row is marked **(you)** and those buttons are greyed out, so there's always at least one working staff login. You can still change your own password.
+- **Locking or deleting takes effect immediately.** If that person is signed in, their next action is refused and they'll need to sign in again (which won't work while locked).
+- Deleting a staff account keeps everything they approved or uploaded.
 
 ---
 
