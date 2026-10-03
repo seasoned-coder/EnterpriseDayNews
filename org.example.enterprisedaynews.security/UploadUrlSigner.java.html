@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UploadUrlSigner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.security</a> &gt; <span class="el_source">UploadUrlSigner.java</span></div><h1>UploadUrlSigner.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.security;
+
+import org.example.enterprisedaynews.model.ImageMetadata;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriUtils;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.time.Clock;
+import java.util.Base64;
+
+/**
+ * Builds image URLs. Items currently shown on the projector are public; every other upload
+ * (awaiting review, rejected, hidden) is only reachable through a signed, expiring link that the API
+ * hands to staff and to the student who uploaded it. Plain {@code &lt;img&gt;} tags can't send a JWT, which
+ * is why the authorisation travels in the URL.
+ */
+@Component
+public class UploadUrlSigner {
+
+    static final String UPLOADS_PREFIX = &quot;/uploads/&quot;;
+
+    /** Links stay identical for a whole hour so polling dashboards don't re-download every image. */
+    private static final long WINDOW_SECONDS = 3600;
+
+    private final byte[] key;
+    private final Clock clock;
+
+    @Autowired
+    public UploadUrlSigner(@Value(&quot;${app.jwt.secret:}&quot;) String jwtSecret) {
+<span class="fc" id="L36">        this(jwtSecret, Clock.systemUTC());</span>
+<span class="fc" id="L37">    }</span>
+
+<span class="fc" id="L39">    UploadUrlSigner(String jwtSecret, Clock clock) {</span>
+        // Derived from the (validated) JWT secret so there is no extra secret to manage.
+<span class="fc" id="L41">        this.key = hmac(JwtProvider.validateSecret(jwtSecret).getBytes(StandardCharsets.UTF_8),</span>
+                &quot;upload-url-signing-v1&quot;);
+<span class="fc" id="L43">        this.clock = clock;</span>
+<span class="fc" id="L44">    }</span>
+
+    /** True for exactly the items the projector shows: active FLASH items, or approved items set to display. */
+    public static boolean isPubliclyVisible(ImageMetadata image) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        return image.isFlashMode()</span>
+<span class="fc bfc" id="L49" title="All 4 branches covered.">                || (image.getStatus() == ImageMetadata.ApprovalStatus.APPROVED &amp;&amp; image.isDisplay());</span>
+    }
+
+    /** URL for an image, signed unless the image is public. {@code null} for items without a file. */
+    public String urlFor(ImageMetadata image) {
+<span class="fc" id="L54">        String fileName = image.getFilePath();</span>
+<span class="pc bpc" id="L55" title="1 of 4 branches missed.">        if (fileName == null || fileName.isBlank()) {</span>
+<span class="fc" id="L56">            return null;</span>
+        }
+<span class="fc" id="L58">        String path = UPLOADS_PREFIX + UriUtils.encodePathSegment(fileName, StandardCharsets.UTF_8);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (isPubliclyVisible(image)) {</span>
+<span class="fc" id="L60">            return path;</span>
+        }
+        // Expires at the end of the next whole window: valid for 1-2 hours, stable within the hour.
+<span class="fc" id="L63">        long expires = (clock.instant().getEpochSecond() / WINDOW_SECONDS + 2) * WINDOW_SECONDS;</span>
+<span class="fc" id="L64">        return path + &quot;?exp=&quot; + expires + &quot;&amp;sig=&quot; + sign(fileName, expires);</span>
+    }
+
+    public boolean isValid(String fileName, String exp, String sig) {
+<span class="pc bpc" id="L68" title="2 of 6 branches missed.">        if (fileName == null || exp == null || sig == null) {</span>
+<span class="fc" id="L69">            return false;</span>
+        }
+        long expires;
+        try {
+<span class="fc" id="L73">            expires = Long.parseLong(exp);</span>
+<span class="fc" id="L74">        } catch (NumberFormatException e) {</span>
+<span class="fc" id="L75">            return false;</span>
+<span class="fc" id="L76">        }</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (expires &lt;= clock.instant().getEpochSecond()) {</span>
+<span class="fc" id="L78">            return false;</span>
+        }
+<span class="fc" id="L80">        return MessageDigest.isEqual(</span>
+<span class="fc" id="L81">                sign(fileName, expires).getBytes(StandardCharsets.US_ASCII),</span>
+<span class="fc" id="L82">                sig.getBytes(StandardCharsets.US_ASCII));</span>
+    }
+
+    private String sign(String fileName, long expires) {
+<span class="fc" id="L86">        byte[] mac = hmac(key, fileName + &quot;\n&quot; + expires);</span>
+<span class="fc" id="L87">        return Base64.getUrlEncoder().withoutPadding().encodeToString(mac);</span>
+    }
+
+    private static byte[] hmac(byte[] key, String message) {
+        try {
+<span class="fc" id="L92">            Mac mac = Mac.getInstance(&quot;HmacSHA256&quot;);</span>
+<span class="fc" id="L93">            mac.init(new SecretKeySpec(key, &quot;HmacSHA256&quot;));</span>
+<span class="fc" id="L94">            return mac.doFinal(message.getBytes(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L95">        } catch (GeneralSecurityException e) {</span>
+<span class="nc" id="L96">            throw new IllegalStateException(&quot;HmacSHA256 unavailable&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

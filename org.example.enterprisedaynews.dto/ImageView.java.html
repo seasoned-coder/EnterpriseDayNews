@@ -11,6 +11,8 @@ import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
 <span class="fc" id="L11">public record ImageView(</span>
         Long id,
         String filePath,
+        /** URL to load the image from; signed when the image isn't public. Null for text-only messages. */
+        String imageUrl,
         String originalFileName,
         String uploadedBy,
         OffsetDateTime uploadedAt,
@@ -26,24 +28,25 @@ import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
         boolean isFlashMode,
         String messageText
 ) {
-    public static ImageView from(ImageMetadata m) {
-<span class="fc" id="L30">        return new ImageView(</span>
-<span class="fc" id="L31">                m.getId(),</span>
-<span class="fc" id="L32">                m.getFilePath(),</span>
-<span class="fc" id="L33">                m.getOriginalFileName(),</span>
-<span class="fc" id="L34">                m.getUploadedBy(),</span>
-<span class="fc" id="L35">                withServerOffset(m.getUploadedAt()),</span>
-<span class="fc" id="L36">                m.getStatus(),</span>
-<span class="fc" id="L37">                m.getVettedBy(),</span>
-<span class="fc" id="L38">                withServerOffset(m.getVettedAt()),</span>
-<span class="fc" id="L39">                m.isDisplay(),</span>
-<span class="fc" id="L40">                m.getDisplayOrder(),</span>
-<span class="fc" id="L41">                m.getPriority(),</span>
-<span class="fc" id="L42">                m.getDurationSeconds(),</span>
-<span class="fc" id="L43">                m.getTotalCost(),</span>
-<span class="fc" id="L44">                m.isInfoMessage(),</span>
-<span class="fc" id="L45">                m.isFlashMode(),</span>
-<span class="fc" id="L46">                m.getMessageText()</span>
+    public static ImageView from(ImageMetadata m, String imageUrl) {
+<span class="fc" id="L32">        return new ImageView(</span>
+<span class="fc" id="L33">                m.getId(),</span>
+<span class="fc" id="L34">                m.getFilePath(),</span>
+                imageUrl,
+<span class="fc" id="L36">                m.getOriginalFileName(),</span>
+<span class="fc" id="L37">                m.getUploadedBy(),</span>
+<span class="fc" id="L38">                withServerOffset(m.getUploadedAt()),</span>
+<span class="fc" id="L39">                m.getStatus(),</span>
+<span class="fc" id="L40">                m.getVettedBy(),</span>
+<span class="fc" id="L41">                withServerOffset(m.getVettedAt()),</span>
+<span class="fc" id="L42">                m.isDisplay(),</span>
+<span class="fc" id="L43">                m.getDisplayOrder(),</span>
+<span class="fc" id="L44">                m.getPriority(),</span>
+<span class="fc" id="L45">                m.getDurationSeconds(),</span>
+<span class="fc" id="L46">                m.getTotalCost(),</span>
+<span class="fc" id="L47">                m.isInfoMessage(),</span>
+<span class="fc" id="L48">                m.isFlashMode(),</span>
+<span class="fc" id="L49">                m.getMessageText()</span>
         );
     }
 }

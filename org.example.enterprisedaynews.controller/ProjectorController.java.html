@@ -20,21 +20,23 @@ import java.util.List;
 public class ProjectorController {
 
     private final ImageService imageService;
+
+    private final ImageViews imageViews;
     private final DisplaySettingsService settingsService;
 
     @GetMapping(&quot;/images&quot;)
     public List&lt;ImageView&gt; getDisplayImages() {
-<span class="fc" id="L27">        return imageService.getDisplayImages().stream().map(ImageView::from).toList();</span>
+<span class="fc" id="L29">        return imageViews.of(imageService.getDisplayImages());</span>
     }
 
     @GetMapping(&quot;/settings&quot;)
     public DisplaySettings getSettings() {
-<span class="fc" id="L32">        return settingsService.get();</span>
+<span class="fc" id="L34">        return settingsService.get();</span>
     }
 
     @PostMapping(&quot;/settings&quot;)
     public ResponseEntity&lt;DisplaySettings&gt; updateSettings(@RequestBody DisplaySettings settings) {
-<span class="fc" id="L37">        return ResponseEntity.ok(settingsService.update(settings));</span>
+<span class="fc" id="L39">        return ResponseEntity.ok(settingsService.update(settings));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

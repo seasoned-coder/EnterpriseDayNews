@@ -17,23 +17,16 @@ final class ControllerSupport {
 <span class="fc" id="L17">        return principal.getName();</span>
     }
 
+    /**
+     * The client's IP address. Forwarding headers are resolved by Tomcat (server.forward-headers-strategy=native),
+     * which only trusts them from internal proxies, so headers are deliberately not read here.
+     */
     static String clientIpOf(HttpServletRequest request) {
-<span class="pc bpc" id="L21" title="1 of 2 branches missed.">        if (request == null) {</span>
-<span class="nc" id="L22">            return null;</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (request == null) {</span>
+<span class="fc" id="L26">            return null;</span>
         }
-
-<span class="fc" id="L25">        String forwarded = request.getHeader(&quot;X-Forwarded-For&quot;);</span>
-<span class="pc bpc" id="L26" title="3 of 4 branches missed.">        if (forwarded != null &amp;&amp; !forwarded.isBlank()) {</span>
-<span class="nc" id="L27">            return forwarded.split(&quot;,&quot;)[0].trim();</span>
-        }
-
-<span class="fc" id="L30">        String realIp = request.getHeader(&quot;X-Real-IP&quot;);</span>
-<span class="pc bpc" id="L31" title="3 of 4 branches missed.">        if (realIp != null &amp;&amp; !realIp.isBlank()) {</span>
-<span class="nc" id="L32">            return realIp.trim();</span>
-        }
-
-<span class="fc" id="L35">        String remoteAddr = request.getRemoteAddr();</span>
-<span class="pc bpc" id="L36" title="2 of 4 branches missed.">        return (remoteAddr == null || remoteAddr.isBlank()) ? null : remoteAddr.trim();</span>
+<span class="fc" id="L28">        String remoteAddr = request.getRemoteAddr();</span>
+<span class="pc bpc" id="L29" title="2 of 4 branches missed.">        return (remoteAddr == null || remoteAddr.isBlank()) ? null : remoteAddr.trim();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
