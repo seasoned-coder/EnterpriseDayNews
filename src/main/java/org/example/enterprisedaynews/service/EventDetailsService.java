@@ -34,13 +34,22 @@ public class EventDetailsService {
         requireMaxLength("Wi-Fi password", wifiPassword, MAX_WIFI_PASSWORD);
         requireMaxLength("App address", appAddress, MAX_ADDRESS);
         if (appAddress != null) {
-            appAddress = appAddress.replaceAll("/+$", "");
+            appAddress = withoutTrailingSlashes(appAddress);
             if (!WEB_ADDRESS.matcher(appAddress).matches()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "App address should look like http://192.168.1.10");
             }
         }
         return repository.save(new EventDetails(EventDetails.DEFAULT_ID, wifiName, wifiPassword, appAddress));
+    }
+
+    /** "http://x//" → "http://x". A plain loop: a regex like "/+$" can be slow on long runs of slashes. */
+    static String withoutTrailingSlashes(String value) {
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
     }
 
     private static String blankToNull(String value) {

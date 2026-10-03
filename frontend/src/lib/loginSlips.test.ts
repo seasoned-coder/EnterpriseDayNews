@@ -7,6 +7,7 @@ import {
   teamNamesFromPattern,
   toUsername,
   wifiQrText,
+  withoutTrailingSlashes,
 } from "@/lib/loginSlips";
 
 describe("teamNamesFromPattern", () => {
@@ -49,6 +50,15 @@ describe("addresses", () => {
     expect(appAddress({ wifiName: null, wifiPassword: null, appAddress: "http://192.168.1.10/" }, "http://localhost:3000"))
       .toBe("http://192.168.1.10");
     expect(appAddress(undefined, "http://192.168.1.10")).toBe("http://192.168.1.10");
+  });
+
+  it("trims trailing slashes quickly, even a huge run of them", () => {
+    expect(withoutTrailingSlashes("http://x///")).toBe("http://x");
+    expect(withoutTrailingSlashes("///")).toBe("");
+    const slashes = "/".repeat(1_000_000) + "x";
+    const started = performance.now();
+    expect(withoutTrailingSlashes(slashes)).toBe(slashes);
+    expect(performance.now() - started).toBeLessThan(500);
   });
 
   it("points the QR code at sign-in with the team filled in", () => {

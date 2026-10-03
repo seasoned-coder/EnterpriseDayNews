@@ -36,7 +36,14 @@ export function toUsername(text: string): string {
 
 /** The address students open: the saved one, or else where this staff page is running. */
 export function appAddress(details: EventDetails | undefined, origin: string): string {
-  return (details?.appAddress?.trim() || origin).replace(/\/+$/, "");
+  return withoutTrailingSlashes(details?.appAddress?.trim() || origin);
+}
+
+/** "http://x//" → "http://x". A plain loop: a regex like /\/+$/ can be slow on long runs of slashes. */
+export function withoutTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end--;
+  return value.slice(0, end);
 }
 
 /** Where a slip's QR code goes: the student sign-in page with the team name filled in. */
