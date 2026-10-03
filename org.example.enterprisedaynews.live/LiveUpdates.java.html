@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LiveUpdates.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.live</a> &gt; <span class="el_source">LiveUpdates.java</span></div><h1>LiveUpdates.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.live;
+
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Tells open pages the moment something changes (issue #43), instead of every page asking every few seconds.
+ *
+ * &lt;p&gt;Each page keeps one Server-Sent Events connection ({@code GET /api/events}). Events are just a topic
+ * name (&quot;adverts&quot;, &quot;prices&quot;, ...) with no data; the page then reloads that data through the normal API. So
+ * the stream reveals nothing and needs no sign-in (EventSource can't send one anyway).
+ *
+ * &lt;ul&gt;
+ *     &lt;li&gt;Sent only after the change is committed, so a reload sees it.&lt;/li&gt;
+ *     &lt;li&gt;Changes within {@link #COALESCE} are sent once (e.g. reordering many adverts, or End of Day).&lt;/li&gt;
+ *     &lt;li&gt;A &quot;ping&quot; every {@link #HEARTBEAT} keeps idle connections open through Wi-Fi and proxies, finds
+ *     closed ones, and lets pages notice a stream that has silently died.&lt;/li&gt;
+ *     &lt;li&gt;Connections are asynchronous: 100+ open streams don't tie up server threads.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L34">@Slf4j</span>
+@Service
+public class LiveUpdates {
+
+<span class="fc" id="L38">    static final Duration COALESCE = Duration.ofMillis(250);</span>
+<span class="fc" id="L39">    static final Duration HEARTBEAT = Duration.ofSeconds(25);</span>
+    /** Browsers reconnect by themselves when a stream ends, so streams needn't live for ever. */
+<span class="fc" id="L41">    static final Duration STREAM_LIFETIME = Duration.ofMinutes(30);</span>
+
+<span class="fc" id="L43">    private final CopyOnWriteArrayList&lt;SseEmitter&gt; listeners = new CopyOnWriteArrayList&lt;&gt;();</span>
+<span class="fc" id="L44">    private final Set&lt;LiveTopic&gt; pending = ConcurrentHashMap.newKeySet();</span>
+<span class="fc" id="L45">    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -&gt; {</span>
+<span class="fc" id="L46">        Thread t = new Thread(r, &quot;live-updates&quot;);</span>
+<span class="fc" id="L47">        t.setDaemon(true);</span>
+<span class="fc" id="L48">        return t;</span>
+    });
+
+<span class="fc" id="L51">    public LiveUpdates() {</span>
+<span class="fc" id="L52">        scheduler.scheduleAtFixedRate(this::heartbeat, HEARTBEAT.toMillis(), HEARTBEAT.toMillis(), TimeUnit.MILLISECONDS);</span>
+<span class="fc" id="L53">    }</span>
+
+    /** A new listening page. */
+    public SseEmitter subscribe() {
+<span class="fc" id="L57">        SseEmitter emitter = new SseEmitter(STREAM_LIFETIME.toMillis());</span>
+<span class="fc" id="L58">        listeners.add(emitter);</span>
+<span class="pc" id="L59">        emitter.onCompletion(() -&gt; listeners.remove(emitter));</span>
+<span class="pc" id="L60">        emitter.onTimeout(() -&gt; listeners.remove(emitter));</span>
+<span class="pc" id="L61">        emitter.onError(e -&gt; listeners.remove(emitter));</span>
+        try {
+            // Tells the page it's connected; also how long to wait before reconnecting if the stream drops.
+<span class="fc" id="L64">            emitter.send(SseEmitter.event().name(&quot;hello&quot;).reconnectTime(3000).data(&quot;connected&quot;));</span>
+<span class="nc" id="L65">        } catch (IOException e) {</span>
+<span class="nc" id="L66">            listeners.remove(emitter);</span>
+<span class="fc" id="L67">        }</span>
+<span class="fc" id="L68">        return emitter;</span>
+    }
+
+    public int listenerCount() {
+<span class="fc" id="L72">        return listeners.size();</span>
+    }
+
+    /** Services publish {@link LiveTopic.Changed}; this sends it once the transaction has committed. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onChanged(LiveTopic.Changed changed) {
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (pending.add(changed.topic())) {</span>
+<span class="fc" id="L79">            scheduler.schedule(() -&gt; send(changed.topic()), COALESCE.toMillis(), TimeUnit.MILLISECONDS);</span>
+        }
+<span class="fc" id="L81">    }</span>
+
+    void send(LiveTopic topic) {
+<span class="fc" id="L84">        pending.remove(topic);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (SseEmitter emitter : listeners) {</span>
+            try {
+<span class="fc" id="L87">                emitter.send(SseEmitter.event().name(topic.eventName()).data(&quot;&quot;));</span>
+<span class="nc" id="L88">            } catch (IOException | IllegalStateException e) {</span>
+<span class="nc" id="L89">                listeners.remove(emitter); // the page has gone</span>
+<span class="fc" id="L90">            }</span>
+<span class="fc" id="L91">        }</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * A &quot;ping&quot; event (not just a comment) so pages can see the stream is alive: if pings stop arriving (e.g.
+     * the Wi-Fi dropped without closing the connection), the page reconnects and polls meanwhile.
+     */
+    void heartbeat() {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (SseEmitter emitter : listeners) {</span>
+            try {
+<span class="fc" id="L101">                emitter.send(SseEmitter.event().name(&quot;ping&quot;).data(&quot;&quot;));</span>
+<span class="nc" id="L102">            } catch (IOException | IllegalStateException e) {</span>
+<span class="nc" id="L103">                listeners.remove(emitter);</span>
+<span class="fc" id="L104">            }</span>
+<span class="fc" id="L105">        }</span>
+<span class="fc" id="L106">    }</span>
+
+    @PreDestroy
+    void stop() {
+<span class="fc" id="L110">        scheduler.shutdownNow();</span>
+<span class="fc" id="L111">        listeners.forEach(SseEmitter::complete);</span>
+<span class="fc" id="L112">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

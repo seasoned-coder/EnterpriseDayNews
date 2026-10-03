@@ -3,8 +3,10 @@
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.PriceWobbleRequest;
 import org.example.enterprisedaynews.dto.PriceWobbleView;
+import org.example.enterprisedaynews.live.LiveTopic;
 import org.example.enterprisedaynews.model.PriceWobble;
 import org.example.enterprisedaynews.repository.PriceWobbleRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,58 +30,61 @@ public class PriceWobbleService {
     public static final int MAX_MESSAGE = 120;
 
     private final PriceWobbleRepository repository;
+    private final ApplicationEventPublisher events;
 
     /** The wobble set up by staff, in force now or starting later; empty at normal prices. */
     public Optional&lt;PriceWobbleView&gt; current() {
-<span class="fc" id="L34">        LocalDateTime now = LocalDateTime.now();</span>
-<span class="fc" id="L35">        return repository.findById(PriceWobble.DEFAULT_ID)</span>
-<span class="fc bfc" id="L36" title="All 4 branches covered.">                .filter(w -&gt; w.getEndsAt() == null || now.isBefore(w.getEndsAt()))</span>
-<span class="fc" id="L37">                .map(w -&gt; PriceWobbleView.of(w, now));</span>
+<span class="fc" id="L37">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L38">        return repository.findById(PriceWobble.DEFAULT_ID)</span>
+<span class="fc bfc" id="L39" title="All 4 branches covered.">                .filter(w -&gt; w.getEndsAt() == null || now.isBefore(w.getEndsAt()))</span>
+<span class="fc" id="L40">                .map(w -&gt; PriceWobbleView.of(w, now));</span>
     }
 
     /** Prices as a percentage of normal right now (100 when there's no wobble). */
     public int currentPercent() {
-<span class="fc" id="L42">        return current().filter(PriceWobbleView::activeNow).map(PriceWobbleView::percent).orElse(PriceList.FULL_PRICE);</span>
+<span class="fc" id="L45">        return current().filter(PriceWobbleView::activeNow).map(PriceWobbleView::percent).orElse(PriceList.FULL_PRICE);</span>
     }
 
     /** The price list as students see it now, with the wobble (if any) applied and described. */
     public PriceList.Prices studentPrices() {
-<span class="fc" id="L47">        return current().filter(PriceWobbleView::activeNow)</span>
-<span class="fc" id="L48">                .map(w -&gt; PriceList.prices(w.percent(), w))</span>
-<span class="fc" id="L49">                .orElseGet(PriceList::prices);</span>
+<span class="fc" id="L50">        return current().filter(PriceWobbleView::activeNow)</span>
+<span class="fc" id="L51">                .map(w -&gt; PriceList.prices(w.percent(), w))</span>
+<span class="fc" id="L52">                .orElseGet(PriceList::prices);</span>
     }
 
     @Transactional
     public PriceWobbleView set(PriceWobbleRequest request) {
-<span class="fc bfc" id="L54" title="All 4 branches covered.">        if (request.percent() &lt; MIN_PERCENT || request.percent() &gt; MAX_PERCENT) {</span>
-<span class="fc" id="L55">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc bfc" id="L57" title="All 4 branches covered.">        if (request.percent() &lt; MIN_PERCENT || request.percent() &gt; MAX_PERCENT) {</span>
+<span class="fc" id="L58">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;Prices can go from &quot; + MIN_PERCENT + &quot;% to &quot; + MAX_PERCENT + &quot;% of normal&quot;);
         }
-<span class="pc bpc" id="L58" title="2 of 4 branches missed.">        String message = request.message() == null || request.message().isBlank() ? null : request.message().trim();</span>
-<span class="pc bpc" id="L59" title="1 of 4 branches missed.">        if (message != null &amp;&amp; message.length() &gt; MAX_MESSAGE) {</span>
-<span class="fc" id="L60">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">        String message = request.message() == null || request.message().isBlank() ? null : request.message().trim();</span>
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">        if (message != null &amp;&amp; message.length() &gt; MAX_MESSAGE) {</span>
+<span class="fc" id="L63">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;Keep the message under &quot; + MAX_MESSAGE + &quot; characters&quot;);
         }
-<span class="fc" id="L63">        LocalDateTime now = LocalDateTime.now();</span>
-<span class="fc" id="L64">        LocalDateTime startsAt = local(request.startsAt());</span>
-<span class="fc" id="L65">        LocalDateTime endsAt = local(request.endsAt());</span>
-<span class="pc bpc" id="L66" title="1 of 6 branches missed.">        if (endsAt != null &amp;&amp; !endsAt.isAfter(startsAt == null ? now : startsAt)) {</span>
-<span class="fc" id="L67">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc" id="L66">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L67">        LocalDateTime startsAt = local(request.startsAt());</span>
+<span class="fc" id="L68">        LocalDateTime endsAt = local(request.endsAt());</span>
+<span class="pc bpc" id="L69" title="1 of 6 branches missed.">        if (endsAt != null &amp;&amp; !endsAt.isAfter(startsAt == null ? now : startsAt)) {</span>
+<span class="fc" id="L70">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     &quot;The end time must be after the start time (and in the future)&quot;);
         }
-<span class="fc" id="L70">        PriceWobble saved = repository.save(new PriceWobble(PriceWobble.DEFAULT_ID, request.percent(), message,</span>
-<span class="pc bpc" id="L71" title="1 of 4 branches missed.">                startsAt != null &amp;&amp; startsAt.isAfter(now) ? startsAt : null, endsAt));</span>
-<span class="fc" id="L72">        return PriceWobbleView.of(saved, now);</span>
+<span class="fc" id="L73">        events.publishEvent(new LiveTopic.Changed(LiveTopic.PRICES)); // students see it at once (#43)</span>
+<span class="fc" id="L74">        PriceWobble saved = repository.save(new PriceWobble(PriceWobble.DEFAULT_ID, request.percent(), message,</span>
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">                startsAt != null &amp;&amp; startsAt.isAfter(now) ? startsAt : null, endsAt));</span>
+<span class="fc" id="L76">        return PriceWobbleView.of(saved, now);</span>
     }
 
     /** Back to normal prices straight away (also part of resetting the event). */
     @Transactional
     public void stop() {
-<span class="fc" id="L78">        repository.deleteById(PriceWobble.DEFAULT_ID);</span>
-<span class="fc" id="L79">    }</span>
+<span class="fc" id="L82">        repository.deleteById(PriceWobble.DEFAULT_ID);</span>
+<span class="fc" id="L83">        events.publishEvent(new LiveTopic.Changed(LiveTopic.PRICES));</span>
+<span class="fc" id="L84">    }</span>
 
     private static LocalDateTime local(OffsetDateTime time) {
-<span class="fc bfc" id="L82" title="All 2 branches covered.">        return time == null ? null : time.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        return time == null ? null : time.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
