@@ -24,22 +24,30 @@ public class StudentController {
     public ResponseEntity&lt;ImageView&gt; upload(@RequestParam(&quot;file&quot;) MultipartFile file,
                                             @RequestParam(value = &quot;priority&quot;, defaultValue = &quot;1&quot;) int priority,
                                             @RequestParam(value = &quot;durationSeconds&quot;, defaultValue = &quot;10&quot;) int durationSeconds,
+                                            @RequestParam(value = &quot;publishOnApproval&quot;, defaultValue = &quot;true&quot;) boolean publishOnApproval,
                                             Principal principal) throws IOException {
-<span class="fc" id="L28">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L29">        return ResponseEntity.ok(imageViews.of(imageService.uploadImage(file, username, priority, durationSeconds)));</span>
+<span class="fc" id="L29">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L30">        return ResponseEntity.ok(imageViews.of(</span>
+<span class="fc" id="L31">                imageService.uploadImage(file, username, priority, durationSeconds, publishOnApproval)));</span>
+    }
+
+    /** Publish (put on screen) or withdraw one of your own adverts; see ImageService#setPublishedByStudent. */
+    @PostMapping(&quot;/uploads/{id}/publish&quot;)
+    public ImageView setPublished(@PathVariable Long id, @RequestParam boolean published, Principal principal) {
+<span class="fc" id="L37">        return imageViews.of(imageService.setPublishedByStudent(id, ControllerSupport.usernameOf(principal), published));</span>
     }
 
     @GetMapping(&quot;/uploads&quot;)
     public ResponseEntity&lt;List&lt;ImageView&gt;&gt; getMyUploads(Principal principal) {
-<span class="fc" id="L34">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L35">        return ResponseEntity.ok(imageViews.of(imageService.getUserUploads(username)));</span>
+<span class="fc" id="L42">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L43">        return ResponseEntity.ok(imageViews.of(imageService.getUserUploads(username)));</span>
     }
 
     @DeleteMapping(&quot;/uploads/{id}&quot;)
     public ResponseEntity&lt;Void&gt; deleteMyUpload(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L40">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L41">        imageService.deleteStudentImage(id, username);</span>
-<span class="fc" id="L42">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L48">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L49">        imageService.deleteStudentImage(id, username);</span>
+<span class="fc" id="L50">        return ResponseEntity.noContent().build();</span>
     }
 }
 

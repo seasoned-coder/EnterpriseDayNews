@@ -36,6 +36,14 @@ public class ImageMetadata {
     private boolean display;
     private int displayOrder;
 
+    /**
+     * Student's choice at upload: go on screen as soon as staff approve it (true), or wait until the
+     * student publishes it (false). See issue #9.
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean publishOnApproval = true;
+
     private int priority;           // 1-4, configurable cost
     private int durationSeconds;    // 10, 20, or 30 seconds
     private int totalCost;          // cost = priorityCost + durationCost
@@ -44,8 +52,8 @@ public class ImageMetadata {
     private boolean isFlashMode;
     private String messageText;
 
-<span class="fc" id="L47">    public enum ApprovalStatus {</span>
-<span class="fc" id="L48">        NEW, APPROVED, REJECTED</span>
+<span class="fc" id="L55">    public enum ApprovalStatus {</span>
+<span class="fc" id="L56">        NEW, APPROVED, REJECTED</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
