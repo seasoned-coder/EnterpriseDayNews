@@ -7,8 +7,9 @@ services:
       POSTGRES_DB: enterpriseday
       POSTGRES_USER: user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (see .env.example)}
+    # Only reachable from this machine (for debugging); other containers use the Docker network.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   backend:
     # 1. Provide the GitHub Image Name
@@ -16,8 +17,9 @@ services:
     # 2. Keep the build instruction for your laptop
     restart: unless-stopped
     build: .
+    # Only reachable from this machine; browsers go through the frontend's nginx (/api, /uploads).
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/enterpriseday
       SPRING_DATASOURCE_USERNAME: user
@@ -44,10 +46,10 @@ services:
         APP_VERSION: ${APP_VERSION:-dev}
     ports:
       - "3000:80"
+    # Uploads are deliberately NOT mounted here: nginx proxies /uploads to the backend, which decides
+    # who may see each file.
     depends_on:
       - backend
-    volumes:
-      - uploads:/usr/share/nginx/html/uploads:ro
 
   caddy:
     image: caddy:2-alpine

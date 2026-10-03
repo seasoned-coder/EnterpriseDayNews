@@ -85,7 +85,7 @@ describe("StudentUpload delete flow", () => {
     mocks.getCurrentUser.mockReturnValue({ username: "student1", role: "STUDENT" });
     mocks.studentGetMyUploads.mockResolvedValue([sampleUpload]);
     mocks.studentDeleteMyUpload.mockResolvedValue(undefined);
-    mocks.imageUrl.mockImplementation((filePath: string) => `/uploads/${filePath}`);
+    mocks.imageUrl.mockImplementation((item: { filePath: string }) => `/uploads/${item.filePath}`);
     mocks.formatRelative.mockReturnValue("just now");
   });
 

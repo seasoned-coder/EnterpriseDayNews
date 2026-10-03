@@ -56,7 +56,7 @@ All three apps (`/student`, `/staff`, `/projector`) are routes in **one** React 
 | **PostgreSQL 16** | Main database in Docker. |
 | **Flyway** | Versioned schema migrations in `src/main/resources/db/migration` (`V1__…`, `V2__…`). Hibernate only *validates* the schema; any schema change needs a new migration file. |
 | **Lombok** | Generates boilerplate (getters/setters, builders, constructors) on entities and services. |
-| **Local disk / Docker volume** | Uploaded images are written to `app.upload-dir` (the `uploads` volume in Docker) and served from `/uploads/*`. |
+| **Local disk / Docker volume** | Uploaded images are written to `app.upload-dir` (the `uploads` volume, mounted only into the backend) and served from `/uploads/*`. Only items currently on the projector are public; everything else needs a signed link (see [Image access](#image-access)). |
 | **JUnit 5, MockMvc, Mockito, H2, JaCoCo** | Backend tests run against an in-memory H2 database; JaCoCo produces the coverage report. |
 
 ### Frontend (`/frontend`)
@@ -75,7 +75,7 @@ All three apps (`/student`, `/staff`, `/projector`) are routes in **one** React 
 | Technology | How it's used |
 |---|---|
 | **Docker + Docker Compose** | Runs `db`, `backend`, `frontend` (and `caddy` when hosted) as containers. Multi-stage Dockerfiles build the Java JAR and the React bundle. |
-| **Nginx** | Inside the frontend container: serves the static React build and proxies `/api` and `/uploads` to the backend, passing the client IP (`X-Forwarded-For`) so student login IPs are recorded correctly. |
+| **Nginx** | Inside the frontend container: serves the static React build and proxies `/api` and `/uploads` to the backend, adding the client IP to `X-Forwarded-For`. The backend only trusts that header from internal (Docker-network) proxies (`server.forward-headers-strategy=native`). |
 | **Caddy** | Hosted deployment only: automatic HTTPS and reverse proxy in front of the frontend. Not used for local testing. |
 | **GitHub Container Registry (ghcr.io)** | Stores built images (`news-backend`, `news-frontend`) pushed by `build-and-push.ps1` / `.sh`. |
 | **GitHub Actions** | `.github/workflows/test-and-coverage.yml` runs the tests on each push. |
@@ -189,7 +189,7 @@ Optional flags:
 
 This will start:
 -   **PostgreSQL**: Database for image metadata, student accounts and settings.
--   **Backend (Java)**: REST API accessible at `http://localhost:8080`.
+-   **Backend (Java)**: REST API at `http://localhost:8080`, reachable from this machine only. The PostgreSQL port (`5432`) is too. Everyone else goes through the frontend.
 -   **Frontend (Nginx Prod)**: Accessible at `http://localhost:3000` (built bundle).
 -   **Caddy**: HTTPS reverse proxy for the public hosted domain only (see below).
 
@@ -266,9 +266,24 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/students/{id}/lock?locked=true|false`: Lock or unlock a student account.
 -   `PUT  /api/staff/students/{id}/password`: Reset a student's password (JSON body: `{"password": "..."}`).
 -   `DELETE /api/staff/students/{id}`: Delete a student account.
--   `GET  /api/projector/images`: List images to display (status=APPROVED & display=true, ordered).
--   `GET  /api/projector/settings`: Current display settings.
--   `POST /api/projector/settings`: Update display settings.
+-   `GET  /api/projector/images`: List images to display (FLASH items if any, otherwise status=APPROVED & display=true, ordered). Public.
+-   `GET  /api/projector/settings`: Current display settings. Public.
+-   `POST /api/projector/settings`: Update display settings (role: STAFF).
+-   `GET  /uploads/{file}`: An image file. Public only for items on the projector; otherwise use the signed `imageUrl` from the API.
+
+Every image in API responses includes an `imageUrl` field. Always load images from it rather than building a URL from `filePath`.
+
+### Image access
+
+-   **Public:** items the projector shows (approved and set to display, or in FLASH).
+-   **Everything else** (awaiting review, hidden, rejected) is only served through a **signed link**. The API includes it in `imageUrl` for staff, and for the student who uploaded the item. Links are signed with a key derived from `APP_JWT_SECRET` and stay the same for an hour (so polling dashboards don't re-download images), then expire after 1–2 hours.
+-   Requests without a valid link, and files with no database record, get a 404.
+
+### Network exposure
+
+-   The backend (`8080`) and database (`5432`) ports are bound to `127.0.0.1`. The frontend (`3000`) is published on all interfaces so phones on the same network can test it. In the hosted deployment, Caddy (`80`/`443`) is the public entry point.
+-   **Client IPs** (shown on the Student Account Dashboard) are read from `X-Forwarded-For` only when the request comes from an internal proxy, walking the header right-to-left. Behind Caddy this records the real visitor address. When testing from your own machine with Docker Desktop, your browser also appears to come from an internal Docker address, so a faked header can't be told apart from a real one. That only affects locally recorded IPs.
+-   **CORS:** off by default, because the frontend and API share an origin. If you host the frontend elsewhere (`VITE_API_BASE_URL`), set `APP_CORS_ALLOWED_ORIGINS` to a comma-separated list of allowed origins.
 
 ### Configuration
 

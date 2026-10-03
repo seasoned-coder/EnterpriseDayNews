@@ -2,7 +2,9 @@ package org.example.enterprisedaynews.config;
 
 import org.example.enterprisedaynews.security.JwtAuthenticationFilter;
 import org.example.enterprisedaynews.security.Roles;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,9 +21,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          @Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.allowedOrigins = allowedOrigins.stream().map(String::trim).filter(o -> !o.isEmpty()).toList();
     }
 
     @Bean
@@ -36,25 +41,34 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/student/**").hasRole(Roles.STUDENT)
                 .requestMatchers("/api/staff/**").hasRole(Roles.STAFF)
-                .requestMatchers("/api/projector/**").permitAll()
-                .requestMatchers("/uploads/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
+                // The projector only reads; changing its settings is a staff action.
+                .requestMatchers(HttpMethod.GET, "/api/projector/**").permitAll()
+                .requestMatchers("/api/projector/**").hasRole(Roles.STAFF)
+                // Access to individual files is decided by UploadAccessInterceptor (public or signed link).
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                // Let error responses (e.g. the 404 for a hidden upload) through as-is instead of turning into 403.
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
         );
-        // H2 console runs in a frame in dev.
-        http.headers(h -> h.frameOptions(f -> f.sameOrigin()));
         return http.build();
     }
 
+    /**
+     * The frontend is served from the same origin as the API (nginx proxies /api), so no cross-origin
+     * access is allowed by default. Set APP_CORS_ALLOWED_ORIGINS only if the frontend is hosted elsewhere
+     * (VITE_API_BASE_URL).
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        if (!allowedOrigins.isEmpty()) {
+            CorsConfiguration configuration = new CorsConfiguration();
+            configuration.setAllowedOrigins(allowedOrigins);
+            configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+            configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+            configuration.setAllowCredentials(false);
+            source.registerCorsConfiguration("/**", configuration);
+        }
         return source;
     }
 

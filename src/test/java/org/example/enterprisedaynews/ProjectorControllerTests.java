@@ -1,6 +1,8 @@
 package org.example.enterprisedaynews;
 
 import org.example.enterprisedaynews.model.DisplaySettings;
+import org.example.enterprisedaynews.security.JwtProvider;
+import org.example.enterprisedaynews.security.Roles;
 import org.example.enterprisedaynews.service.DisplaySettingsService;
 import org.example.enterprisedaynews.service.ImageService;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +34,9 @@ class ProjectorControllerTests {
 
     @MockitoBean
     private ImageService imageService;
+
+    @Autowired
+    private JwtProvider jwtProvider;
 
     @Test
     void testGetSettingsDefault() throws Exception {
@@ -73,12 +80,25 @@ class ProjectorControllerTests {
         String json = "{\"intervalSpeedSeconds\":20,\"displayDurationSeconds\":40,\"imageRefreshSeconds\":90}";
 
         mockMvc.perform(post("/api/projector/settings")
+                .header("Authorization", "Bearer " + jwtProvider.generateToken("staff.member", Roles.STAFF))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.intervalSpeedSeconds").value(20))
                 .andExpect(jsonPath("$.displayDurationSeconds").value(40))
                 .andExpect(jsonPath("$.imageRefreshSeconds").value(90));
+    }
+
+    @Test
+    void testUpdateSettingsRequiresStaff() throws Exception {
+        String json = "{\"intervalSpeedSeconds\":1,\"displayDurationSeconds\":1,\"imageRefreshSeconds\":1}";
+
+        mockMvc.perform(post("/api/projector/settings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isForbidden());
+
+        verify(settingsService, never()).update(any());
     }
 
     @Test

@@ -17,21 +17,14 @@ final class ControllerSupport {
         return principal.getName();
     }
 
+    /**
+     * The client's IP address. Forwarding headers are resolved by Tomcat (server.forward-headers-strategy=native),
+     * which only trusts them from internal proxies, so headers are deliberately not read here.
+     */
     static String clientIpOf(HttpServletRequest request) {
         if (request == null) {
             return null;
         }
-
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
-        }
-
         String remoteAddr = request.getRemoteAddr();
         return (remoteAddr == null || remoteAddr.isBlank()) ? null : remoteAddr.trim();
     }

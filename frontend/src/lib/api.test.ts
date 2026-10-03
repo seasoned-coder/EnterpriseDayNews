@@ -26,6 +26,19 @@ describe("api.studentDeleteMyUpload", () => {
   });
 });
 
+describe("api.imageUrl", () => {
+  it("uses the server-provided (possibly signed) URL as-is", () => {
+    expect(
+      api.imageUrl({ filePath: "abc_advert.jpg", imageUrl: "/uploads/abc_advert.jpg?exp=1&sig=xyz" }),
+    ).toBe("/uploads/abc_advert.jpg?exp=1&sig=xyz");
+  });
+
+  it("falls back to an encoded public path when the server sends no URL", () => {
+    expect(api.imageUrl({ filePath: "abc_my advert #1.jpg" })).toBe("/uploads/abc_my%20advert%20%231.jpg");
+    expect(api.imageUrl({ filePath: "abc.jpg", imageUrl: null })).toBe("/uploads/abc.jpg");
+  });
+});
+
 describe("api.login", () => {
   afterEach(() => {
     vi.restoreAllMocks();

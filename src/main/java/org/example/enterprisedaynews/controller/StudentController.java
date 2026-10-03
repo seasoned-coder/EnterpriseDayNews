@@ -18,19 +18,21 @@ public class StudentController {
 
     private final ImageService imageService;
 
+    private final ImageViews imageViews;
+
     @PostMapping("/upload")
     public ResponseEntity<ImageView> upload(@RequestParam("file") MultipartFile file,
                                             @RequestParam(value = "priority", defaultValue = "1") int priority,
                                             @RequestParam(value = "durationSeconds", defaultValue = "10") int durationSeconds,
                                             Principal principal) throws IOException {
         String username = ControllerSupport.usernameOf(principal);
-        return ResponseEntity.ok(ImageView.from(imageService.uploadImage(file, username, priority, durationSeconds)));
+        return ResponseEntity.ok(imageViews.of(imageService.uploadImage(file, username, priority, durationSeconds)));
     }
 
     @GetMapping("/uploads")
     public ResponseEntity<List<ImageView>> getMyUploads(Principal principal) {
         String username = ControllerSupport.usernameOf(principal);
-        return ResponseEntity.ok(imageService.getUserUploads(username).stream().map(ImageView::from).toList());
+        return ResponseEntity.ok(imageViews.of(imageService.getUserUploads(username)));
     }
 
     @DeleteMapping("/uploads/{id}")

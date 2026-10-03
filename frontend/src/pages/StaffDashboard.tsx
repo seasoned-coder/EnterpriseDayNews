@@ -464,7 +464,7 @@ const StaffDashboard = () => {
            {active && (
              <>
                <img
-                 src={api.imageUrl(active.filePath)}
+                 src={api.imageUrl(active)}
                  alt={`Submission by ${active.uploadedBy}`}
                  className="max-h-[60vh] w-full object-cover"
                />

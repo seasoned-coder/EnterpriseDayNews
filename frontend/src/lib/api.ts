@@ -15,6 +15,8 @@ export type SubmissionStatusApi = "NEW" | "APPROVED" | "REJECTED";
 export interface ApiSubmission {
   id: number;
   filePath: string;
+  /** Server-provided image URL (signed when the item isn't public); null for text-only messages. */
+  imageUrl?: string | null;
   originalFileName: string;
   uploadedBy: string;
   uploadedAt: string;
@@ -107,8 +109,13 @@ export const api = {
     return user ? JSON.parse(user) as ApiUser : null;
   },
 
-  imageUrl(filePath: string) {
-    return `${UPLOADS_BASE}/${filePath}`;
+  /**
+   * Where to load an item's image from. The backend supplies `imageUrl`, which is signed for anything
+   * not currently on the projector (pending, hidden, rejected), so always prefer it.
+   */
+  imageUrl(item: Pick<ApiSubmission, "imageUrl" | "filePath">) {
+    if (item.imageUrl) return `${API_BASE}${item.imageUrl}`;
+    return `${UPLOADS_BASE}/${encodeURIComponent(item.filePath)}`;
   },
 
   async studentUpload(name: string, file: File, priority: number = 1, durationSeconds: number = 10) {

@@ -3,8 +3,10 @@ package org.example.enterprisedaynews.repository;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 
 public interface ImageRepository extends JpaRepository<ImageMetadata, Long> {
+    Optional<ImageMetadata> findFirstByFilePath(String filePath);
     List<ImageMetadata> findByStatusOrderByDisplayOrderAsc(ImageMetadata.ApprovalStatus status);
     List<ImageMetadata> findByStatusOrderByUploadedAtDesc(ImageMetadata.ApprovalStatus status);
     List<ImageMetadata> findByStatusAndDisplayOrderByDisplayOrderAsc(ImageMetadata.ApprovalStatus status, boolean display);

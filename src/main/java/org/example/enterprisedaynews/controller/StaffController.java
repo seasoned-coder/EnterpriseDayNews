@@ -23,38 +23,40 @@ import java.util.List;
 public class StaffController {
 
     private final ImageService imageService;
+
+    private final ImageViews imageViews;
     private final StudentAccountService studentAccountService;
 
     @GetMapping("/new")
     public List<ImageView> getNewImages() {
-        return imageService.getNewImages().stream().map(ImageView::from).toList();
+        return imageViews.of(imageService.getNewImages());
     }
 
     @GetMapping("/approved")
     public List<ImageView> getApprovedImages() {
-        return imageService.getApprovedImages().stream().map(ImageView::from).toList();
+        return imageViews.of(imageService.getApprovedImages());
     }
 
     @GetMapping("/rejected")
     public List<ImageView> getRejectedImages() {
-        return imageService.getRejectedImages().stream().map(ImageView::from).toList();
+        return imageViews.of(imageService.getRejectedImages());
     }
 
     @PostMapping("/approve/{id}")
     public ResponseEntity<ImageView> approve(@PathVariable Long id, Principal principal) {
-        return ResponseEntity.ok(ImageView.from(
+        return ResponseEntity.ok(imageViews.of(
                 imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));
     }
 
     @PostMapping("/reject/{id}")
     public ResponseEntity<ImageView> reject(@PathVariable Long id, Principal principal) {
-        return ResponseEntity.ok(ImageView.from(
+        return ResponseEntity.ok(imageViews.of(
                 imageService.updateStatus(id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal))));
     }
 
     @PostMapping("/toggle-display/{id}")
     public ResponseEntity<ImageView> toggleDisplay(@PathVariable Long id, @RequestParam boolean display) {
-        return ResponseEntity.ok(ImageView.from(imageService.toggleDisplay(id, display)));
+        return ResponseEntity.ok(imageViews.of(imageService.toggleDisplay(id, display)));
     }
 
     @PostMapping("/order")
@@ -69,7 +71,7 @@ public class StaffController {
         String username = ControllerSupport.usernameOf(principal);
         ImageMetadata metadata = imageService.uploadImage(file, username);
         // Staff uploads are auto-approved.
-        return ResponseEntity.ok(ImageView.from(
+        return ResponseEntity.ok(imageViews.of(
                 imageService.updateStatus(metadata.getId(), ApprovalStatus.APPROVED, username)));
     }
 
@@ -87,7 +89,7 @@ public class StaffController {
 
     @GetMapping("/info")
     public List<ImageView> getInfoMessages() {
-        return imageService.getInfoMessages().stream().map(ImageView::from).toList();
+        return imageViews.of(imageService.getInfoMessages());
     }
 
     @PostMapping("/info/upload")
@@ -95,7 +97,7 @@ public class StaffController {
                                                        @RequestParam(value = "flash", defaultValue = "false") boolean flash,
                                                        Principal principal) throws IOException {
         String username = ControllerSupport.usernameOf(principal);
-        return ResponseEntity.ok(ImageView.from(imageService.uploadInfoMessage(file, username, flash)));
+        return ResponseEntity.ok(imageViews.of(imageService.uploadInfoMessage(file, username, flash)));
     }
 
     @PostMapping("/info/free-text")
@@ -103,12 +105,12 @@ public class StaffController {
                                                   @RequestParam(value = "flash", defaultValue = "true") boolean flash,
                                                   Principal principal) {
         String username = ControllerSupport.usernameOf(principal);
-        return ResponseEntity.ok(ImageView.from(imageService.postFreeTextMessage(text, username, flash)));
+        return ResponseEntity.ok(imageViews.of(imageService.postFreeTextMessage(text, username, flash)));
     }
 
     @PostMapping("/toggle-flash/{id}")
     public ResponseEntity<ImageView> toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
-        return ResponseEntity.ok(ImageView.from(imageService.toggleFlashMode(id, flash)));
+        return ResponseEntity.ok(imageViews.of(imageService.toggleFlashMode(id, flash)));
     }
 
     @GetMapping("/students")

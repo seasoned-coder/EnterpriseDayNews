@@ -184,7 +184,7 @@ const Projector = () => {
             </div>
           ) : (
             <img
-              src={api.imageUrl(it.filePath)}
+              src={api.imageUrl(it)}
               alt={`${it.uploadedBy} submission`}
               className="ken-burns h-full w-full object-cover"
             />

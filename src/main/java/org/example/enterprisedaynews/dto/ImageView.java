@@ -11,6 +11,8 @@ import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
 public record ImageView(
         Long id,
         String filePath,
+        /** URL to load the image from; signed when the image isn't public. Null for text-only messages. */
+        String imageUrl,
         String originalFileName,
         String uploadedBy,
         OffsetDateTime uploadedAt,
@@ -26,10 +28,11 @@ public record ImageView(
         boolean isFlashMode,
         String messageText
 ) {
-    public static ImageView from(ImageMetadata m) {
+    public static ImageView from(ImageMetadata m, String imageUrl) {
         return new ImageView(
                 m.getId(),
                 m.getFilePath(),
+                imageUrl,
                 m.getOriginalFileName(),
                 m.getUploadedBy(),
                 withServerOffset(m.getUploadedAt()),

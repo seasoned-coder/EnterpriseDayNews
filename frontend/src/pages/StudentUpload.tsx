@@ -281,7 +281,7 @@ const StudentUpload = () => {
                         </Button>
                       </div>
                       <img
-                        src={api.imageUrl(upload.filePath)}
+                        src={api.imageUrl(upload)}
                         alt={upload.originalFileName}
                         className="mb-3 aspect-video w-full rounded-lg object-cover"
                       />

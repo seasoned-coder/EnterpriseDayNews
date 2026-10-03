@@ -20,11 +20,13 @@ import java.util.List;
 public class ProjectorController {
 
     private final ImageService imageService;
+
+    private final ImageViews imageViews;
     private final DisplaySettingsService settingsService;
 
     @GetMapping("/images")
     public List<ImageView> getDisplayImages() {
-        return imageService.getDisplayImages().stream().map(ImageView::from).toList();
+        return imageViews.of(imageService.getDisplayImages());
     }
 
     @GetMapping("/settings")
