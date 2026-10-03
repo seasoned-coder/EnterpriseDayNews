@@ -97,6 +97,7 @@ You can build the backend and frontend separately or let Docker Compose handle i
 ```bash
 mvn clean package
 ```
+To run the backend outside Docker, set `APP_JWT_SECRET` (and the datasource settings) in the environment first, as described in [Secrets](#secrets-env-required).
 
 #### Frontend (NPM / Vite)
 ```bash
@@ -107,6 +108,28 @@ npm run build # For production build
 ```
 
 ### 2. Run with Docker Compose
+
+#### Secrets (`.env`), required
+
+Docker Compose reads secrets from an untracked `.env` file next to `docker-compose.yml`, and won't start without it. **This repository is public: never commit real secrets.**
+
+1. Copy `.env.example` to `.env`.
+2. Fill in random values (the file explains how to generate them):
+   - `APP_JWT_SECRET`: signs login tokens; at least 32 characters. The backend refuses to start if it's missing, too short, or a value that has appeared in this repo.
+   - `POSTGRES_PASSWORD`: the database password.
+   - `FREEDNS_UPDATE_KEY`: hosted server only, used by `auto-deploy-docker.sh`.
+
+`POSTGRES_PASSWORD` only takes effect when the database volume is **first created**. To change the password on an existing database without losing data, change it inside the database first, then update `.env` and restart:
+
+```bash
+docker compose exec -T db psql -U user -d enterpriseday -c "ALTER USER \"user\" WITH PASSWORD 'new-password-here';"
+# then set POSTGRES_PASSWORD=new-password-here in .env
+docker compose up -d
+```
+
+Changing `APP_JWT_SECRET` signs everyone out; they just sign in again.
+
+#### Starting the stack
 
 The easiest way to run the entire stack is using Docker Compose:
 
@@ -171,7 +194,7 @@ This will start:
 
 ### 2.2 Local Testing with Docker
 
-Testing is done locally with Docker Desktop. The `caddy` service is configured for the public hosted domain and needs ports 80/443, so leave it out locally:
+Testing is done locally with Docker Desktop. Create your `.env` first (see [Secrets](#secrets-env-required)). The `caddy` service is configured for the public hosted domain and needs ports 80/443, so leave it out locally:
 
 ```bash
 docker compose up --build db backend frontend
@@ -244,7 +267,8 @@ The frontend automatically handles login and token management when navigating to
 
 ### Configuration
 
--   `app.jwt.secret` — Secret key for signing JWTs.
+-   `app.jwt.secret` (env: `APP_JWT_SECRET`): secret key for signing JWTs. **Required, no default.** Tests use their own test-only value in `src/test/resources/application.properties`.
+-   `spring.datasource.password` (env: `SPRING_DATASOURCE_PASSWORD`): set from `POSTGRES_PASSWORD` in `.env` when run with Docker Compose.
 -   `app.jwt.expiration-ms` — Token expiration time (default: 1 hour).
 -   `app.upload-dir` (env: `APP_UPLOAD_DIR`) — directory where uploaded images are stored. Defaults to `./uploads`.
 

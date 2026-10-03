@@ -39,6 +39,10 @@ build/
 .DS_Store
 
 ### Project ###
+# Local/deployment secrets (see .env.example)
+.env
+.env.*
+!.env.example
 /uploads/
 src/main/resources/static/uploads/
 node_modules/
