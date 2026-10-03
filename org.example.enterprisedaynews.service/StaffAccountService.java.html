@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StaffAccountService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">StaffAccountService.java</span></div><h1>StaffAccountService.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.enterprisedaynews.model.StaffAccount;
+import org.example.enterprisedaynews.repository.StaffAccountRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+<span class="fc" id="L18">@Slf4j</span>
+public class StaffAccountService {
+
+    private final StaffAccountRepository staffAccountRepository;
+    private final LoginGuard loginGuard;
+
+    // First staff account, supplied at deploy time (APP_STAFF_BOOTSTRAP_USERNAME / _PASSWORD in .env).
+    @Value(&quot;${app.staff.bootstrap-username:}&quot;)
+    private String bootstrapUsername;
+
+    @Value(&quot;${app.staff.bootstrap-password:}&quot;)
+    private String bootstrapPassword;
+
+    /**
+     * Creates the first staff account from deployment config, but only while there are no staff accounts.
+     * An existing account is never recreated or reset from config.
+     *
+     * @return the created account, if one was created
+     */
+    @Transactional
+    public Optional&lt;StaffAccount&gt; bootstrapFirstAccount() {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (staffAccountRepository.count() &gt; 0) {</span>
+<span class="fc" id="L40">            return Optional.empty();</span>
+        }
+<span class="fc bfc" id="L42" title="All 4 branches covered.">        if (isBlank(bootstrapUsername) || isBlank(bootstrapPassword)) {</span>
+<span class="fc" id="L43">            log.warn(&quot;No staff accounts exist, so nobody can sign in to the staff app. Set &quot;</span>
+                    + &quot;APP_STAFF_BOOTSTRAP_USERNAME and APP_STAFF_BOOTSTRAP_PASSWORD (see .env.example) and restart.&quot;);
+<span class="fc" id="L45">            return Optional.empty();</span>
+        }
+<span class="fc" id="L47">        StaffAccount created = createAccount(bootstrapUsername, bootstrapPassword);</span>
+<span class="fc" id="L48">        log.info(&quot;Created first staff account '{}' from deployment config. &quot;</span>
+<span class="fc" id="L49">                + &quot;You can now remove APP_STAFF_BOOTSTRAP_PASSWORD from .env.&quot;, created.getUsername());</span>
+<span class="fc" id="L50">        return Optional.of(created);</span>
+    }
+
+    @Transactional
+    public StaffAccount createAccount(String username, String password) {
+<span class="fc" id="L55">        String normalizedUsername = PasswordPolicy.normalizeAndValidateUsername(username);</span>
+<span class="fc" id="L56">        String normalizedPassword = PasswordPolicy.validateNewPassword(password, PasswordPolicy.STAFF_MIN_LENGTH);</span>
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (staffAccountRepository.existsByUsername(normalizedUsername)) {</span>
+<span class="fc" id="L59">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;A staff account with that username already exists&quot;);</span>
+        }
+
+<span class="fc" id="L62">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L63">        return staffAccountRepository.save(StaffAccount.builder()</span>
+<span class="fc" id="L64">                .username(normalizedUsername)</span>
+<span class="fc" id="L65">                .passwordHash(loginGuard.hash(normalizedPassword))</span>
+<span class="fc" id="L66">                .locked(false)</span>
+<span class="fc" id="L67">                .failedLoginAttempts(0)</span>
+<span class="fc" id="L68">                .createdAt(now)</span>
+<span class="fc" id="L69">                .updatedAt(now)</span>
+<span class="fc" id="L70">                .build());</span>
+    }
+
+    @Transactional(noRollbackFor = ResponseStatusException.class)
+    public StaffAccount authenticate(String username, String password) {
+<span class="fc" id="L75">        String normalized = PasswordPolicy.normalizeAndValidateUsername(username);</span>
+<span class="fc" id="L76">        String normalizedPassword = PasswordPolicy.normalizeLoginPassword(password);</span>
+<span class="fc" id="L77">        return loginGuard.authenticate(staffAccountRepository.findByUsername(normalized), normalizedPassword,</span>
+                staffAccountRepository, &quot;Staff account is locked&quot;);
+    }
+
+    @Transactional
+    public StaffAccount recordSuccessfulLogin(StaffAccount account, String ipAddress) {
+<span class="fc" id="L83">        return loginGuard.recordSuccessfulLogin(account, ipAddress, staffAccountRepository);</span>
+    }
+
+    private static boolean isBlank(String value) {
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">        return value == null || value.isBlank();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

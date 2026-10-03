@@ -1,280 +1,133 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StudentAccountService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">StudentAccountService.java</span></div><h1>StudentAccountService.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.enterprisedaynews.model.StudentAccount;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
+<span class="fc" id="L19">@Slf4j</span>
 public class StudentAccountService {
 
-<span class="fc" id="L24">    private static final Pattern USERNAME_PATTERN = Pattern.compile(&quot;^[a-zA-Z0-9._-]+$&quot;);</span>
-<span class="fc" id="L25">    private static final Pattern BCRYPT_HASH_PATTERN = Pattern.compile(&quot;^\\$2[aby]?\\$\\d{2}\\$.{53}$&quot;);</span>
-    private static final int MIN_PASSWORD_LENGTH = 6;
-    private static final int MAX_FAILED_ATTEMPTS = 5;
-    private static final int TEMP_LOCK_MINUTES = 15;
-<span class="fc" id="L29">    private static final Set&lt;String&gt; COMMON_PASSWORD_BLOCKLIST = Set.of(</span>
-            &quot;password&quot;, &quot;password1&quot;, &quot;password123&quot;, &quot;qwerty&quot;, &quot;qwerty123&quot;,
-            &quot;123456&quot;, &quot;1234567&quot;, &quot;12345678&quot;, &quot;abc123&quot;, &quot;letmein&quot;,
-            &quot;student&quot;, &quot;student1&quot;, &quot;school&quot;, &quot;welcome&quot;, &quot;admin&quot;, &quot;enterprise&quot;
+    /**
+     * Student accounts that older versions created automatically, with passwords that were published
+     * in this (public) repository. They are no longer created, and are locked at startup if they still
+     * use those passwords.
+     */
+<span class="fc" id="L27">    static final Map&lt;String, String&gt; PUBLISHED_DEFAULT_ACCOUNTS = Map.of(</span>
+            &quot;student&quot;, &quot;EdNews1&quot;,
+            &quot;guest&quot;, &quot;Guest1A&quot;
     );
 
     private final StudentAccountRepository studentAccountRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final LoginGuard loginGuard;
 
-    @PostConstruct
+    /** Locks any account still using a password published in this repository. Returns how many were locked. */
     @Transactional
-    public void ensureDefaultAccounts() {
-<span class="fc" id="L41">        ensureAccountExists(&quot;student&quot;, &quot;EdNews1&quot;);</span>
-<span class="fc" id="L42">        ensureAccountExists(&quot;guest&quot;, &quot;Guest1A&quot;);</span>
-<span class="fc" id="L43">    }</span>
+    public int lockAccountsWithPublishedPasswords() {
+<span class="fc" id="L38">        int locked = 0;</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (Map.Entry&lt;String, String&gt; entry : PUBLISHED_DEFAULT_ACCOUNTS.entrySet()) {</span>
+<span class="fc" id="L40">            Optional&lt;StudentAccount&gt; found = studentAccountRepository.findByUsername(entry.getKey());</span>
+<span class="fc bfc" id="L41" title="All 6 branches covered.">            if (found.isPresent() &amp;&amp; !found.get().isLocked() &amp;&amp; loginGuard.storedPasswordIs(found.get(), entry.getValue())) {</span>
+<span class="fc" id="L42">                StudentAccount account = found.get();</span>
+<span class="fc" id="L43">                account.setLocked(true);</span>
+<span class="fc" id="L44">                account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L45">                studentAccountRepository.save(account);</span>
+<span class="fc" id="L46">                locked++;</span>
+<span class="fc" id="L47">                log.warn(&quot;Locked student account '{}': it still uses a password published in the source code. &quot;</span>
+                        + &quot;Set a new password from the Student Account Dashboard and unlock it if it is needed.&quot;,
+<span class="fc" id="L49">                        account.getUsername());</span>
+            }
+<span class="fc" id="L51">        }</span>
+<span class="fc" id="L52">        return locked;</span>
+    }
 
     @Transactional(readOnly = true)
     public List&lt;StudentAccount&gt; listAccounts() {
-<span class="nc" id="L47">        return studentAccountRepository.findAllByOrderByUsernameAsc();</span>
+<span class="nc" id="L57">        return studentAccountRepository.findAllByOrderByUsernameAsc();</span>
     }
 
     @Transactional(readOnly = true)
     public Optional&lt;StudentAccount&gt; findActiveAccount(String username) {
-<span class="fc" id="L52">        String normalized = normalizeUsername(username);</span>
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (normalized == null) {</span>
-<span class="nc" id="L54">            return Optional.empty();</span>
+<span class="fc" id="L62">        String normalized = PasswordPolicy.normalizeUsername(username);</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (normalized == null) {</span>
+<span class="nc" id="L64">            return Optional.empty();</span>
         }
-<span class="fc" id="L56">        return studentAccountRepository.findByUsername(normalized)</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                .filter(account -&gt; !isAccountLockedNow(account));</span>
+<span class="fc" id="L66">        return studentAccountRepository.findByUsername(normalized)</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                .filter(account -&gt; !loginGuard.isLockedNow(account));</span>
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public StudentAccount authenticate(String username, String password) {
-<span class="fc" id="L62">        String normalized = normalizeAndValidateUsername(username);</span>
-<span class="fc" id="L63">        String normalizedPassword = normalizeAndValidateLoginPassword(password);</span>
-
-<span class="fc" id="L65">        StudentAccount account = studentAccountRepository.findByUsername(normalized)</span>
-<span class="pc" id="L66">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Invalid username or password&quot;));</span>
-
-<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (account.isLocked()) {</span>
-<span class="fc" id="L69">            throw new ResponseStatusException(HttpStatus.LOCKED, &quot;Student account is locked&quot;);</span>
-        }
-
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (isTemporarilyLocked(account)) {</span>
-<span class="fc" id="L73">            throw new ResponseStatusException(HttpStatus.LOCKED,</span>
-                    &quot;Too many failed attempts. This account is temporarily locked.&quot;);
-        }
-
-<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (!passwordMatches(account, normalizedPassword)) {</span>
-<span class="fc" id="L78">            boolean lockedNow = registerFailedAttempt(account);</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (lockedNow) {</span>
-<span class="fc" id="L80">                throw new ResponseStatusException(HttpStatus.LOCKED,</span>
-                        &quot;Too many failed attempts. This account is temporarily locked for 15 minutes.&quot;);
-            }
-<span class="fc" id="L83">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Invalid username or password&quot;);</span>
-        }
-
-<span class="fc" id="L86">        clearFailedAttemptState(account);</span>
-
-<span class="fc" id="L88">        return account;</span>
+<span class="fc" id="L72">        String normalized = PasswordPolicy.normalizeAndValidateUsername(username);</span>
+<span class="fc" id="L73">        String normalizedPassword = PasswordPolicy.normalizeLoginPassword(password);</span>
+<span class="fc" id="L74">        return loginGuard.authenticate(studentAccountRepository.findByUsername(normalized), normalizedPassword,</span>
+                studentAccountRepository, &quot;Student account is locked&quot;);
     }
 
     @Transactional
     public StudentAccount recordSuccessfulLogin(StudentAccount account, String ipAddress) {
-<span class="fc" id="L93">        clearFailedAttemptState(account);</span>
-<span class="fc" id="L94">        account.setLastLoginAt(LocalDateTime.now());</span>
-<span class="fc" id="L95">        account.setLastLoginIp(normalizeIp(ipAddress));</span>
-<span class="fc" id="L96">        account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="fc" id="L97">        return studentAccountRepository.save(account);</span>
+<span class="fc" id="L80">        return loginGuard.recordSuccessfulLogin(account, ipAddress, studentAccountRepository);</span>
     }
 
     @Transactional
     public StudentAccount createAccount(String username, String password) {
-<span class="fc" id="L102">        String normalizedUsername = normalizeAndValidateUsername(username);</span>
-<span class="fc" id="L103">        String normalizedPassword = normalizeAndValidatePassword(password);</span>
+<span class="fc" id="L85">        String normalizedUsername = PasswordPolicy.normalizeAndValidateUsername(username);</span>
+<span class="fc" id="L86">        String normalizedPassword = PasswordPolicy.validateNewPassword(password, PasswordPolicy.STUDENT_MIN_LENGTH);</span>
 
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (studentAccountRepository.existsByUsername(normalizedUsername)) {</span>
-<span class="fc" id="L106">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;A student account with that username already exists&quot;);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (studentAccountRepository.existsByUsername(normalizedUsername)) {</span>
+<span class="fc" id="L89">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;A student account with that username already exists&quot;);</span>
         }
 
-<span class="fc" id="L109">        LocalDateTime now = LocalDateTime.now();</span>
-<span class="fc" id="L110">        StudentAccount account = StudentAccount.builder()</span>
-<span class="fc" id="L111">                .username(normalizedUsername)</span>
-<span class="fc" id="L112">                .passwordHash(passwordEncoder.encode(normalizedPassword))</span>
-<span class="fc" id="L113">                .locked(false)</span>
-<span class="fc" id="L114">                .failedLoginAttempts(0)</span>
-<span class="fc" id="L115">                .createdAt(now)</span>
-<span class="fc" id="L116">                .updatedAt(now)</span>
-<span class="fc" id="L117">                .build();</span>
-<span class="fc" id="L118">        return studentAccountRepository.save(account);</span>
+<span class="fc" id="L92">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L93">        return studentAccountRepository.save(StudentAccount.builder()</span>
+<span class="fc" id="L94">                .username(normalizedUsername)</span>
+<span class="fc" id="L95">                .passwordHash(loginGuard.hash(normalizedPassword))</span>
+<span class="fc" id="L96">                .locked(false)</span>
+<span class="fc" id="L97">                .failedLoginAttempts(0)</span>
+<span class="fc" id="L98">                .createdAt(now)</span>
+<span class="fc" id="L99">                .updatedAt(now)</span>
+<span class="fc" id="L100">                .build());</span>
     }
 
     @Transactional
     public StudentAccount setLocked(Long id, boolean locked) {
-<span class="fc" id="L123">        StudentAccount account = findById(id);</span>
-<span class="fc" id="L124">        account.setLocked(locked);</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (!locked) {</span>
-<span class="fc" id="L126">            clearFailedAttemptState(account);</span>
+<span class="fc" id="L105">        StudentAccount account = findById(id);</span>
+<span class="fc" id="L106">        account.setLocked(locked);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (!locked) {</span>
+<span class="fc" id="L108">            loginGuard.clearFailedAttemptState(account);</span>
         }
-<span class="fc" id="L128">        account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="fc" id="L129">        return studentAccountRepository.save(account);</span>
+<span class="fc" id="L110">        account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L111">        return studentAccountRepository.save(account);</span>
     }
 
     @Transactional
     public StudentAccount changePassword(Long id, String password) {
-<span class="fc" id="L134">        String normalizedPassword = normalizeAndValidatePassword(password);</span>
-<span class="fc" id="L135">        StudentAccount account = findById(id);</span>
-<span class="fc" id="L136">        account.setPasswordHash(passwordEncoder.encode(normalizedPassword));</span>
-<span class="fc" id="L137">        account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="fc" id="L138">        return studentAccountRepository.save(account);</span>
+<span class="fc" id="L116">        String normalizedPassword = PasswordPolicy.validateNewPassword(password, PasswordPolicy.STUDENT_MIN_LENGTH);</span>
+<span class="fc" id="L117">        StudentAccount account = findById(id);</span>
+<span class="fc" id="L118">        account.setPasswordHash(loginGuard.hash(normalizedPassword));</span>
+<span class="fc" id="L119">        account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L120">        return studentAccountRepository.save(account);</span>
     }
 
     @Transactional
     public void deleteAccount(Long id) {
-<span class="fc" id="L143">        studentAccountRepository.delete(findById(id));</span>
-<span class="fc" id="L144">    }</span>
-
-    private void ensureAccountExists(String username, String password) {
-<span class="fc" id="L147">        String normalizedUsername = normalizeUsername(username);</span>
-<span class="pc bpc" id="L148" title="2 of 4 branches missed.">        if (normalizedUsername == null || studentAccountRepository.existsByUsername(normalizedUsername)) {</span>
-<span class="nc" id="L149">            return;</span>
-        }
-<span class="fc" id="L151">        LocalDateTime now = LocalDateTime.now();</span>
-<span class="fc" id="L152">        studentAccountRepository.save(StudentAccount.builder()</span>
-<span class="fc" id="L153">                .username(normalizedUsername)</span>
-<span class="fc" id="L154">                .passwordHash(passwordEncoder.encode(password))</span>
-<span class="fc" id="L155">                .locked(false)</span>
-<span class="fc" id="L156">                .failedLoginAttempts(0)</span>
-<span class="fc" id="L157">                .createdAt(now)</span>
-<span class="fc" id="L158">                .updatedAt(now)</span>
-<span class="fc" id="L159">                .build());</span>
-<span class="fc" id="L160">    }</span>
+<span class="fc" id="L125">        studentAccountRepository.delete(findById(id));</span>
+<span class="fc" id="L126">    }</span>
 
     private StudentAccount findById(Long id) {
-<span class="fc" id="L163">        return studentAccountRepository.findById(id)</span>
-<span class="fc" id="L164">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Student account not found&quot;));</span>
-    }
-
-    private String normalizeAndValidateUsername(String username) {
-<span class="fc" id="L168">        String normalized = normalizeUsername(username);</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (normalized == null) {</span>
-<span class="nc" id="L170">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Username is required&quot;);</span>
-        }
-<span class="fc bfc" id="L172" title="All 2 branches covered.">        if (!USERNAME_PATTERN.matcher(normalized).matches()) {</span>
-<span class="fc" id="L173">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
-                    &quot;Username may only contain letters, numbers, dots, dashes, and underscores&quot;);
-        }
-<span class="fc" id="L176">        return normalized;</span>
-    }
-
-    private String normalizeAndValidatePassword(String password) {
-<span class="fc" id="L180">        String normalized = normalizeAndValidateLoginPassword(password);</span>
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (normalized.length() &lt; MIN_PASSWORD_LENGTH) {</span>
-<span class="fc" id="L182">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
-                    &quot;Password must be at least &quot; + MIN_PASSWORD_LENGTH + &quot; characters long&quot;);
-        }
-
-<span class="fc" id="L186">        boolean hasUppercase = normalized.chars().anyMatch(Character::isUpperCase);</span>
-<span class="fc" id="L187">        boolean hasDigit = normalized.chars().anyMatch(Character::isDigit);</span>
-<span class="fc bfc" id="L188" title="All 4 branches covered.">        if (!hasUppercase || !hasDigit) {</span>
-<span class="fc" id="L189">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
-                    &quot;Password must include at least one uppercase letter and one number&quot;);
-        }
-
-<span class="fc" id="L193">        String lower = normalized.toLowerCase(Locale.ROOT);</span>
-<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (COMMON_PASSWORD_BLOCKLIST.contains(lower)) {</span>
-<span class="fc" id="L195">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
-                    &quot;Please choose a stronger password&quot;);
-        }
-
-<span class="fc" id="L199">        return normalized;</span>
-    }
-
-    private String normalizeAndValidateLoginPassword(String password) {
-<span class="pc bpc" id="L203" title="2 of 4 branches missed.">        if (password == null || password.trim().isEmpty()) {</span>
-<span class="nc" id="L204">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Password is required&quot;);</span>
-        }
-<span class="fc" id="L206">        return password.trim();</span>
-    }
-
-    private boolean isAccountLockedNow(StudentAccount account) {
-<span class="pc bpc" id="L210" title="2 of 4 branches missed.">        return account.isLocked() || isTemporarilyLocked(account);</span>
-    }
-
-    private boolean isTemporarilyLocked(StudentAccount account) {
-<span class="fc" id="L214">        LocalDateTime until = account.getTemporaryLockUntil();</span>
-<span class="pc bpc" id="L215" title="1 of 4 branches missed.">        return until != null &amp;&amp; until.isAfter(LocalDateTime.now());</span>
-    }
-
-    private boolean registerFailedAttempt(StudentAccount account) {
-<span class="fc" id="L219">        int attempts = account.getFailedLoginAttempts() + 1;</span>
-<span class="fc" id="L220">        account.setFailedLoginAttempts(attempts);</span>
-<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (attempts &gt;= MAX_FAILED_ATTEMPTS) {</span>
-<span class="fc" id="L222">            account.setTemporaryLockUntil(LocalDateTime.now().plusMinutes(TEMP_LOCK_MINUTES));</span>
-<span class="fc" id="L223">            account.setFailedLoginAttempts(0);</span>
-        }
-<span class="fc" id="L225">        account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="fc" id="L226">        studentAccountRepository.save(account);</span>
-<span class="pc bpc" id="L227" title="1 of 4 branches missed.">        return account.getTemporaryLockUntil() != null &amp;&amp; account.getTemporaryLockUntil().isAfter(LocalDateTime.now());</span>
-    }
-
-    private void clearFailedAttemptState(StudentAccount account) {
-<span class="fc" id="L231">        account.setFailedLoginAttempts(0);</span>
-<span class="fc" id="L232">        account.setTemporaryLockUntil(null);</span>
-<span class="fc" id="L233">    }</span>
-
-    private boolean passwordMatches(StudentAccount account, String rawPassword) {
-<span class="fc" id="L236">        String storedPassword = account.getPasswordHash();</span>
-<span class="pc bpc" id="L237" title="2 of 4 branches missed.">        if (storedPassword == null || storedPassword.isBlank()) {</span>
-<span class="nc" id="L238">            return false;</span>
-        }
-
-<span class="fc bfc" id="L241" title="All 2 branches covered.">        if (isBcryptHash(storedPassword)) {</span>
-            try {
-<span class="fc" id="L243">                return passwordEncoder.matches(rawPassword, storedPassword);</span>
-<span class="nc" id="L244">            } catch (IllegalArgumentException ignored) {</span>
-<span class="nc" id="L245">                return false;</span>
-            }
-        }
-
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (!storedPassword.equals(rawPassword)) {</span>
-<span class="nc" id="L250">            return false;</span>
-        }
-
-<span class="fc" id="L253">        account.setPasswordHash(passwordEncoder.encode(rawPassword));</span>
-<span class="fc" id="L254">        account.setUpdatedAt(LocalDateTime.now());</span>
-<span class="fc" id="L255">        studentAccountRepository.save(account);</span>
-<span class="fc" id="L256">        return true;</span>
-    }
-
-    private boolean isBcryptHash(String passwordHash) {
-<span class="fc" id="L260">        return BCRYPT_HASH_PATTERN.matcher(passwordHash).matches();</span>
-    }
-
-    private String normalizeUsername(String username) {
-<span class="pc bpc" id="L264" title="2 of 4 branches missed.">        if (username == null || username.trim().isEmpty()) {</span>
-<span class="nc" id="L265">            return null;</span>
-        }
-<span class="fc" id="L267">        return username.trim().toLowerCase(Locale.ROOT);</span>
-    }
-
-    private String normalizeIp(String ipAddress) {
-<span class="pc bpc" id="L271" title="2 of 4 branches missed.">        if (ipAddress == null || ipAddress.isBlank()) {</span>
-<span class="nc" id="L272">            return null;</span>
-        }
-<span class="fc" id="L274">        return ipAddress.trim();</span>
+<span class="fc" id="L129">        return studentAccountRepository.findById(id)</span>
+<span class="fc" id="L130">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Student account not found&quot;));</span>
     }
 }
-
-
-
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

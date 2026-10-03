@@ -2,19 +2,25 @@
 
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.service.DisplaySettingsService;
+import org.example.enterprisedaynews.service.StaffAccountService;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-/** Ensures default singleton settings exist on startup. */
+/** Startup tasks: default settings, the first staff account, and locking accounts with published passwords. */
 @Component
 @RequiredArgsConstructor
 public class StartupSeeder implements CommandLineRunner {
 
     private final DisplaySettingsService displaySettingsService;
+    private final StaffAccountService staffAccountService;
+    private final StudentAccountService studentAccountService;
 
     @Override
     public void run(String... args) {
-<span class="fc" id="L17">        displaySettingsService.ensureSeeded();</span>
-<span class="fc" id="L18">    }</span>
+<span class="fc" id="L21">        displaySettingsService.ensureSeeded();</span>
+<span class="fc" id="L22">        staffAccountService.bootstrapFirstAccount();</span>
+<span class="fc" id="L23">        studentAccountService.lockAccountsWithPublishedPasswords();</span>
+<span class="fc" id="L24">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

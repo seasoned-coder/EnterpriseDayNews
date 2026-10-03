@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginGuard.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.service</a> &gt; <span class="el_source">LoginGuard.java</span></div><h1>LoginGuard.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.service;
+
+import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.model.LoginAccount;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+/**
+ * Password checking, brute-force lockout and login recording shared by student and staff accounts.
+ * Callers are responsible for the surrounding transaction.
+ */
+@Component
+@RequiredArgsConstructor
+class LoginGuard {
+
+    static final int MAX_FAILED_ATTEMPTS = 5;
+    static final int TEMP_LOCK_MINUTES = 15;
+
+<span class="fc" id="L26">    private static final Pattern BCRYPT_HASH_PATTERN = Pattern.compile(&quot;^\\$2[aby]?\\$\\d{2}\\$.{53}$&quot;);</span>
+
+    private final PasswordEncoder passwordEncoder;
+
+    &lt;T extends LoginAccount&gt; T authenticate(Optional&lt;T&gt; found, String rawPassword,
+                                            JpaRepository&lt;T, Long&gt; repository, String lockedMessage) {
+<span class="fc" id="L32">        T account = found.orElseThrow(</span>
+<span class="fc" id="L33">                () -&gt; new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Invalid username or password&quot;));</span>
+
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (account.isLocked()) {</span>
+<span class="fc" id="L36">            throw new ResponseStatusException(HttpStatus.LOCKED, lockedMessage);</span>
+        }
+
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (isTemporarilyLocked(account)) {</span>
+<span class="fc" id="L40">            throw new ResponseStatusException(HttpStatus.LOCKED,</span>
+                    &quot;Too many failed attempts. This account is temporarily locked.&quot;);
+        }
+
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (!passwordMatches(account, rawPassword, repository)) {</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            if (registerFailedAttempt(account, repository)) {</span>
+<span class="fc" id="L46">                throw new ResponseStatusException(HttpStatus.LOCKED,</span>
+                        &quot;Too many failed attempts. This account is temporarily locked for &quot;
+                                + TEMP_LOCK_MINUTES + &quot; minutes.&quot;);
+            }
+<span class="fc" id="L50">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Invalid username or password&quot;);</span>
+        }
+
+<span class="fc" id="L53">        clearFailedAttemptState(account);</span>
+<span class="fc" id="L54">        return account;</span>
+    }
+
+    &lt;T extends LoginAccount&gt; T recordSuccessfulLogin(T account, String ipAddress, JpaRepository&lt;T, Long&gt; repository) {
+<span class="fc" id="L58">        clearFailedAttemptState(account);</span>
+<span class="fc" id="L59">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L60">        account.setLastLoginAt(now);</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">        account.setLastLoginIp(ipAddress == null || ipAddress.isBlank() ? null : ipAddress.trim());</span>
+<span class="fc" id="L62">        account.setUpdatedAt(now);</span>
+<span class="fc" id="L63">        return repository.save(account);</span>
+    }
+
+    String hash(String rawPassword) {
+<span class="fc" id="L67">        return passwordEncoder.encode(rawPassword);</span>
+    }
+
+    /** True if the stored password is exactly {@code rawPassword}; never upgrades or saves anything. */
+    boolean storedPasswordIs(LoginAccount account, String rawPassword) {
+<span class="fc" id="L72">        String stored = account.getPasswordHash();</span>
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">        if (stored == null || stored.isBlank()) {</span>
+<span class="nc" id="L74">            return false;</span>
+        }
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (isBcryptHash(stored)) {</span>
+            try {
+<span class="fc" id="L78">                return passwordEncoder.matches(rawPassword, stored);</span>
+<span class="nc" id="L79">            } catch (IllegalArgumentException ignored) {</span>
+<span class="nc" id="L80">                return false;</span>
+            }
+        }
+<span class="fc" id="L83">        return stored.equals(rawPassword);</span>
+    }
+
+    boolean isLockedNow(LoginAccount account) {
+<span class="pc bpc" id="L87" title="2 of 4 branches missed.">        return account.isLocked() || isTemporarilyLocked(account);</span>
+    }
+
+    boolean isTemporarilyLocked(LoginAccount account) {
+<span class="fc" id="L91">        LocalDateTime until = account.getTemporaryLockUntil();</span>
+<span class="pc bpc" id="L92" title="1 of 4 branches missed.">        return until != null &amp;&amp; until.isAfter(LocalDateTime.now());</span>
+    }
+
+    void clearFailedAttemptState(LoginAccount account) {
+<span class="fc" id="L96">        account.setFailedLoginAttempts(0);</span>
+<span class="fc" id="L97">        account.setTemporaryLockUntil(null);</span>
+<span class="fc" id="L98">    }</span>
+
+    private &lt;T extends LoginAccount&gt; boolean registerFailedAttempt(T account, JpaRepository&lt;T, Long&gt; repository) {
+<span class="fc" id="L101">        int attempts = account.getFailedLoginAttempts() + 1;</span>
+<span class="fc" id="L102">        account.setFailedLoginAttempts(attempts);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (attempts &gt;= MAX_FAILED_ATTEMPTS) {</span>
+<span class="fc" id="L104">            account.setTemporaryLockUntil(LocalDateTime.now().plusMinutes(TEMP_LOCK_MINUTES));</span>
+<span class="fc" id="L105">            account.setFailedLoginAttempts(0);</span>
+        }
+<span class="fc" id="L107">        account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L108">        repository.save(account);</span>
+<span class="fc" id="L109">        return isTemporarilyLocked(account);</span>
+    }
+
+    /** Checks the password; a legacy plaintext password that matches is upgraded to a BCrypt hash. */
+    private &lt;T extends LoginAccount&gt; boolean passwordMatches(T account, String rawPassword,
+                                                             JpaRepository&lt;T, Long&gt; repository) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (!storedPasswordIs(account, rawPassword)) {</span>
+<span class="fc" id="L116">            return false;</span>
+        }
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (!isBcryptHash(account.getPasswordHash())) {</span>
+<span class="fc" id="L119">            account.setPasswordHash(passwordEncoder.encode(rawPassword));</span>
+<span class="fc" id="L120">            account.setUpdatedAt(LocalDateTime.now());</span>
+<span class="fc" id="L121">            repository.save(account);</span>
+        }
+<span class="fc" id="L123">        return true;</span>
+    }
+
+    private boolean isBcryptHash(String passwordHash) {
+<span class="fc" id="L127">        return BCRYPT_HASH_PATTERN.matcher(passwordHash).matches();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
