@@ -1,0 +1,9 @@
+{
+  "name": "news-screenshots",
+  "private": true,
+  "description": "Captures the README screenshots from a throwaway demo stack (issue #44). Run make-screenshots.ps1.",
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "25.12.0"
+  }
+}

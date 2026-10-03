@@ -160,7 +160,8 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
 
   const nameCell = (account: ApiAccount) => (
     <>
-      <div className="break-all font-semibold">
+      {/* Wrap at hyphens/dots first ("comet-" / "crafts"); only break inside a word that can't fit at all. */}
+      <div className="font-semibold [overflow-wrap:anywhere]">
         {account.username}
         {isSelf(account) && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(you)</span>}
       </div>

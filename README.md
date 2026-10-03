@@ -19,6 +19,28 @@ The system consists of three main components, each with a different audience:
 
 Students run companies with virtual event money: they **pay for priority** (how often their advert appears) and **duration** (how long it stays up). How that turns into screen time is described in [docs/design-notes.md](docs/design-notes.md).
 
+### Screenshots
+
+All teams, adverts and names below are made up.
+
+**Student app** (on a phone): the upload page, choosing and paying for screen time, and the team's adverts with their review status.
+
+| Upload | Prices | Your uploads |
+|---|---|---|
+| <img src="docs/screenshots/student-upload.png" alt="Student upload page on a phone" width="250"> | <img src="docs/screenshots/student-prices.png" alt="Tap-to-choose priority and duration with the total cost" width="250"> | <img src="docs/screenshots/student-uploads.png" alt="A team's uploads: waiting for approval, approved" width="250"> |
+
+**Staff app:** reviewing new uploads, the approved adverts in projector order, and managing team accounts.
+
+![Advert Dashboard: new uploads waiting for review](docs/screenshots/staff-new.png)
+![Advert Dashboard: approved adverts in projector order, with a staff notice](docs/screenshots/staff-approved.png)
+![Student Account Dashboard](docs/screenshots/staff-students.png)
+
+**Projector:** the big screen playing an approved advert.
+
+![Projector showing a student advert](docs/screenshots/projector.png)
+
+To regenerate them after UI changes, run `.\tools\screenshots\make-screenshots.ps1` (add `-Build` to use this checkout's code). It runs a separate demo copy of the apps with made-up data, so local and event data are never touched or shown.
+
 ### User Guides
 
 -   [Student Guide](docs/student-guide.md): for students uploading adverts.

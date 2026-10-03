@@ -1,0 +1,29 @@
+# Throwaway demo copy of the apps for README screenshots (issue #44). Run through make-screenshots.ps1,
+# which starts it as its own Compose project ("newsdemo"), so it has its own database and uploads and never
+# touches local or event data. Only the frontend is published, on 127.0.0.1:3100.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: enterpriseday
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+
+  backend:
+    image: ghcr.io/seasoned-coder/news-backend:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/enterpriseday
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      # Random per run (set by make-screenshots.ps1); the demo stack is deleted afterwards.
+      APP_STAFF_BOOTSTRAP_USERNAME: ms.okafor
+      APP_STAFF_BOOTSTRAP_PASSWORD: ${DEMO_STAFF_PASSWORD:?run make-screenshots.ps1}
+    depends_on:
+      - db
+
+  frontend:
+    image: ghcr.io/seasoned-coder/news-frontend:latest
+    ports:
+      - "127.0.0.1:3100:80"
+    depends_on:
+      - backend

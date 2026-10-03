@@ -20,7 +20,7 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - The default `java` on PATH may be Java 8. Run Maven with `JAVA_HOME` pointing at a JDK 25 (e.g. Amazon Corretto 25).
 - Use `MockitoBean` instead of `MockBean` (deprecated in Spring Boot 3.4+).
 - **JaCoCo** 0.8.14+ for Java 25. **Spring Boot** 3.4.13+. **Lombok** 1.18.42+ as an `annotationProcessorPath`. **Byte Buddy** pinned to 1.17.8+ for Mockito on JDK 25.
-- Schema changes need a Flyway migration (`src/main/resources/db/migration/V<n>__*.sql`); Hibernate only validates.
+- Schema changes need a Flyway migration (`src/main/resources/db/migration/V<n>__*.sql`); Hibernate only validates. Note that `docker-compose.yml` sets `SPRING_JPA_HIBERNATE_DDL_AUTO=update`, which hides a missing migration on existing databases (`display_settings` had none until V10). The screenshot demo stack (`tools/screenshots/`) starts from an empty database with validation, so it doubles as a fresh-install check.
 - `src/test/resources/application.properties` **replaces** the main one in tests, so repeat any security-relevant settings there (e.g. `server.forward-headers-strategy`, a test-only `app.jwt.secret`).
 - Tests share one in-memory H2 database per Spring context, so use unique usernames per test.
 - MockMvc doesn't run Tomcat valves. Test forwarded-header/IP behaviour with `@SpringBootTest(webEnvironment = RANDOM_PORT)`.
@@ -43,6 +43,8 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - `docker compose up --build -d db backend frontend` (always `--build`; skip `caddy`). A fresh database needs the staff bootstrap login in `.env`.
 - Chrome autofill on the login pages can overwrite typed values; set fields directly or use the API to get a token.
 - **Load testing** (`loadtest/`, issue #36): k6 runs in Docker on the compose network (`enterprisedaynews_default`) against `http://frontend`. The default is 52 teams; set `TEAMS=26` for a normal event. `find-limit.ps1` steps the team count up until the targets are missed. It creates `loadteam*`/`loadstaff*` accounts and adverts, so never point it at the event database. Write k6 output to a file (`*> file`): run directly, PowerShell treats k6's stderr lines as errors.
+
+- **README screenshots** (`docs/screenshots/`): regenerate with `tools/screenshots/make-screenshots.ps1` (`-Build` for this checkout, `-KeepRunning` to inspect the demo at http://127.0.0.1:3100). Only made-up demo data: the repo is public.
 
 ## Concurrency
 - Many phones poll at once, so keep request work small. Add an index (Flyway) for any new list query. Never `findAll()` and filter in Java on a polled path. Don't hold explicit locks.
