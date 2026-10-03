@@ -71,7 +71,8 @@ class StaffAccountControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.locked").value(true));
 
-        mockMvc.perform(get("/api/staff/new").header("Authorization", theirs)).andExpect(status().isForbidden());
+        // 401: their sign-in no longer counts, so the app sends them back to the sign-in page.
+        mockMvc.perform(get("/api/staff/new").header("Authorization", theirs)).andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/staff/staff-accounts/{id}/lock", idOf("locked.out.staff"))
                         .param("locked", "false")
@@ -87,7 +88,7 @@ class StaffAccountControllerTests {
         mockMvc.perform(delete("/api/staff/staff-accounts/{id}", idOf("leaving.staff")).header("Authorization", me))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/staff/new").header("Authorization", theirs)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/staff/new").header("Authorization", theirs)).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/staff/staff-accounts").header("Authorization", me))
                 .andExpect(jsonPath("$[*].username", not(hasItem("leaving.staff"))));
     }
@@ -122,9 +123,9 @@ class StaffAccountControllerTests {
 
     @Test
     void studentsAndStrangersCannotManageStaff() throws Exception {
-        mockMvc.perform(get("/api/staff/staff-accounts")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/staff/staff-accounts")).andExpect(status().isUnauthorized());
 
-        String studentToken = "Bearer " + jwtProvider.generateToken("anystudent", Roles.STUDENT);
+        String studentToken = TestAccounts.studentBearer(context, "nosy.student");
         mockMvc.perform(get("/api/staff/staff-accounts").header("Authorization", studentToken))
                 .andExpect(status().isForbidden());
     }
@@ -132,6 +133,27 @@ class StaffAccountControllerTests {
     @Test
     void tokensForStaffAccountsThatDoNotExistAreRefused() throws Exception {
         String ghost = "Bearer " + jwtProvider.generateToken("never.existed", Roles.STAFF);
-        mockMvc.perform(get("/api/staff/new").header("Authorization", ghost)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/staff/new").header("Authorization", ghost)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void renamesAStaffAccountAndRefusesTakenNames() throws Exception {
+        TestAccounts.staffBearer(context, "rename.me.staff");
+        TestAccounts.staffBearer(context, "taken.staff");
+        long id = idOf("rename.me.staff");
+
+        mockMvc.perform(put("/api/staff/staff-accounts/{id}/username", id)
+                        .header("Authorization", me)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"Taken.Staff\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("The username \"taken.staff\" is already taken by another staff account"));
+
+        mockMvc.perform(put("/api/staff/staff-accounts/{id}/username", id)
+                        .header("Authorization", me)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"Renamed.Staff\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("renamed.staff"));
     }
 }

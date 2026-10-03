@@ -72,6 +72,12 @@ describe("BrandNav", () => {
     expect(screen.queryByTitle("Logout")).not.toBeInTheDocument();
   });
 
+  it("stays pinned to the top while the page scrolls", () => {
+    renderNav({ links: STAFF_NAV });
+
+    expect(screen.getByRole("banner")).toHaveClass("sticky", "top-0");
+  });
+
   it("renders nothing on the projector", () => {
     const { container } = renderNav({}, "/projector");
     expect(container).toBeEmptyDOMElement();

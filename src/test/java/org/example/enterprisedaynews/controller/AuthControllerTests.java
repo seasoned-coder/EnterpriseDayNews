@@ -1,5 +1,6 @@
 package org.example.enterprisedaynews.controller;
 
+import org.example.enterprisedaynews.security.JwtProvider;
 import org.example.enterprisedaynews.security.Roles;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.example.enterprisedaynews.service.StaffAccountService;
@@ -14,6 +15,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,6 +34,9 @@ class AuthControllerTests {
 
     @Autowired
     private StudentAccountRepository studentAccountRepository;
+
+    @Autowired
+    private JwtProvider jwtProvider;
 
     private ResultActions login(String username, String password, String role) throws Exception {
         StringBuilder body = new StringBuilder("{");
@@ -115,6 +120,19 @@ class AuthControllerTests {
         var refreshed = studentAccountRepository.findByUsername("legacyuser").orElseThrow();
         assertNotEquals("Legacy1", refreshed.getPasswordHash());
         assertTrue(refreshed.getPasswordHash().startsWith("$2"));
+    }
+
+    @Test
+    void testRenamedStudentIsSentBackToSignIn() throws Exception {
+        var account = studentAccountService.createAccount("before.rename", "EdNews7");
+        String oldToken = "Bearer " + jwtProvider.generateToken("before.rename", Roles.STUDENT);
+        mockMvc.perform(get("/api/student/uploads").header("Authorization", oldToken)).andExpect(status().isOk());
+
+        studentAccountService.renameAccount(account.getId(), "after.rename");
+
+        // 401 (not 403): the app clears the session and shows the sign-in page.
+        mockMvc.perform(get("/api/student/uploads").header("Authorization", oldToken)).andExpect(status().isUnauthorized());
+        login("after.rename", "EdNews7", Roles.STUDENT).andExpect(status().isOk());
     }
 
     @Test

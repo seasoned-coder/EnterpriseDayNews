@@ -142,7 +142,7 @@ class StudentControllerTests {
                 "file", "test.jpg", "image/jpeg", "content".getBytes());
 
         mockMvc.perform(multipart("/api/student/upload").file(file))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

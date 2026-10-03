@@ -2,6 +2,7 @@ package org.example.enterprisedaynews.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.enterprisedaynews.model.StaffAccount;
+import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StaffAccountRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -22,13 +23,24 @@ public class StaffAccountService extends AccountService<StaffAccount> {
     @Value("${app.staff.bootstrap-password:}")
     private String bootstrapPassword;
 
-    public StaffAccountService(StaffAccountRepository repository, LoginGuard loginGuard) {
+    private final ImageRepository imageRepository;
+
+    public StaffAccountService(StaffAccountRepository repository, LoginGuard loginGuard,
+                               ImageRepository imageRepository) {
         super(repository, loginGuard, PasswordPolicy.STAFF_MIN_LENGTH, "staff");
+        this.imageRepository = imageRepository;
     }
 
     @Override
     protected StaffAccount newAccount() {
         return new StaffAccount();
+    }
+
+    /** Staff items they uploaded and adverts they approved keep pointing at them after a rename. */
+    @Override
+    protected void onRenamed(String oldUsername, String newUsername) {
+        imageRepository.renameUploader(oldUsername, newUsername);
+        imageRepository.renameVetter(oldUsername, newUsername);
     }
 
     /**

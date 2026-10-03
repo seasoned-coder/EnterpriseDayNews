@@ -315,7 +315,9 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/students/{id}/lock?locked=true|false`: Lock or unlock a student account.
 -   `PUT  /api/staff/students/{id}/password`: Reset a student's password (JSON body: `{"password": "..."}`).
 -   `DELETE /api/staff/students/{id}`: Delete a student account.
--   `/api/staff/staff-accounts`: the same five operations (`GET`, `POST`, `POST /{id}/lock`, `PUT /{id}/password`, `DELETE /{id}`) for staff accounts. Locking or deleting your own account is refused with `409`.
+-   `PUT  /api/staff/students/{id}/username`: Rename a student account (JSON body: `{"username": "..."}`). `409` if the name is used by any other student account (active or locked); their uploads move to the new name.
+-   `/api/staff/staff-accounts`: the same operations (`GET`, `POST`, `POST /{id}/lock`, `PUT /{id}/password`, `PUT /{id}/username`, `DELETE /{id}`) for staff accounts. Locking or deleting your own account is refused with `409`.
+-   Requests without a valid sign-in (missing, expired, or for an account that has since been locked, renamed or deleted) get `401`, and the frontend returns to the sign-in page. Signed in with the wrong role gets `403`.
 -   `GET  /api/projector/images`: Items the projector may show: FLASH items if any, otherwise approved + displayed items (student adverts and staff content) in staff order. The projector page decides what to show next; see [docs/design-notes.md](docs/design-notes.md#projector-scheduling). Public.
 -   `GET  /api/projector/settings`: Current display settings. Public.
 -   `POST /api/projector/settings`: Update display settings (role: STAFF). JSON body: `intervalSpeedSeconds` (staff content interval, 0-3600), `displayDurationSeconds` (staff item display time, 3-120), `imageRefreshSeconds` (projector refresh, 2-60).

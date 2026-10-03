@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, Loader2, Lock, Trash2, Unlock, UserPlus, Users } from "lucide-react";
+import { Loader2, UserPlus, Users } from "lucide-react";
+import { AccountActions } from "@/components/AccountActions";
 import { BrandNav } from "@/components/BrandNav";
+import { SingleFieldDialog } from "@/components/SingleFieldDialog";
 import { StaffFooter } from "@/components/StaffFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { accountApi, api, formatDateTime, formatRelative, type AccountKind, type ApiAccount } from "@/lib/api";
 import { STAFF_NAV } from "@/lib/staffNav";
@@ -25,15 +28,19 @@ export interface AccountsDashboardConfig {
   passwordPolicy: string;
   /** Extra sentence in the delete confirmation. */
   deleteNote: string;
+  /** Extra sentence in the rename dialog (what happens to the person's sign-in and records). */
+  renameNote: string;
   /** Staff can't lock or delete their own account (the server refuses too). */
   protectSelf: boolean;
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
+const USERNAME_RULES = "Letters, numbers, dots, dashes and underscores only. It can't match any other account, even a locked one.";
+
 type AccountFilter = "all" | "active" | "locked" | "seen";
 
-/** The summary tiles: each shows a count and, when clicked, filters the table to those accounts. */
+/** The summary tiles: each shows a count and, when clicked, filters the list to those accounts. */
 const ACCOUNT_FILTERS: { key: AccountFilter; label: string; matches: (account: ApiAccount) => boolean }[] = [
   { key: "all", label: "Total accounts", matches: () => true },
   { key: "active", label: "Active", matches: (account) => !account.locked },
@@ -41,8 +48,18 @@ const ACCOUNT_FILTERS: { key: AccountFilter; label: string; matches: (account: A
   { key: "seen", label: "Seen at least once", matches: (account) => account.lastLoginAt !== null },
 ];
 
+const StatusBadge = ({ account }: { account: ApiAccount }) => (
+  <div className="space-y-1">
+    <Badge variant={account.locked ? "destructive" : "secondary"}>{account.locked ? "Locked" : "Active"}</Badge>
+    {account.temporaryLockUntil && (
+      <div className="text-xs text-muted-foreground">Temp lock until {formatDateTime(account.temporaryLockUntil)}</div>
+    )}
+  </div>
+);
+
 export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig }) => {
   const user = api.getCurrentUser("STAFF");
+  const isMobile = useIsMobile();
   const accounts = useMemo(() => accountApi(config.kind), [config.kind]);
   const queryKey = ["accounts", config.kind];
   const queryClient = useQueryClient();
@@ -50,7 +67,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordTarget, setPasswordTarget] = useState<ApiAccount | null>(null);
-  const [nextPassword, setNextPassword] = useState("");
+  const [renameTarget, setRenameTarget] = useState<ApiAccount | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiAccount | null>(null);
   const [filter, setFilter] = useState<AccountFilter>("all");
 
@@ -77,11 +94,11 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
   });
 
   const toggleLock = useMutation({
-    mutationFn: ({ id, locked }: { id: number; locked: boolean }) => accounts.setLocked(id, locked),
-    onSuccess: (account, variables) => {
+    mutationFn: (account: ApiAccount) => accounts.setLocked(account.id, !account.locked),
+    onSuccess: (account) => {
       toast({
-        title: variables.locked ? "Account locked" : "Account unlocked",
-        description: `${account.username} has been ${variables.locked ? "locked" : "unlocked"}.`,
+        title: account.locked ? "Account locked" : "Account unlocked",
+        description: `${account.username} has been ${account.locked ? "locked" : "unlocked"}.`,
       });
       refreshAccounts();
     },
@@ -89,24 +106,27 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
   });
 
   const changePassword = useMutation({
-    mutationFn: () => {
-      if (!passwordTarget) throw new Error("No account selected");
-      return accounts.changePassword(passwordTarget.id, nextPassword);
-    },
+    mutationFn: ({ id, password }: { id: number; password: string }) => accounts.changePassword(id, password),
     onSuccess: (account) => {
       toast({ title: "Password updated", description: `Password changed for ${account.username}.` });
       setPasswordTarget(null);
-      setNextPassword("");
       refreshAccounts();
     },
     onError: failed("Could not change password"),
   });
 
-  const deleteAccount = useMutation({
-    mutationFn: () => {
-      if (!deleteTarget) throw new Error("No account selected");
-      return accounts.remove(deleteTarget.id);
+  const rename = useMutation({
+    mutationFn: ({ id, username }: { id: number; username: string }) => accounts.rename(id, username),
+    onSuccess: (account) => {
+      toast({ title: "Username changed", description: `${renameTarget?.username} is now ${account.username}.` });
+      setRenameTarget(null);
+      refreshAccounts();
     },
+    onError: failed("Could not rename account"),
+  });
+
+  const deleteAccount = useMutation({
+    mutationFn: (id: number) => accounts.remove(id),
     onSuccess: () => {
       toast({ title: `${capitalize(config.noun)} account deleted`, description: "The account has been permanently removed." });
       setDeleteTarget(null);
@@ -123,8 +143,30 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
 
   const isSelf = (account: ApiAccount) => config.protectSelf && account.username === user.username;
   const createDisabled = !newUsername.trim() || !newPassword.trim() || createAccount.isPending;
-  const passwordDisabled = !nextPassword.trim() || changePassword.isPending;
-  const actionsBusy = toggleLock.isPending || deleteAccount.isPending || changePassword.isPending;
+  const actionsBusy = toggleLock.isPending || deleteAccount.isPending || changePassword.isPending || rename.isPending;
+
+  const actionsFor = (account: ApiAccount, large = false) => (
+    <AccountActions
+      account={account}
+      isSelf={isSelf(account)}
+      busy={actionsBusy}
+      large={large}
+      onToggleLock={(target) => toggleLock.mutate(target)}
+      onRename={setRenameTarget}
+      onPassword={setPasswordTarget}
+      onDelete={setDeleteTarget}
+    />
+  );
+
+  const nameCell = (account: ApiAccount) => (
+    <>
+      <div className="break-all font-semibold">
+        {account.username}
+        {isSelf(account) && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(you)</span>}
+      </div>
+      <div className="text-xs text-muted-foreground">Created {formatRelative(account.createdAt)}</div>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,7 +179,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
             <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">{config.title}</h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">{config.description}</p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground">
+          <div className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4 text-primary" />
             Staff-only area
           </div>
@@ -149,8 +191,8 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
           </div>
         )}
 
-        {/* The totals double as filters for the table; "Total accounts" shows everyone again. */}
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="group" aria-label="Filter accounts">
+        {/* The totals double as filters for the list; "Total accounts" shows everyone again. */}
+        <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4" role="group" aria-label="Filter accounts">
           {ACCOUNT_FILTERS.map((item) => {
             const selected = item.key === activeFilter.key;
             return (
@@ -166,9 +208,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                 )}
               >
                 <p className={cn("text-sm", selected ? "font-medium text-primary" : "text-muted-foreground")}>{item.label}</p>
-                <p className="mt-1 font-display text-3xl font-bold tracking-tight">
-                  {allAccounts.filter(item.matches).length}
-                </p>
+                <p className="mt-1 font-display text-3xl font-bold tracking-tight">{allAccounts.filter(item.matches).length}</p>
               </button>
             );
           })}
@@ -179,9 +219,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
             <div className="border-b border-border px-5 py-4">
               <h2 className="font-display text-2xl font-bold tracking-tight">{capitalize(config.noun)} accounts</h2>
               {activeFilter.key === "all" ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  See each account, latest login time, and most recent IP address.
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">See each account, latest login time, and most recent IP address.</p>
               ) : (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Showing: <span className="font-medium text-foreground">{activeFilter.label.toLowerCase()}</span>
@@ -209,6 +247,23 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                   Show all accounts
                 </button>
               </div>
+            ) : isMobile ? (
+              // Phones: one card per account with big buttons, instead of a table to scroll sideways.
+              <ul className="divide-y divide-border" aria-label={`${capitalize(config.noun)} accounts`}>
+                {shownAccounts.map((account) => (
+                  <li key={account.id} data-testid="account-card" className="space-y-3 px-5 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">{nameCell(account)}</div>
+                      <StatusBadge account={account} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Last login: {formatDateTime(account.lastLoginAt)}
+                      {account.lastLoginIp && <span className="font-mono"> · {account.lastLoginIp}</span>}
+                    </p>
+                    {actionsFor(account, true)}
+                  </li>
+                ))}
+              </ul>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -218,30 +273,15 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                       <TableHead>Status</TableHead>
                       <TableHead>Last login</TableHead>
                       <TableHead>IP address</TableHead>
-                      <TableHead className="w-[280px]">Actions</TableHead>
+                      <TableHead className="w-[300px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {shownAccounts.map((account) => (
                       <TableRow key={account.id}>
+                        <TableCell className="py-3">{nameCell(account)}</TableCell>
                         <TableCell className="py-3">
-                          <div className="font-semibold">
-                            {account.username}
-                            {isSelf(account) && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(you)</span>}
-                          </div>
-                          <div className="text-xs text-muted-foreground">Created {formatRelative(account.createdAt)}</div>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <div className="space-y-1">
-                            <Badge variant={account.locked ? "destructive" : "secondary"}>
-                              {account.locked ? "Locked" : "Active"}
-                            </Badge>
-                            {account.temporaryLockUntil && (
-                              <div className="text-xs text-muted-foreground">
-                                Temp lock until {formatDateTime(account.temporaryLockUntil)}
-                              </div>
-                            )}
-                          </div>
+                          <StatusBadge account={account} />
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="min-w-[180px]">
@@ -254,51 +294,7 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
                         <TableCell className="py-3">
                           <span className="font-mono text-xs text-muted-foreground">{account.lastLoginIp ?? "—"}</span>
                         </TableCell>
-                        <TableCell className="py-3">
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              type="button"
-                              variant={account.locked ? "default" : "outline"}
-                              size="sm"
-                              disabled={actionsBusy || isSelf(account)}
-                              title={isSelf(account) ? "You can't lock your own account" : undefined}
-                              onClick={() => toggleLock.mutate({ id: account.id, locked: !account.locked })}
-                            >
-                              {account.locked ? (
-                                <>
-                                  <Unlock className="mr-2 h-4 w-4" /> Unlock
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="mr-2 h-4 w-4" /> Lock
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={actionsBusy}
-                              onClick={() => {
-                                setPasswordTarget(account);
-                                setNextPassword("");
-                              }}
-                            >
-                              <KeyRound className="mr-2 h-4 w-4" /> Password
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              disabled={actionsBusy || isSelf(account)}
-                              title={isSelf(account) ? "You can't delete your own account" : undefined}
-                              onClick={() => setDeleteTarget(account)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </Button>
-                          </div>
-                        </TableCell>
+                        <TableCell className="py-3">{actionsFor(account)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -366,47 +362,42 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
       </main>
       <StaffFooter />
 
-      <Dialog open={passwordTarget !== null} onOpenChange={(open) => !open && setPasswordTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change password</DialogTitle>
-            <DialogDescription>
-              Set a new password for <span className="font-semibold text-foreground">{passwordTarget?.username}</span>.
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-xs text-muted-foreground">Password policy: {config.passwordPolicy}</p>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!passwordDisabled) changePassword.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <label htmlFor="next-password" className="text-sm font-medium text-foreground">
-                New password
-              </label>
-              <Input
-                id="next-password"
-                type="password"
-                value={nextPassword}
-                onChange={(event) => setNextPassword(event.target.value)}
-                autoComplete="new-password"
-                placeholder="Enter a new password"
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => setPasswordTarget(null)} disabled={changePassword.isPending}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={passwordDisabled}>
-                {changePassword.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save password
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <SingleFieldDialog
+        open={passwordTarget !== null}
+        onClose={() => setPasswordTarget(null)}
+        title="Change password"
+        description={
+          <>
+            Set a new password for <span className="font-semibold text-foreground">{passwordTarget?.username}</span>.
+          </>
+        }
+        hint={`Password policy: ${config.passwordPolicy}`}
+        label="New password"
+        type="password"
+        placeholder="Enter a new password"
+        autoComplete="new-password"
+        submitLabel="Save password"
+        pending={changePassword.isPending}
+        onSubmit={(password) => passwordTarget && changePassword.mutate({ id: passwordTarget.id, password })}
+      />
+
+      <SingleFieldDialog
+        open={renameTarget !== null}
+        onClose={() => setRenameTarget(null)}
+        title="Rename account"
+        description={
+          <>
+            Choose a new username for <span className="font-semibold text-foreground">{renameTarget?.username}</span>.{" "}
+            {config.renameNote}
+          </>
+        }
+        hint={USERNAME_RULES}
+        label="New username"
+        initialValue={renameTarget?.username ?? ""}
+        submitLabel="Save username"
+        pending={rename.isPending}
+        onSubmit={(username) => renameTarget && rename.mutate({ id: renameTarget.id, username })}
+      />
 
       <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
@@ -417,11 +408,16 @@ export const AccountsDashboard = ({ config }: { config: AccountsDashboardConfig 
               sign in. {config.deleteNote}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteAccount.isPending}>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button variant="outline" className="h-11" onClick={() => setDeleteTarget(null)} disabled={deleteAccount.isPending}>
               Cancel
             </Button>
-            <Button variant="destructive" disabled={deleteAccount.isPending} onClick={() => deleteAccount.mutate()}>
+            <Button
+              variant="destructive"
+              className="h-11"
+              disabled={deleteAccount.isPending}
+              onClick={() => deleteTarget && deleteAccount.mutate(deleteTarget.id)}
+            >
               {deleteAccount.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete account
             </Button>

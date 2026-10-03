@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   setLocked: vi.fn(),
   changePassword: vi.fn(),
+  rename: vi.fn(),
   remove: vi.fn(),
   toast: vi.fn(),
 }));
@@ -57,8 +58,10 @@ describe("AccountsDashboard", () => {
       create: mocks.create,
       setLocked: mocks.setLocked,
       changePassword: mocks.changePassword,
+      rename: mocks.rename,
       remove: mocks.remove,
     });
+    window.innerWidth = 1024;
   });
 
   describe("for staff accounts", () => {
@@ -123,6 +126,82 @@ describe("AccountsDashboard", () => {
           expect.objectContaining({ description: "Password must be at least 10 characters long" }),
         ),
       );
+    });
+  });
+
+  describe("renaming (issue #15)", () => {
+    beforeEach(() => {
+      mocks.list.mockResolvedValue([account(7, "year10-team1"), account(8, "year10-team2")]);
+    });
+
+    it("renames an account, starting from its current name", async () => {
+      mocks.rename.mockResolvedValue(account(7, "the-cake-co"));
+      renderPage(<StudentAccountsDashboard />);
+
+      fireEvent.click(within(await rowFor("year10-team1")).getByRole("button", { name: /rename/i }));
+      const dialog = await screen.findByRole("dialog");
+      const field = within(dialog).getByLabelText("New username");
+      expect(field).toHaveValue("year10-team1");
+      expect(within(dialog).getByRole("button", { name: /save username/i })).toBeDisabled();
+      expect(within(dialog).getByText(/even a locked one/)).toBeInTheDocument();
+
+      fireEvent.change(field, { target: { value: "  the-cake-co " } });
+      fireEvent.click(within(dialog).getByRole("button", { name: /save username/i }));
+
+      await waitFor(() => expect(mocks.rename).toHaveBeenCalledWith(7, "the-cake-co"));
+      expect(mocks.toast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Username changed", description: "year10-team1 is now the-cake-co." }),
+      );
+    });
+
+    it("shows why a name was refused (e.g. already taken)", async () => {
+      mocks.rename.mockRejectedValue(new Error('The username "year10-team2" is already taken by another student account'));
+      renderPage(<StudentAccountsDashboard />);
+
+      fireEvent.click(within(await rowFor("year10-team1")).getByRole("button", { name: /rename/i }));
+      const dialog = await screen.findByRole("dialog");
+      fireEvent.change(within(dialog).getByLabelText("New username"), { target: { value: "year10-team2" } });
+      fireEvent.click(within(dialog).getByRole("button", { name: /save username/i }));
+
+      await waitFor(() =>
+        expect(mocks.toast).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "Could not rename account",
+            description: 'The username "year10-team2" is already taken by another student account',
+          }),
+        ),
+      );
+    });
+  });
+
+  describe("on a phone", () => {
+    beforeEach(() => {
+      window.innerWidth = 375;
+      mocks.list.mockResolvedValue([account(7, "year10-team1"), account(8, "year10-team2", true)]);
+    });
+
+    it("shows each account as a card with big buttons instead of a wide table", async () => {
+      renderPage(<StudentAccountsDashboard />);
+
+      const cards = await screen.findAllByTestId("account-card");
+      expect(cards).toHaveLength(2);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      const rename = within(cards[0]).getByRole("button", { name: /rename/i });
+      expect(rename).toHaveClass("h-11");
+      expect(within(cards[1]).getByRole("button", { name: /unlock/i })).toBeInTheDocument();
+    });
+
+    it("renames from a card", async () => {
+      mocks.rename.mockResolvedValue(account(8, "renamed-team"));
+      renderPage(<StudentAccountsDashboard />);
+
+      const [, second] = await screen.findAllByTestId("account-card");
+      fireEvent.click(within(second).getByRole("button", { name: /rename/i }));
+      const dialog = await screen.findByRole("dialog");
+      fireEvent.change(within(dialog).getByLabelText("New username"), { target: { value: "renamed-team" } });
+      fireEvent.click(within(dialog).getByRole("button", { name: /save username/i }));
+
+      await waitFor(() => expect(mocks.rename).toHaveBeenCalledWith(8, "renamed-team"));
     });
   });
 

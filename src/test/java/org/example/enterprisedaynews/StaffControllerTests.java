@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
@@ -176,6 +177,9 @@ class StaffControllerTests {
 
     @Test
     void testStaffEndpointsForbiddenForStudents() throws Exception {
+        // A real, active student: signed in, but the wrong role (403, not 401).
+        when(studentAccountService.findActiveAccount("student")).thenReturn(Optional.of(new StudentAccount()));
+
         mockMvc.perform(get("/api/staff/new")
                 .header("Authorization", studentToken))
                 .andExpect(status().isForbidden());

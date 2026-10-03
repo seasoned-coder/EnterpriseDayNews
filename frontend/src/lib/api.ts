@@ -322,7 +322,7 @@ const ACCOUNT_PATHS: Record<AccountKind, string> = {
   staff: "/api/staff/staff-accounts",
 };
 
-/** The same five operations for student and staff accounts. */
+/** The same operations for student and staff accounts. */
 export function accountApi(kind: AccountKind) {
   const base = ACCOUNT_PATHS[kind];
   return {
@@ -333,6 +333,8 @@ export function accountApi(kind: AccountKind) {
       staff<ApiAccount>(`${base}/${id}/lock?locked=${locked}`, { method: "POST" }),
     changePassword: (id: number, password: string) =>
       staff<ApiAccount>(`${base}/${id}/password`, { method: "PUT", body: { password } }),
+    rename: (id: number, username: string) =>
+      staff<ApiAccount>(`${base}/${id}/username`, { method: "PUT", body: { username } }),
     remove: (id: number) => staff<void>(`${base}/${id}`, { method: "DELETE" }),
   };
 }

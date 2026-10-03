@@ -2,6 +2,7 @@ package org.example.enterprisedaynews.controller;
 
 import org.example.enterprisedaynews.dto.AccountView;
 import org.example.enterprisedaynews.dto.CreateAccountRequest;
+import org.example.enterprisedaynews.dto.RenameAccountRequest;
 import org.example.enterprisedaynews.dto.UpdatePasswordRequest;
 import org.example.enterprisedaynews.model.LoginAccount;
 import org.example.enterprisedaynews.service.AccountService;
@@ -42,6 +43,11 @@ public abstract class AccountManagementController<T extends LoginAccount> {
     @PutMapping("/{id}/password")
     public AccountView changePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest request) {
         return AccountView.from(accountService.changePassword(id, request.password()));
+    }
+
+    @PutMapping("/{id}/username")
+    public AccountView rename(@PathVariable Long id, @RequestBody RenameAccountRequest request) {
+        return AccountView.from(accountService.renameAccount(id, request.username()));
     }
 
     @DeleteMapping("/{id}")

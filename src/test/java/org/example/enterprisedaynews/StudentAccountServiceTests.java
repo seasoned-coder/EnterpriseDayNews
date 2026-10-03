@@ -1,6 +1,9 @@
 package org.example.enterprisedaynews;
 
+import org.example.enterprisedaynews.model.ImageMetadata;
+import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.model.StudentAccount;
+import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.example.enterprisedaynews.service.StudentAccountService;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,9 @@ class StudentAccountServiceTests {
 
     @Autowired
     private StudentAccountRepository studentAccountRepository;
+
+    @Autowired
+    private ImageRepository imageRepository;
 
     /** The staff member performing account changes. */
     private static final String STAFF = "staff.member";
@@ -166,6 +172,62 @@ class StudentAccountServiceTests {
 
         studentAccountRepository.deleteById(stillPublished.getId());
         studentAccountRepository.deleteById(changed.getId());
+    }
+
+    @Test
+    void renamingMovesTheStudentsUploadsWithThem() {
+        StudentAccount account = studentAccountService.createAccount("old.team.name", "Sunrise7");
+        ImageMetadata upload = imageRepository.save(ImageMetadata.builder()
+                .filePath("rename-test.jpg").uploadedBy("old.team.name").status(ApprovalStatus.NEW).build());
+
+        StudentAccount renamed = studentAccountService.renameAccount(account.getId(), "  New.Team.Name ");
+
+        assertEquals("new.team.name", renamed.getUsername());
+        assertEquals("new.team.name", imageRepository.findById(upload.getId()).orElseThrow().getUploadedBy());
+        assertEquals("new.team.name", studentAccountService.authenticate("new.team.name", "Sunrise7").getUsername());
+        assertEquals(HttpStatus.UNAUTHORIZED, assertThrows(ResponseStatusException.class,
+                () -> studentAccountService.authenticate("old.team.name", "Sunrise7")).getStatusCode());
+        imageRepository.deleteById(upload.getId());
+    }
+
+    @Test
+    void renameRefusesNamesAlreadyInUseEvenByLockedAccounts() {
+        StudentAccount account = studentAccountService.createAccount("renamer", "Sunrise7");
+        StudentAccount locked = studentAccountService.createAccount("locked.name", "Sunrise7");
+        studentAccountService.setLocked(locked.getId(), true, STAFF);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> studentAccountService.renameAccount(account.getId(), "LOCKED.NAME"));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertTrue(ex.getReason().contains("already taken"));
+        assertEquals("renamer", studentAccountRepository.findById(account.getId()).orElseThrow().getUsername());
+    }
+
+    @Test
+    void renameValidatesTheNewName() {
+        StudentAccount account = studentAccountService.createAccount("valid.name", "Sunrise7");
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
+                () -> studentAccountService.renameAccount(account.getId(), "no spaces!")).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
+                () -> studentAccountService.renameAccount(account.getId(), "  ")).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
+                () -> studentAccountService.renameAccount(999_999L, "anything")).getStatusCode());
+    }
+
+    @Test
+    void renamingToTheSameNameChangesNothingAndFreesNothing() {
+        StudentAccount account = studentAccountService.createAccount("same.name", "Sunrise7");
+
+        assertEquals("same.name", studentAccountService.renameAccount(account.getId(), "Same.Name").getUsername());
+    }
+
+    @Test
+    void theOldNameCanBeReusedAfterARename() {
+        StudentAccount account = studentAccountService.createAccount("reuse.me", "Sunrise7");
+        studentAccountService.renameAccount(account.getId(), "reused.elsewhere");
+
+        assertDoesNotThrow(() -> studentAccountService.createAccount("reuse.me", "Sunrise7"));
     }
 
     @Test

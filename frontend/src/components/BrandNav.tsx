@@ -24,9 +24,10 @@ export const BrandNav = ({ variant = "light", links = [] }: BrandNavProps) => {
   };
 
   return (
+    // Sticky: the banner (section links, sign-out) stays pinned to the top while the page scrolls.
     <header
       className={cn(
-        "relative z-20 w-full border-b backdrop-blur-md",
+        "sticky top-0 z-30 w-full border-b backdrop-blur-md",
         isDark
           ? "border-student-border/60 bg-student-bg/70 text-student-ink"
           : "border-border/70 bg-background/80 text-foreground"

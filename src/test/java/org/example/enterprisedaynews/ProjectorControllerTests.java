@@ -97,7 +97,7 @@ class ProjectorControllerTests {
         mockMvc.perform(post("/api/projector/settings")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verify(settingsService, never()).update(any());
     }

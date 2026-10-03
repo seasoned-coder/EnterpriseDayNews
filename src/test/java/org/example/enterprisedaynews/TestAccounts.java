@@ -1,9 +1,11 @@
 package org.example.enterprisedaynews;
 
 import org.example.enterprisedaynews.repository.StaffAccountRepository;
+import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.example.enterprisedaynews.security.JwtProvider;
 import org.example.enterprisedaynews.security.Roles;
 import org.example.enterprisedaynews.service.StaffAccountService;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -22,5 +24,14 @@ public final class TestAccounts {
             context.getBean(StaffAccountService.class).createAccount(username, "TestStaff123");
         }
         return "Bearer " + context.getBean(JwtProvider.class).generateToken(username, Roles.STAFF);
+    }
+
+    /** Ensures the student account exists and returns an "Authorization" header value for it. */
+    public static String studentBearer(ApplicationContext context, String username) {
+        StudentAccountRepository repository = context.getBean(StudentAccountRepository.class);
+        if (!repository.existsByUsername(username)) {
+            context.getBean(StudentAccountService.class).createAccount(username, "TestStudent1");
+        }
+        return "Bearer " + context.getBean(JwtProvider.class).generateToken(username, Roles.STUDENT);
     }
 }

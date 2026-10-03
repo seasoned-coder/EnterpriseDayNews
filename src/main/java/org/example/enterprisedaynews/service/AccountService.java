@@ -116,6 +116,33 @@ public abstract class AccountService<T extends LoginAccount> {
         return repository.save(account);
     }
 
+    /**
+     * Renames an account (issue #15). The new name must be valid and not used by any other account of
+     * this kind, active or locked. Their current sign-in ends, because it carries the old name.
+     */
+    @Transactional
+    public T renameAccount(Long id, String newUsername) {
+        String normalized = PasswordPolicy.normalizeAndValidateUsername(newUsername);
+        T account = findById(id);
+        String oldUsername = account.getUsername();
+        if (normalized.equals(oldUsername)) {
+            return account;
+        }
+        if (repository.existsByUsername(normalized)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "The username \"" + normalized + "\" is already taken by another " + kind + " account");
+        }
+        account.setUsername(normalized);
+        account.setUpdatedAt(LocalDateTime.now());
+        T saved = repository.save(account);
+        onRenamed(oldUsername, normalized);
+        return saved;
+    }
+
+    /** Hook to carry records that refer to the account by username over to the new name. */
+    protected void onRenamed(String oldUsername, String newUsername) {
+    }
+
     @Transactional
     public void deleteAccount(Long id, String actingUsername) {
         T account = findById(id);

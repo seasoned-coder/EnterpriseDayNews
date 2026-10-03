@@ -2,6 +2,7 @@ package org.example.enterprisedaynews.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.enterprisedaynews.model.StudentAccount;
+import org.example.enterprisedaynews.repository.ImageRepository;
 import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +25,23 @@ public class StudentAccountService extends AccountService<StudentAccount> {
             "guest", "Guest1A"
     );
 
-    public StudentAccountService(StudentAccountRepository repository, LoginGuard loginGuard) {
+    private final ImageRepository imageRepository;
+
+    public StudentAccountService(StudentAccountRepository repository, LoginGuard loginGuard,
+                                 ImageRepository imageRepository) {
         super(repository, loginGuard, PasswordPolicy.STUDENT_MIN_LENGTH, "student");
+        this.imageRepository = imageRepository;
     }
 
     @Override
     protected StudentAccount newAccount() {
         return new StudentAccount();
+    }
+
+    /** Uploads are linked by username, so they move with a renamed student (they can still manage them). */
+    @Override
+    protected void onRenamed(String oldUsername, String newUsername) {
+        imageRepository.renameUploader(oldUsername, newUsername);
     }
 
     /** Locks any account still using a password published in this repository. Returns how many were locked. */

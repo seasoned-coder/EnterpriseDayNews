@@ -9,6 +9,7 @@ const STAFF_ACCOUNTS: AccountsDashboardConfig = {
   usernamePlaceholder: "e.g. j.smith",
   passwordPolicy: "Use at least 10 characters with at least one capital letter and one number.",
   deleteNote: "Things they approved or uploaded stay in the system.",
+  renameNote: "Things they uploaded or approved move to the new name. They'll need to sign in again with it (including you, if it's your own account).",
   protectSelf: true,
 };
 

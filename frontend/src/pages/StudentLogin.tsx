@@ -36,7 +36,7 @@ const StudentLogin = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-student-bg text-student-ink">
+    <div className="relative min-h-screen overflow-x-clip bg-student-bg text-student-ink">
       <div className="aurora" />
       <div className="grain absolute inset-0" />
 

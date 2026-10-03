@@ -37,9 +37,13 @@ After **5 wrong passwords in a row**, your account is **locked for 15 minutes**.
 
 If a message says your account **is locked**, a member of staff has locked it. Ask them for help.
 
-### If you get sent back to the start page
+### If your username changes
 
-You stay signed in for about an hour. After that, the site sends you back to the start page. Just sign in again.
+A teacher can change your team's username (for example, if your company changes its name). If that happens while you're signed in, you'll be taken back to the sign-in page. Sign in with the **new** username and your usual password. Your adverts will still be there.
+
+### If you get sent back to the sign-in page
+
+You stay signed in for about an hour. After that, the site takes you back to the sign-in page. Just sign in again.
 
 ---
 

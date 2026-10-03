@@ -8,6 +8,7 @@ const STUDENT_ACCOUNTS: AccountsDashboardConfig = {
   usernamePlaceholder: "e.g. year10-team1",
   passwordPolicy: "Use at least 6 characters with at least one capital letter and one number.",
   deleteNote: "Existing uploads will remain in the system.",
+  renameNote: "Their adverts move to the new name. If they're signed in, they'll need to sign in again with it.",
   protectSelf: false,
 };
 

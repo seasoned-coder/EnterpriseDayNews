@@ -188,6 +188,8 @@ Students sign in to the upload portal with accounts you manage here.
 
 Four totals appear at the top: **Total accounts**, **Active**, **Locked** and **Seen at least once**. **Select a total to show just those accounts** in the table (it's highlighted while selected). Select **Total accounts**, or **Show all**, to see everyone again. The Staff Account Dashboard works the same way.
 
+On a phone, each account appears as a card with large buttons instead of a table.
+
 The **Student accounts** table shows, for each account:
 
 - **Username** and when it was created
@@ -229,6 +231,18 @@ A temporary lock also affects anyone already signed in to that account until it 
 
 This does not unlock a locked account. Select **Unlock** as well if needed.
 
+### Renaming an account
+
+Useful when a company changes its name, or a username was mistyped.
+
+1. Select **Rename** on the account's row (or card, on a phone).
+2. The box starts with the current username. Type the new one.
+3. Select **Save username**.
+
+- Usernames use letters, numbers, dots, dashes and underscores only, and can't match **any** other account, **including locked ones**. Capitals don't count as different ("Team1" and "team1" clash). If the name is taken you'll be told, and nothing changes.
+- The student's **adverts move to the new name**, so they can still see, publish and delete them.
+- If they're signed in, they're taken back to the sign-in page and must use the **new** username. Their password stays the same.
+
 ### Deleting an account
 
 1. Select **Delete** on the account's row.
@@ -244,7 +258,7 @@ The student can no longer sign in. **Their existing uploads stay in the system.*
 
 Manage who can sign in to the staff app. Select **Staff accounts** in the top banner (**Staff** on smaller screens).
 
-It works like the Student Account Dashboard: the same totals, table, **Lock** / **Unlock**, **Password** and **Delete** buttons, and last login time and IP address.
+It works like the Student Account Dashboard: the same totals, table, **Lock** / **Unlock**, **Rename**, **Password** and **Delete** buttons, and last login time and IP address. If you rename your own account, you'll be signed out and need to sign in with the new name.
 
 - **Adding a colleague:** enter a **Username** and **Password** under **Add a staff account** and select **Add staff account**. Staff passwords need at least 10 characters, with a capital letter and a number. Give them their login in person.
 - **You can't lock or delete your own account.** Your row is marked **(you)** and those buttons are greyed out, so there's always at least one working staff login. You can still change your own password.
