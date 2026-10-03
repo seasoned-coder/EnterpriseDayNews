@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   delete: vi.fn(),
   toggleDisplay: vi.fn(),
   approve: vi.fn(),
+  reject: vi.fn(),
   projectorSettings: vi.fn(),
   toast: vi.fn(),
 }));
@@ -24,6 +25,7 @@ vi.mock("@/lib/api", () => ({
     delete: mocks.delete,
     toggleDisplay: mocks.toggleDisplay,
     approve: mocks.approve,
+    reject: mocks.reject,
     projectorSettings: mocks.projectorSettings,
     imageUrl: (item: { filePath: string }) => `/uploads/${item.filePath}`,
   },
@@ -152,6 +154,33 @@ describe("StaffDashboard", () => {
       expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Approve failed", description: message })),
     );
     await waitFor(() => expect(mocks.list.mock.calls.filter(([kind]) => kind === "new").length).toBeGreaterThan(1));
+  });
+
+  it("asks why before rejecting, and sends the reason (issue #38)", async () => {
+    const pending = makeSubmission({ id: 3, filePath: "b.jpg", uploadedBy: "year10-team2", status: "NEW" });
+    mocks.list.mockImplementation(async (kind: string) => (kind === "new" ? [pending] : []));
+    mocks.reject.mockResolvedValue({ ...pending, status: "REJECTED" });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /^reject$/i }));
+    expect(mocks.reject).not.toHaveBeenCalled();
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("year10-team2")).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText("Or write your own"), { target: { value: "Add your stand number" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Reject with this reason" }));
+
+    await waitFor(() => expect(mocks.reject).toHaveBeenCalledWith(3, "head.teacher", "Add your stand number"));
+  });
+
+  it("shows the reason on rejected cards", async () => {
+    const rejected = makeSubmission({ id: 5, filePath: "c.jpg", status: "REJECTED", rejectionReason: "Too blurry" });
+    mocks.list.mockImplementation(async (kind: string) => (kind === "rejected" ? [rejected] : []));
+    renderPage();
+
+    await openTab(/rejected/i);
+
+    expect(await screen.findByText("Too blurry")).toBeInTheDocument();
   });
 
   it("uses friendly empty-state text", async () => {

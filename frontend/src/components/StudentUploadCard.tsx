@@ -1,4 +1,4 @@
-import { EyeOff, Loader2, MonitorUp, Trash2 } from "lucide-react";
+import { EyeOff, Loader2, MessageCircle, MonitorUp, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
@@ -51,7 +51,10 @@ export function publishingState(upload: ApiSubmission): Publishing {
       return {
         label: "Not approved",
         badgeClass: "bg-red-500/20 text-red-400",
-        hint: "A teacher said no. Ask a member of staff if you're not sure why.",
+        // With a reason (issue #38), the card shows it in a box instead.
+        hint: upload.rejectionReason
+          ? "Fix it and upload a new version: it'll be checked again."
+          : "A teacher said no. Ask a member of staff if you're not sure why.",
       };
   }
 }
@@ -86,6 +89,14 @@ export const StudentUploadCard = ({ upload, busy, onSetPublished, onDelete }: St
       <img src={api.imageUrl(upload)} alt={upload.originalFileName} className="mb-3 aspect-video w-full rounded-lg object-cover" />
       <div className="space-y-2">
         <Badge className={state.badgeClass}>{state.label}</Badge>
+        {upload.status === "REJECTED" && upload.rejectionReason && (
+          <div className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-student-ink">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-red-300">
+              <MessageCircle className="h-3.5 w-3.5" /> Teacher's note
+            </p>
+            <p className="mt-1">{upload.rejectionReason}</p>
+          </div>
+        )}
         <p className="text-xs text-student-muted">{state.hint}</p>
         {state.action && (
           <Button

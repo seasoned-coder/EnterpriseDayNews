@@ -29,6 +29,7 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -104,13 +105,29 @@ class StaffControllerTests {
 
     @Test
     void testRejectImage() throws Exception {
-        when(imageService.updateStatus(eq(1L), eq(ApprovalStatus.REJECTED), eq("staff1")))
+        when(imageService.updateStatus(eq(1L), eq(ApprovalStatus.REJECTED), eq("staff1"), isNull()))
                 .thenReturn(sampleImage(1L, ApprovalStatus.REJECTED));
 
         mockMvc.perform(post("/api/staff/reject/1")
                 .header("Authorization", staffToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
+    }
+
+    /** Issue #38: the reason goes to the service and comes back for the student to see. */
+    @Test
+    void rejectingWithAReasonPassesItOn() throws Exception {
+        ImageMetadata rejected = sampleImage(1L, ApprovalStatus.REJECTED);
+        rejected.setRejectionReason("Text too small to read on the big screen");
+        when(imageService.updateStatus(eq(1L), eq(ApprovalStatus.REJECTED), eq("staff1"),
+                eq("Text too small to read on the big screen"))).thenReturn(rejected);
+
+        mockMvc.perform(post("/api/staff/reject/1")
+                        .header("Authorization", staffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Text too small to read on the big screen\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rejectionReason").value("Text too small to read on the big screen"));
     }
 
     @Test

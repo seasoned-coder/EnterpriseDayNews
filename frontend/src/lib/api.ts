@@ -28,6 +28,8 @@ export interface ApiSubmission {
   status: SubmissionStatusApi;
   vettedBy: string | null;
   vettedAt: string | null;
+  /** Why staff rejected it (issue #38), shown to the student. */
+  rejectionReason?: string | null;
   display: boolean;
   /** Goes on screen as soon as it's approved (true) or waits for the student to publish it (false). */
   publishOnApproval: boolean;
@@ -289,8 +291,9 @@ export const api = {
     return staff<ApiSubmission>(`/api/staff/approve/${id}`, { method: "POST" });
   },
 
-  reject(id: number, _staffName = "staff") {
-    return staff<ApiSubmission>(`/api/staff/reject/${id}`, { method: "POST" });
+  /** Rejects an advert; the optional reason is shown to the student (issue #38). */
+  reject(id: number, _staffName = "staff", reason: string | null = null) {
+    return staff<ApiSubmission>(`/api/staff/reject/${id}`, { method: "POST", body: { reason } });
   },
 
   toggleDisplay(id: number, display: boolean, _staffName = "staff") {

@@ -2,6 +2,7 @@ package org.example.enterprisedaynews.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
+import org.example.enterprisedaynews.dto.RejectRequest;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.service.EventResetService;
 import org.example.enterprisedaynews.service.ImageService;
@@ -43,10 +44,14 @@ public class StaffController {
                 imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));
     }
 
+    /** Rejects an advert, optionally saying why ({@code {"reason": "..."}}), which the student sees (issue #38). */
     @PostMapping("/reject/{id}")
-    public ResponseEntity<ImageView> reject(@PathVariable Long id, Principal principal) {
-        return ResponseEntity.ok(imageViews.of(
-                imageService.updateStatus(id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal))));
+    public ResponseEntity<ImageView> reject(@PathVariable Long id,
+                                            @RequestBody(required = false) RejectRequest request,
+                                            Principal principal) {
+        String reason = request == null ? null : request.reason();
+        return ResponseEntity.ok(imageViews.of(imageService.updateStatus(
+                id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal), reason)));
     }
 
     @PostMapping("/toggle-display/{id}")

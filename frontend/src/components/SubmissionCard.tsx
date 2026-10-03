@@ -121,6 +121,11 @@ export const SubmissionCard = ({
                 💰 {submission.totalCost}
               </Badge>
             </div>
+            {submission.status === "REJECTED" && submission.rejectionReason && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Reason given:</span> {submission.rejectionReason}
+              </p>
+            )}
           </div>
 
          {submission.status === "NEW" && (onApprove || onReject) && (

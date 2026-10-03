@@ -53,6 +53,23 @@ describe("StudentUploadCard", () => {
     expect(onSetPublished).toHaveBeenCalledWith(advert, false);
   });
 
+  it("shows the teacher's reason for a rejected advert (issue #38)", () => {
+    const advert = upload({ status: "REJECTED", rejectionReason: "The picture is too blurry." });
+    render(<StudentUploadCard upload={advert} busy={false} onSetPublished={vi.fn()} onDelete={vi.fn()} />);
+
+    expect(screen.getByText("Teacher's note")).toBeInTheDocument();
+    expect(screen.getByText("The picture is too blurry.")).toBeInTheDocument();
+    expect(screen.getByText(/Fix it and upload a new version/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ask a member of staff/)).not.toBeInTheDocument();
+  });
+
+  it("says to ask staff when no reason was given", () => {
+    render(<StudentUploadCard upload={upload({ status: "REJECTED" })} busy={false} onSetPublished={vi.fn()} onDelete={vi.fn()} />);
+
+    expect(screen.queryByText("Teacher's note")).not.toBeInTheDocument();
+    expect(screen.getByText(/Ask a member of staff/)).toBeInTheDocument();
+  });
+
   it("disables its buttons while busy and hands deletes to the page", () => {
     const onDelete = vi.fn();
     const advert = upload({});

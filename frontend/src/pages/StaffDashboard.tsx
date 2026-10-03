@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, MessageSquare, Megaphone, Send, Upload } from "lucide-react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
+import { RejectDialog } from "@/components/RejectDialog";
 import { SubmissionCard } from "@/components/SubmissionCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -139,9 +140,16 @@ const StaffDashboard = () => {
     },
   });
 
+  // Rejecting first asks why (issue #38); rejectTarget is the advert waiting for that answer.
+  const [rejectTarget, setRejectTarget] = useState<ApiSubmission | null>(null);
+  const askToReject = (id: number) => {
+    const all = [...(newQ.data ?? []), ...(approvedQ.data ?? []), ...(rejectedQ.data ?? [])];
+    setRejectTarget(all.find((s) => s.id === id) ?? ({ id } as ApiSubmission));
+  };
+
   const reject = useMutation({
-    mutationFn: async (id: number) => {
-      return api.reject(id, staffName);
+    mutationFn: async ({ id, reason }: { id: number; reason: string | null }) => {
+      return api.reject(id, staffName, reason);
     },
     onSuccess: () => {
       toast({ title: "Rejected", description: "Submission moved to Rejected." });
@@ -423,7 +431,7 @@ const StaffDashboard = () => {
                       submission={s}
                       busy={busy}
                       onApprove={(id) => approve.mutate(id)}
-                      onReject={(id) => reject.mutate(id)}
+                      onReject={askToReject}
                       onDelete={(id) => setDeleteId(id)}
                       onToggleDisplay={(id, display) => toggleDisplay.mutate({ id, display })}
                       onToggleFlash={(id, flash) => toggleFlash.mutate({ id, flash })}
@@ -499,7 +507,7 @@ const StaffDashboard = () => {
                        variant="outline"
                        className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                        onClick={() => {
-                         reject.mutate(active.id);
+                         askToReject(active.id);
                          setActive(null);
                        }}
                      >
@@ -533,7 +541,7 @@ const StaffDashboard = () => {
                        variant="outline"
                        className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                        onClick={() => {
-                         reject.mutate(active.id);
+                         askToReject(active.id);
                          setActive(null);
                        }}
                      >
@@ -572,6 +580,16 @@ const StaffDashboard = () => {
            )}
          </DialogContent>
        </Dialog>
+
+       <RejectDialog
+         open={rejectTarget !== null}
+         teamName={rejectTarget?.uploadedBy}
+         onCancel={() => setRejectTarget(null)}
+         onReject={(reason) => {
+           if (rejectTarget) reject.mutate({ id: rejectTarget.id, reason });
+           setRejectTarget(null);
+         }}
+       />
 
        <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
          <DialogContent>

@@ -33,6 +33,10 @@ public class ImageMetadata {
     private String vettedBy;
     private LocalDateTime vettedAt;
 
+    /** Why staff rejected it, shown to the student (issue #38). Cleared when it's approved. */
+    @Column(length = 200)
+    private String rejectionReason;
+
     private boolean display;
     private int displayOrder;
 

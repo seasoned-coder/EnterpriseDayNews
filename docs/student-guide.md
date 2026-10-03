@@ -122,9 +122,11 @@ Each upload shows a label:
 | **Waiting for approval** | Waiting for an adult to check it. The line underneath says whether it goes on screen straight away when approved, or waits for you. |
 | **Approved** | An adult said yes. It is **not** on the big screen yet: tap **Publish now** when you want it on. |
 | **On screen** | It is in the mix on the big screen right now. |
-| **Not approved** | An adult said no. Ask a member of staff if you are not sure why. |
+| **Not approved** | An adult said no. Usually there's a **Teacher's note** saying why. Fix it and upload a new version. If there's no note, ask a member of staff. |
 
 You can also see the priority, duration and cost you chose.
+
+**Teacher's notes** are there to help, for example "The text is too small to read on the big screen". Make the change, upload the new version, and delete the old one if you like.
 
 ---
 

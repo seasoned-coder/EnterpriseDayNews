@@ -55,6 +55,8 @@ Each card shows the uploader, how long ago it was uploaded, and the student's ch
 2. Click the card to see the image at a larger size. Check it carefully (see [Safeguarding](#safeguarding)).
 3. Select **Approve** or **Reject**.
 
+**When you reject, say why.** A box asks for a reason. Tap a quick reason (e.g. "The text is too small to read on the big screen…") or write your own. The team sees it on their phone as a **Teacher's note**, so they can fix the advert and upload it again without hunting for a member of staff. Keep it kind and specific: they're 13–14. You can still reject without a reason, but they'll then have to ask. The reason also shows on the card in the **Rejected** tab. If you later approve the advert, the reason is removed.
+
 **Important:** Approving an item can put it **on the projector straight away** (within a few seconds). Students choose this when uploading:
 
 - **Most adverts** go on screen as soon as you approve them.

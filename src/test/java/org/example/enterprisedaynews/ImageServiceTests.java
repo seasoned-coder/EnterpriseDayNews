@@ -159,6 +159,45 @@ class ImageServiceTests {
 
         assertEquals(ApprovalStatus.REJECTED, updated.getStatus());
         assertFalse(updated.isDisplay());
+        assertNull(updated.getRejectionReason());
+    }
+
+    /** Issue #38: the reason is kept (tidied) when rejecting, and cleared if staff later approve it. */
+    @Test
+    void rejectionReasonIsKeptUntilApproved() {
+        ImageMetadata m = new ImageMetadata();
+        m.setId(1L);
+        m.setStatus(ApprovalStatus.NEW);
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(m));
+        when(imageRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+
+        imageService.updateStatus(1L, ApprovalStatus.REJECTED, "staff1", "  Image too blurry  ");
+        assertEquals("Image too blurry", m.getRejectionReason());
+
+        imageService.updateStatus(1L, ApprovalStatus.APPROVED, "staff1", "ignored when approving");
+        assertNull(m.getRejectionReason());
+    }
+
+    @Test
+    void blankRejectionReasonIsNoReason() {
+        ImageMetadata m = new ImageMetadata();
+        m.setId(1L);
+        m.setStatus(ApprovalStatus.NEW);
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(m));
+        when(imageRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+
+        imageService.updateStatus(1L, ApprovalStatus.REJECTED, "staff1", "   ");
+
+        assertNull(m.getRejectionReason());
+    }
+
+    @Test
+    void tooLongRejectionReasonIsRefusedBeforeAnythingChanges() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> imageService.updateStatus(1L, ApprovalStatus.REJECTED, "staff1", "x".repeat(201)));
+
+        assertEquals(400, ex.getStatusCode().value());
+        verify(imageRepository, never()).save(any());
     }
 
     private ImageMetadata studentAdvert(long id, ApprovalStatus status, boolean display, boolean publishOnApproval) {

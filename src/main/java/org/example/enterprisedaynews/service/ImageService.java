@@ -187,14 +187,32 @@ public class ImageService {
         return imageRepository.save(metadata);
     }
 
+    /** Longest rejection reason (issue #38): a sentence, shown on the student's phone. */
+    public static final int MAX_REJECTION_REASON = 200;
+
     @Transactional
     public ImageMetadata updateStatus(Long id, ApprovalStatus status, String vettedBy) {
+        return updateStatus(id, status, vettedBy, null);
+    }
+
+    /**
+     * Approves or rejects an advert. When rejecting, {@code rejectionReason} (optional) tells the student why
+     * (issue #38); approving clears any earlier reason.
+     */
+    @Transactional
+    public ImageMetadata updateStatus(Long id, ApprovalStatus status, String vettedBy, String rejectionReason) {
+        String reason = rejectionReason == null || rejectionReason.isBlank() ? null : rejectionReason.trim();
+        if (reason != null && reason.length() > MAX_REJECTION_REASON) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Keep the reason under " + MAX_REJECTION_REASON + " characters");
+        }
         ImageMetadata metadata = findOrThrow(id);
         // Enforce the approval state machine — see ImageStateMachine for allowed transitions.
         ImageStateMachine.assertCanTransition(metadata.getStatus(), status);
         metadata.setStatus(status);
         metadata.setVettedBy(vettedBy);
         metadata.setVettedAt(LocalDateTime.now());
+        metadata.setRejectionReason(status == ApprovalStatus.REJECTED ? reason : null);
         // Approving puts it on screen only if the student chose "as soon as it's approved"; rejecting hides it.
         metadata.setDisplay(status == ApprovalStatus.APPROVED && metadata.isPublishOnApproval());
         return imageRepository.save(metadata);

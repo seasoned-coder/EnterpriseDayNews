@@ -19,6 +19,8 @@ public record ImageView(
         ApprovalStatus status,
         String vettedBy,
         OffsetDateTime vettedAt,
+        /** Why it was rejected (issue #38), or null. */
+        String rejectionReason,
         boolean display,
         /** Whether it goes on screen as soon as it's approved, or waits for the student to publish it. */
         boolean publishOnApproval,
@@ -41,6 +43,7 @@ public record ImageView(
                 m.getStatus(),
                 m.getVettedBy(),
                 withServerOffset(m.getVettedAt()),
+                m.getRejectionReason(),
                 m.isDisplay(),
                 m.isPublishOnApproval(),
                 m.getDisplayOrder(),

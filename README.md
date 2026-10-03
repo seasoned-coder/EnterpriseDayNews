@@ -327,7 +327,7 @@ The frontend automatically handles login and token management when navigating to
 -   `GET  /api/staff/approved`: List approved images.
 -   `GET  /api/staff/rejected`: List rejected images.
 -   `POST /api/staff/approve/{id}`: Approve an image (auto-displayed).
--   `POST /api/staff/reject/{id}`: Reject an image (auto-hidden).
+-   `POST /api/staff/reject/{id}`: Reject an image (auto-hidden). Optional JSON body `{"reason": "..."}` (up to 200 characters), shown to the student as a "Teacher's note" and returned as `rejectionReason`; approving clears it.
 -   `POST /api/staff/toggle-display/{id}?display=true|false`: Show/hide an approved image.
 -   `POST /api/staff/order`: Reorder approved images (JSON body: `[id1, id2, ...]`).
 -   `GET  /api/staff/info`: List information messages.
