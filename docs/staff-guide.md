@@ -1,0 +1,226 @@
+# Staff Guide: Advert Dashboard and Student Accounts
+
+This guide is for adult staff running the event. It covers:
+
+- [Signing in](#signing-in)
+- [Advert Dashboard](#advert-dashboard) (reviewing uploads and controlling the projector)
+- [Event Communications](#event-communications-staff-images-and-messages) (staff images, urgent messages, FLASH)
+- [End of Day](#end-of-day-clear-down)
+- [Student Account Dashboard](#student-account-dashboard)
+- [Safeguarding](#safeguarding)
+
+---
+
+## Signing in
+
+1. Open the address you've been given and choose **Staff Console** (or go straight to `/staff`).
+2. Enter your **Staff Username** and **Password**. These are given to you by the event organiser.
+3. Select **Sign In**.
+
+You'll see **Staff Access Granted** and land on the **Advert Dashboard**. A failed sign-in shows **Access Denied**.
+
+- The username is not case-sensitive. The password is.
+- Your session lasts about an hour. When it expires you are sent back to the home page; sign in again.
+- To sign out, use the **Logout** icon at the top right.
+
+---
+
+## Advert Dashboard
+
+The Advert Dashboard (`/staff`) is where you review student uploads before they reach the projector. Lists refresh automatically every 15 seconds.
+
+### Tabs
+
+| Tab | What's in it |
+|---|---|
+| **New** | Uploads waiting for review. |
+| **Approved** | Approved items. This is the projector's pool. |
+| **Rejected** | Items you have turned down. |
+| **Event Communications** | Staff information images and the urgent free-text message. |
+| **End of Day** | The **Clear Down** tool. |
+
+Each tab shows a count. Use **Search by student name…** to filter the current tab by uploader.
+
+Each card shows the uploader, how long ago it was uploaded, and the student's chosen priority (P1–P4), duration (10/20/30s) and total cost. Click a card to open a larger preview with the same actions.
+
+### Reviewing new uploads
+
+1. Open the **New** tab.
+2. Click the card to see the image at a larger size. Check it carefully (see [Safeguarding](#safeguarding)).
+3. Select **Approve** or **Reject**.
+
+**Important:** Approving an item puts it **on the projector straight away** (within a few seconds). There is no separate "publish" step. Only approve what you are happy to show to the whole room.
+
+### Changing your mind
+
+- An **Approved** item can be moved to **Rejected** with **Reject**. It is removed from the projector.
+- A **Rejected** item can be moved back with **Approve**. It goes straight back on the projector.
+- Items can never be moved back to **New**.
+
+### Show or hide on the projector
+
+On the **Approved** tab, each card has a **Hide** / **Display** button. (In the large preview it reads **Hide from Projector** / **Display on Projector**.)
+
+- **Hide** keeps the item approved but takes it off the projector.
+- **Display** puts it back on.
+- Only approved items can be displayed.
+
+Students can see whether their item is currently **On Projector**.
+
+### Reordering
+
+On the **Approved** tab you can change the order of items:
+
+- Use the **Up** and **Down** buttons on each card, or
+- Drag a card and drop it onto another card (on a computer).
+
+You'll see **Order updated**.
+
+**Note:** The projector currently shuffles items and shows higher-priority items more often, so the on-screen order will not exactly follow this list. See the [Projector Guide](projector-guide.md).
+
+### Deleting an item
+
+Deleting removes the record and the image file permanently.
+
+1. If the item is **New** or **Approved**, first select **Reject**.
+2. On the **Rejected** tab, select **Delete** (on the card or in the preview).
+3. Confirm with **Yes, Delete Permanently**.
+
+Students can also delete their own uploads from the student portal.
+
+---
+
+## Event Communications: staff images and messages
+
+Open the **Event Communications** tab. Items here show an **INFO** badge. They are approved automatically because they come from staff.
+
+### Urgent Free Text (FLASH)
+
+Use this for urgent announcements. It **immediately takes over the projector** in FLASH MODE.
+
+1. Type your message in the **Urgent Free Text** box.
+2. Select **Send Urgent Message**.
+
+The projector shows the text with an **Urgent Announcement** label.
+
+- There is only ever **one** free-text message. Sending a new one replaces the old text.
+- To remove it, select the bin icon next to **Send Urgent Message** (this deletes the message), or
+- Select **Flash** on its card to switch FLASH off. The message then stays in the normal rotation until you **Hide** or **Delete** it.
+
+### Upload Information (staff images)
+
+Use this to add your own images (for example, a schedule or a sponsor slide).
+
+1. Under **Upload Information**, choose an image file.
+2. Decide on **Flash Mode** (see warning below).
+3. Select **Upload Info Image**.
+
+Without Flash Mode, the image is added **hidden**. Select **Display** on its card when you want it on the projector.
+
+> **Warning:** The **Flash Mode** box is **ticked by default**. A FLASH item takes over the projector straight away, even if it is marked hidden. Untick **Flash Mode** before uploading unless you want an immediate takeover.
+
+Staff images follow the same file rules as student uploads: JPEG, PNG, GIF or WebP, up to 10 MB.
+
+### How FLASH works
+
+- While **any** item has FLASH switched on, the projector shows **only** FLASH items, and normal adverts pause.
+- Toggle FLASH on or off with the **Flash** button on an info card (on the **Event Communications** or **Approved** tab). A card in FLASH shows a red **FLASH** badge.
+- When the last FLASH item is switched off or deleted, normal rotation resumes.
+
+Info items can be deleted at any time with **Delete** on their card, and confirmed with **Yes, Delete Permanently**.
+
+---
+
+## End of Day: Clear Down
+
+Use this once the event is over.
+
+1. Open the **End of Day** tab.
+2. Select **Clear Down**.
+3. Type `clear down` in the box.
+4. Select **Confirm Clear Down**.
+
+**What it deletes:** every student upload (new, approved and rejected) and its image file.
+
+**What it keeps:**
+
+- Staff information items from **Event Communications** (info images and the free-text message).
+- All student accounts.
+
+Delete info items individually if you don't want them next time. This cannot be undone.
+
+---
+
+## Student Account Dashboard
+
+Students sign in to the upload portal with accounts you manage here.
+
+- **To open it:** select **Student accounts** in the top banner of the Advert Dashboard (shown as **Students** on a phone).
+- **To return:** select **Back to Advert Dashboard** in the top banner (shown as **Adverts** on a phone).
+
+### The overview
+
+Four totals appear at the top: **Total accounts**, **Active**, **Locked** and **Seen at least once**.
+
+The **Student accounts** table shows, for each account:
+
+- **Username** and when it was created
+- **Status**: **Active** or **Locked**, plus **Temp lock until …** after too many failed sign-ins
+- **Last login**: date and time ("Never" if never used)
+- **IP address**: the address of the device used for the most recent sign-in
+
+The list refreshes every 15 seconds.
+
+### Adding an account
+
+1. In **Add a student account**, enter a **Username** and **Password**.
+2. Select **Add student account**.
+
+The account can be used straight away. Give the student the username and password. On the sign-in page they type the username in **Your Name** and the password in **Event Code**.
+
+**Username rules:** letters, numbers, dots, dashes and underscores only. Usernames are stored in lower case and must be unique.
+
+### Password rules
+
+- At least 6 characters
+- At least one capital letter and at least one number
+- Very common passwords (for example "password1" or "qwerty123") are refused
+
+### Locking and unlocking
+
+- **Lock** stops the student signing in. It also blocks a student who is already signed in from uploading.
+- **Unlock** lets them sign in again.
+
+**Automatic temporary lock:** after **5 wrong passwords in a row**, an account locks for **15 minutes**. It shows as **Locked** with **Temp lock until …**. Selecting **Unlock** clears the temporary lock immediately and resets the failed-attempt count.
+
+A temporary lock also affects anyone already signed in to that account until it expires or you unlock it. This matters if a team shares one account.
+
+### Resetting a password
+
+1. Select **Password** on the account's row.
+2. Enter the **New password** (same rules as above).
+3. Select **Save password**.
+
+This does not unlock a locked account. Select **Unlock** as well if needed.
+
+### Deleting an account
+
+1. Select **Delete** on the account's row.
+2. Confirm with **Delete account**.
+
+The student can no longer sign in. **Their existing uploads stay in the system.** Remove those from the Advert Dashboard if needed.
+
+**Note on built-in accounts:** the system creates a small number of built-in student accounts when it starts. If you delete one, it is recreated the next time the system restarts. If you don't need them, **Lock** them (or change their passwords) instead of deleting them.
+
+---
+
+## Safeguarding
+
+All uploads are made by children and shown publicly on the big screen.
+
+- **Always check every upload yourself before approving.** Approving shows it on the projector right away.
+- The automatic image checker on the student page is a helper, not a guarantee. If it can't run, it lets images through.
+- Check for faces, names, school uniforms or other personal details. Students are asked to confirm that everyone in the photo is happy to be featured. If in doubt, reject.
+- If something inappropriate gets onto the screen, select **Hide** or **Reject** immediately. For a fast takeover, send an **Urgent Free Text** message.
+- The uploader's username appears on screen under each item. Choose student usernames that don't reveal full names.
+- Lock or delete any account that is misused, and follow your school's safeguarding procedures.

@@ -252,7 +252,7 @@ const StaffDashboard = () => {
     <div className="min-h-screen bg-background">
       <BrandNav
         variant="light"
-        secondaryLink={{ to: "/staff/students", label: "Student accounts" }}
+        secondaryLink={{ to: "/staff/students", label: "Student accounts", shortLabel: "Students" }}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">

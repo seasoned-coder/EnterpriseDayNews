@@ -9,17 +9,76 @@ A suite of three web applications designed for school students to upload news ar
 
 ## Project Overview
 
-The system consists of three main components:
-1.  **Student App**: A mobile-friendly web interface for students to upload a single image of a news article.
-2.  **Staff App**: A dashboard for staff members to review, approve, or reject uploaded images, manage display order, and add their own images.
-3.  **Projector App**: A slideshow application that displays approved images on a rotating basis with configurable intervals.
+The system consists of three main components, each with a different audience:
+1.  **Student App** (`/student`) — used by 13/14-year-old students, mostly on phones and tablets. A simple, mobile-friendly interface for each student company to upload images of its adverts/news articles. Nothing a student uploads is shown until an adult has approved it.
+2.  **Staff App** (`/staff`) — used by adult staff to vet and check student uploads and to add their own content. It has two dashboards, switched from the top banner:
+    -   **Advert Dashboard**: review, approve, or reject uploaded images, manage display order, and add staff images and information messages.
+    -   **Student Account Dashboard**: list the company/student accounts, add or delete accounts, lock/unlock them, reset passwords, and see when (and from which IP address) each account last signed in.
+3.  **Projector App** (`/projector`) — runs unattended on a machine plugged into the event's screen projector. A full-screen slideshow of approved images on a rotating basis with configurable intervals.
+
+### User Guides
+
+-   [Student Guide](docs/student-guide.md): for students uploading adverts.
+-   [Staff Guide](docs/staff-guide.md): the Advert Dashboard, Event Communications, End of Day and the Student Account Dashboard.
+-   [Projector Guide](docs/projector-guide.md): setting up and running the big screen.
+
+Keep these guides up to date whenever a change affects what users see or do.
 
 ## Tech Stack
 
--   **Backend**: Java 25, Spring Boot 3.4
--   **Frontend**: React
--   **Database**: PostgreSQL
--   **Containerization**: Docker, Docker Compose
+### How the pieces fit together
+
+```
+Browser (student phone / staff laptop / projector PC)
+   │  HTTPS
+   ▼
+Caddy  ── TLS certificates + reverse proxy (hosted deployment only)
+   │
+   ▼
+Nginx (frontend container) ── serves the built React app
+   │   /api/*  and  /uploads/*  are proxied to ▼
+   ▼
+Spring Boot (backend container) ── REST API, auth, image storage
+   │                       │
+   ▼                       ▼
+PostgreSQL (db container)  "uploads" Docker volume (image files)
+```
+
+All three apps (`/student`, `/staff`, `/projector`) are routes in **one** React single-page app, backed by **one** Spring Boot API.
+
+### Backend (`/src`)
+| Technology | How it's used |
+|---|---|
+| **Java 25 + Spring Boot 3.4** | REST API under `/api/*` (auth, student uploads, staff moderation, projector feed). |
+| **Spring Web** | Controllers in `controller/`; responses go through DTOs in `dto/` rather than exposing JPA entities directly. |
+| **Spring Security + JJWT** | Stateless JWT auth. `POST /api/auth/login` issues a token carrying the user's role (`STUDENT` or `STAFF`); `JwtAuthenticationFilter` checks it on every request and `SecurityConfig` restricts each URL to a role. Student passwords are hashed with BCrypt. |
+| **Spring Data JPA (Hibernate)** | Entities in `model/` (`ImageMetadata`, `StudentAccount`, settings) with repositories in `repository/`. |
+| **PostgreSQL 16** | Main database in Docker. |
+| **Flyway** | Versioned schema migrations in `src/main/resources/db/migration` (`V1__…`, `V2__…`). Hibernate only *validates* the schema; any schema change needs a new migration file. |
+| **Lombok** | Generates boilerplate (getters/setters, builders, constructors) on entities and services. |
+| **Local disk / Docker volume** | Uploaded images are written to `app.upload-dir` (the `uploads` volume in Docker) and served from `/uploads/*`. |
+| **JUnit 5, MockMvc, Mockito, H2, JaCoCo** | Backend tests run against an in-memory H2 database; JaCoCo produces the coverage report. |
+
+### Frontend (`/frontend`)
+| Technology | How it's used |
+|---|---|
+| **React 18 + TypeScript** | UI for all three apps; pages live in `src/pages`. |
+| **Vite** | Dev server (`npm run dev`) and production build. The build is stamped with `APP_VERSION`, which is shown at the bottom of the main screen. |
+| **React Router** | Routes `/student`, `/staff`, `/staff/students`, `/projector` and their login pages. |
+| **Tailwind CSS + shadcn/ui (Radix UI) + lucide-react** | Styling, accessible UI components, and icons. |
+| **TanStack Query** | Fetching and caching API data. `src/lib/api.ts` is the single API client and attaches the JWT. |
+| **TensorFlow.js + NSFWJS** | In-browser image checker. Student uploads are scanned on the device *before* they are sent, as an extra safeguard on top of staff approval. |
+| **sonner** | Toast notifications. |
+| **Vitest + Testing Library + jsdom** | Frontend unit and component tests. |
+
+### Infrastructure
+| Technology | How it's used |
+|---|---|
+| **Docker + Docker Compose** | Runs `db`, `backend`, `frontend` (and `caddy` when hosted) as containers. Multi-stage Dockerfiles build the Java JAR and the React bundle. |
+| **Nginx** | Inside the frontend container: serves the static React build and proxies `/api` and `/uploads` to the backend, passing the client IP (`X-Forwarded-For`) so student login IPs are recorded correctly. |
+| **Caddy** | Hosted deployment only: automatic HTTPS and reverse proxy in front of the frontend. Not used for local testing. |
+| **GitHub Container Registry (ghcr.io)** | Stores built images (`news-backend`, `news-frontend`) pushed by `build-and-push.ps1` / `.sh`. |
+| **GitHub Actions** | `.github/workflows/test-and-coverage.yml` runs the tests on each push. |
 
 ## Prerequisites
 
@@ -105,28 +164,44 @@ Optional flags:
 ```
 
 This will start:
--   **PostgreSQL**: Database for image metadata and settings.
+-   **PostgreSQL**: Database for image metadata, student accounts and settings.
 -   **Backend (Java)**: REST API accessible at `http://localhost:8080`.
--   **Frontend (Vite Dev)**: Accessible at `http://localhost:5173` (recommended for development).
 -   **Frontend (Nginx Prod)**: Accessible at `http://localhost:3000` (built bundle).
+-   **Caddy**: HTTPS reverse proxy for the public hosted domain only (see below).
+
+### 2.2 Local Testing with Docker
+
+Testing is done locally with Docker Desktop. The `caddy` service is configured for the public hosted domain and needs ports 80/443, so leave it out locally:
+
+```bash
+docker compose up --build db backend frontend
+```
+
+-   Always pass `--build`, otherwise Compose may pull the published `:latest` images from GitHub Container Registry instead of testing your local changes.
+-   The database lives in the `db` container; `docker compose down -v` wipes it (and uploaded images) for a clean start.
 
 ### 3. Accessing the Apps
 
-Since the application uses a mock authentication system, you can access different roles by using specific URLs or headers:
+-   **Student View**: `http://localhost:3000/student`
+-   **Staff View**: `http://localhost:3000/staff`
+-   **Projector View**: `http://localhost:3000/projector`
 
--   **Student View**: `http://localhost:5173/student`
--   **Staff View**: `http://localhost:5173/staff`
--   **Projector View**: `http://localhost:5173/projector`
-
-*Note: In the new Lovable UI, routing is handled via `/student`, `/staff`, and `/projector` paths.*
+When running the Vite dev server (`npm run dev`) instead, use `http://localhost:5173` with the same paths.
 
 ## Authentication (JWT)
 
 The system uses JWT (JSON Web Token) authentication.
 1.  **Login**: Users must first authenticate via `POST /api/auth/login` to receive a token.
     -   Body: `{"username": "...", "password": "...", "role": "STUDENT|STAFF"}`
-    -   *Note: Currently, any password is accepted as long as it's not empty.*
 2.  **Bearer Token**: All protected API requests must include the `Authorization: Bearer <token>` header.
+
+**Student accounts** are stored in the database and managed by staff from the Student Account Dashboard:
+-   Usernames are case-insensitive and may contain letters, numbers, dots, dashes and underscores.
+-   Passwords are stored as bcrypt hashes and must be at least 6 characters with an uppercase letter and a number; common passwords are rejected.
+-   Five failed sign-ins temporarily lock an account for 15 minutes. Staff can also lock an account indefinitely; unlocking clears any temporary lock.
+-   The time and IP address of each successful sign-in are recorded.
+
+**Staff accounts** are currently fixed in the backend; moving them into the database is tracked in issues #6 and #12.
 
 The frontend automatically handles login and token management when navigating to `/student` or `/staff`.
 
@@ -143,6 +218,7 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/auth/login`: Authenticate and receive a JWT token.
 -   `POST /api/student/upload`: Upload an image (role: STUDENT).
 -   `GET  /api/student/uploads`: List current user's uploads.
+-   `DELETE /api/student/uploads/{id}`: Delete one of the current user's own uploads.
 -   `GET  /api/staff/new`: List images awaiting review (role: STAFF).
 -   `GET  /api/staff/approved`: List approved images.
 -   `GET  /api/staff/rejected`: List rejected images.
@@ -151,11 +227,17 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/toggle-display/{id}?display=true|false`: Show/hide an approved image.
 -   `POST /api/staff/order`: Reorder approved images (JSON body: `[id1, id2, ...]`).
 -   `POST /api/staff/upload`: Staff upload (auto-approved).
--   `POST /api/staff/info`: Staff upload of an information message (image).
--   `POST /api/staff/text`: Post a free-text urgent message.
+-   `GET  /api/staff/info`: List information messages.
+-   `POST /api/staff/info/upload?flash=true|false`: Staff upload of an information message (image).
+-   `POST /api/staff/info/free-text?flash=true|false`: Post a free-text urgent message.
 -   `POST /api/staff/toggle-flash/{id}?flash=true|false`: Toggle FLASH mode for an image/message.
 -   `DELETE /api/staff/{id}`: Delete an image.
 -   `DELETE /api/staff/all`: Delete all images (resets for end of day, preserves staff library items).
+-   `GET  /api/staff/students`: List student accounts (incl. lock state, last login time and IP).
+-   `POST /api/staff/students`: Create a student account (JSON body: `{"username": "...", "password": "..."}`).
+-   `POST /api/staff/students/{id}/lock?locked=true|false`: Lock or unlock a student account.
+-   `PUT  /api/staff/students/{id}/password`: Reset a student's password (JSON body: `{"password": "..."}`).
+-   `DELETE /api/staff/students/{id}`: Delete a student account.
 -   `GET  /api/projector/images`: List images to display (status=APPROVED & display=true, ordered).
 -   `GET  /api/projector/settings`: Current display settings.
 -   `POST /api/projector/settings`: Update display settings.
@@ -183,8 +265,10 @@ npm test
 This runs Vitest for the new frontend structure. For watch mode use `npm run test:watch`.
 
 Tests cover:
-- `App.test.tsx` — top-level routing.
 - `api.test.ts` — API client logic and header handling.
+- `fileSizeCheck.test.ts` — upload size limits.
+- `useNsfwCheck.test.ts` — the in-browser image scanner.
+- `StudentUpload.test.tsx` — the student upload page.
 
 `axios` or `fetch` is mocked in every test, so no backend is required.
 

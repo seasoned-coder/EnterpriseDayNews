@@ -3,6 +3,9 @@ package org.example.enterprisedaynews.dto;
 import org.example.enterprisedaynews.model.StudentAccount;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
+import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
 
 public record StudentAccountView(
         Long id,
@@ -10,11 +13,11 @@ public record StudentAccountView(
         boolean locked,
         boolean manuallyLocked,
         int failedLoginAttempts,
-        LocalDateTime temporaryLockUntil,
-        LocalDateTime lastLoginAt,
+        OffsetDateTime temporaryLockUntil,
+        OffsetDateTime lastLoginAt,
         String lastLoginIp,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
     public static StudentAccountView from(StudentAccount account) {
         boolean temporaryLocked = account.getTemporaryLockUntil() != null
@@ -25,11 +28,11 @@ public record StudentAccountView(
                 account.isLocked() || temporaryLocked,
                 account.isLocked(),
                 account.getFailedLoginAttempts(),
-                account.getTemporaryLockUntil(),
-                account.getLastLoginAt(),
+                withServerOffset(account.getTemporaryLockUntil()),
+                withServerOffset(account.getLastLoginAt()),
                 account.getLastLoginIp(),
-                account.getCreatedAt(),
-                account.getUpdatedAt()
+                withServerOffset(account.getCreatedAt()),
+                withServerOffset(account.getUpdatedAt())
         );
     }
 }

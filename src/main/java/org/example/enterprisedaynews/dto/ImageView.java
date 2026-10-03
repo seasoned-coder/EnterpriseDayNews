@@ -3,7 +3,9 @@ package org.example.enterprisedaynews.dto;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
+import static org.example.enterprisedaynews.dto.ApiTimes.withServerOffset;
 
 /** API representation of an image. Decouples REST contract from JPA entity. */
 public record ImageView(
@@ -11,10 +13,10 @@ public record ImageView(
         String filePath,
         String originalFileName,
         String uploadedBy,
-        LocalDateTime uploadedAt,
+        OffsetDateTime uploadedAt,
         ApprovalStatus status,
         String vettedBy,
-        LocalDateTime vettedAt,
+        OffsetDateTime vettedAt,
         boolean display,
         int displayOrder,
         int priority,
@@ -30,10 +32,10 @@ public record ImageView(
                 m.getFilePath(),
                 m.getOriginalFileName(),
                 m.getUploadedBy(),
-                m.getUploadedAt(),
+                withServerOffset(m.getUploadedAt()),
                 m.getStatus(),
                 m.getVettedBy(),
-                m.getVettedAt(),
+                withServerOffset(m.getVettedAt()),
                 m.isDisplay(),
                 m.getDisplayOrder(),
                 m.getPriority(),

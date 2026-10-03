@@ -8,6 +8,8 @@ interface BrandNavProps {
   secondaryLink?: {
     to: string;
     label: string;
+    /** Shown instead of `label` on phone-width screens, where space in the banner is tight. */
+    shortLabel?: string;
   };
 }
 
@@ -32,33 +34,40 @@ export const BrandNav = ({ variant = "light", secondaryLink }: BrandNavProps) =>
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <NavLink to="/" className="flex items-center gap-2.5">
+        <NavLink to="/" className="flex min-w-0 items-center gap-2.5">
           <span
             className={cn(
-              "grid h-9 w-9 place-items-center rounded-xl",
+              "grid h-9 w-9 shrink-0 place-items-center rounded-xl",
               isDark ? "bg-gradient-neon" : "bg-foreground text-background"
             )}
           >
             <Newspaper className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight">
+          <span className="truncate font-display text-lg font-bold tracking-tight">
             BT Enterprise Day <span className={isDark ? "text-gradient-neon" : "text-primary"}>News</span>
           </span>
         </NavLink>
 
         {user && (
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             {secondaryLink && (
               <NavLink
                 to={secondaryLink.to}
                 className={cn(
-                  "hidden rounded-full border px-3 py-2 text-sm font-medium transition-colors sm:inline-flex",
+                  "inline-flex rounded-full border px-3 py-2 text-sm font-medium transition-colors",
                   isDark
                     ? "border-student-border/70 bg-white/[0.04] text-student-ink hover:bg-white/[0.08]"
                     : "border-border bg-card text-foreground hover:bg-muted"
                 )}
               >
-                {secondaryLink.label}
+                {secondaryLink.shortLabel ? (
+                  <>
+                    <span className="sm:hidden">{secondaryLink.shortLabel}</span>
+                    <span className="hidden sm:inline">{secondaryLink.label}</span>
+                  </>
+                ) : (
+                  secondaryLink.label
+                )}
               </NavLink>
             )}
             <div className="hidden sm:flex sm:flex-col sm:items-end">

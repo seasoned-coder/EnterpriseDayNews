@@ -17,9 +17,11 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -245,6 +247,35 @@ class StaffControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].username").value("student"))
                 .andExpect(jsonPath("$[0].locked").value(false));
+    }
+
+    @Test
+    void testStudentAccountTimesIncludeTimeZoneOffset() throws Exception {
+        // Without an offset, browsers read the timestamp as their own local time and show the wrong hour.
+        StudentAccount account = sampleStudentAccount(3L, "seenco", false);
+        account.setLastLoginAt(LocalDateTime.now());
+        account.setLastLoginIp("203.0.113.7");
+        account.setCreatedAt(LocalDateTime.now());
+        when(studentAccountService.listAccounts()).thenReturn(List.of(account));
+
+        mockMvc.perform(get("/api/staff/students")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].lastLoginAt").value(matchesPattern(".*(Z|[+-]\\d{2}:\\d{2})$")))
+                .andExpect(jsonPath("$[0].createdAt").value(matchesPattern(".*(Z|[+-]\\d{2}:\\d{2})$")))
+                .andExpect(jsonPath("$[0].lastLoginIp").value("203.0.113.7"));
+    }
+
+    @Test
+    void testImageTimesIncludeTimeZoneOffset() throws Exception {
+        ImageMetadata image = sampleImage(1L, ApprovalStatus.NEW);
+        image.setUploadedAt(LocalDateTime.now());
+        when(imageService.getNewImages()).thenReturn(List.of(image));
+
+        mockMvc.perform(get("/api/staff/new")
+                .header("Authorization", staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].uploadedAt").value(matchesPattern(".*(Z|[+-]\\d{2}:\\d{2})$")));
     }
 
     @Test
