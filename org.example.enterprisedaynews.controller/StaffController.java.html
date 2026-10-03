@@ -2,6 +2,7 @@
 
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
+import org.example.enterprisedaynews.dto.RejectRequest;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.service.EventResetService;
 import org.example.enterprisedaynews.service.ImageService;
@@ -24,78 +25,82 @@ public class StaffController {
 
     @GetMapping(&quot;/new&quot;)
     public List&lt;ImageView&gt; getNewImages() {
-<span class="fc" id="L27">        return imageViews.of(imageService.getNewImages());</span>
+<span class="fc" id="L28">        return imageViews.of(imageService.getNewImages());</span>
     }
 
     @GetMapping(&quot;/approved&quot;)
     public List&lt;ImageView&gt; getApprovedImages() {
-<span class="fc" id="L32">        return imageViews.of(imageService.getApprovedImages());</span>
+<span class="fc" id="L33">        return imageViews.of(imageService.getApprovedImages());</span>
     }
 
     @GetMapping(&quot;/rejected&quot;)
     public List&lt;ImageView&gt; getRejectedImages() {
-<span class="fc" id="L37">        return imageViews.of(imageService.getRejectedImages());</span>
+<span class="fc" id="L38">        return imageViews.of(imageService.getRejectedImages());</span>
     }
 
     @PostMapping(&quot;/approve/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; approve(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L42">        return ResponseEntity.ok(imageViews.of(</span>
-<span class="fc" id="L43">                imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));</span>
+<span class="fc" id="L43">        return ResponseEntity.ok(imageViews.of(</span>
+<span class="fc" id="L44">                imageService.updateStatus(id, ApprovalStatus.APPROVED, ControllerSupport.usernameOf(principal))));</span>
     }
 
+    /** Rejects an advert, optionally saying why ({@code {&quot;reason&quot;: &quot;...&quot;}}), which the student sees (issue #38). */
     @PostMapping(&quot;/reject/{id}&quot;)
-    public ResponseEntity&lt;ImageView&gt; reject(@PathVariable Long id, Principal principal) {
-<span class="fc" id="L48">        return ResponseEntity.ok(imageViews.of(</span>
-<span class="fc" id="L49">                imageService.updateStatus(id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal))));</span>
+    public ResponseEntity&lt;ImageView&gt; reject(@PathVariable Long id,
+                                            @RequestBody(required = false) RejectRequest request,
+                                            Principal principal) {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        String reason = request == null ? null : request.reason();</span>
+<span class="fc" id="L53">        return ResponseEntity.ok(imageViews.of(imageService.updateStatus(</span>
+<span class="fc" id="L54">                id, ApprovalStatus.REJECTED, ControllerSupport.usernameOf(principal), reason)));</span>
     }
 
     @PostMapping(&quot;/toggle-display/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; toggleDisplay(@PathVariable Long id, @RequestParam boolean display) {
-<span class="fc" id="L54">        return ResponseEntity.ok(imageViews.of(imageService.toggleDisplay(id, display)));</span>
+<span class="fc" id="L59">        return ResponseEntity.ok(imageViews.of(imageService.toggleDisplay(id, display)));</span>
     }
 
     @PostMapping(&quot;/order&quot;)
     public ResponseEntity&lt;Void&gt; updateOrder(@RequestBody List&lt;Long&gt; ids) {
-<span class="fc" id="L59">        imageService.updateDisplayOrder(ids);</span>
-<span class="fc" id="L60">        return ResponseEntity.ok().build();</span>
+<span class="fc" id="L64">        imageService.updateDisplayOrder(ids);</span>
+<span class="fc" id="L65">        return ResponseEntity.ok().build();</span>
     }
 
     @DeleteMapping(&quot;/{id}&quot;)
     public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id) {
-<span class="fc" id="L65">        imageService.deleteImage(id);</span>
-<span class="fc" id="L66">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L70">        imageService.deleteImage(id);</span>
+<span class="fc" id="L71">        return ResponseEntity.noContent().build();</span>
     }
 
     /** End of Day: delete all student adverts and reset projector settings (issue #34). */
     @PostMapping(&quot;/reset-event&quot;)
     public EventResetService.Result resetEvent() {
-<span class="fc" id="L72">        return eventResetService.resetEvent();</span>
+<span class="fc" id="L77">        return eventResetService.resetEvent();</span>
     }
 
     @GetMapping(&quot;/info&quot;)
     public List&lt;ImageView&gt; getInfoMessages() {
-<span class="fc" id="L77">        return imageViews.of(imageService.getInfoMessages());</span>
+<span class="fc" id="L82">        return imageViews.of(imageService.getInfoMessages());</span>
     }
 
     @PostMapping(&quot;/info/upload&quot;)
     public ResponseEntity&lt;ImageView&gt; uploadInfoMessage(@RequestParam(&quot;file&quot;) MultipartFile file,
                                                        @RequestParam(value = &quot;flash&quot;, defaultValue = &quot;false&quot;) boolean flash,
                                                        Principal principal) throws IOException {
-<span class="fc" id="L84">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L85">        return ResponseEntity.ok(imageViews.of(imageService.uploadInfoMessage(file, username, flash)));</span>
+<span class="fc" id="L89">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L90">        return ResponseEntity.ok(imageViews.of(imageService.uploadInfoMessage(file, username, flash)));</span>
     }
 
     @PostMapping(&quot;/info/free-text&quot;)
     public ResponseEntity&lt;ImageView&gt; postFreeText(@RequestBody String text,
                                                   @RequestParam(value = &quot;flash&quot;, defaultValue = &quot;true&quot;) boolean flash,
                                                   Principal principal) {
-<span class="fc" id="L92">        String username = ControllerSupport.usernameOf(principal);</span>
-<span class="fc" id="L93">        return ResponseEntity.ok(imageViews.of(imageService.postFreeTextMessage(text, username, flash)));</span>
+<span class="fc" id="L97">        String username = ControllerSupport.usernameOf(principal);</span>
+<span class="fc" id="L98">        return ResponseEntity.ok(imageViews.of(imageService.postFreeTextMessage(text, username, flash)));</span>
     }
 
     @PostMapping(&quot;/toggle-flash/{id}&quot;)
     public ResponseEntity&lt;ImageView&gt; toggleFlash(@PathVariable Long id, @RequestParam boolean flash) {
-<span class="fc" id="L98">        return ResponseEntity.ok(imageViews.of(imageService.toggleFlashMode(id, flash)));</span>
+<span class="fc" id="L103">        return ResponseEntity.ok(imageViews.of(imageService.toggleFlashMode(id, flash)));</span>
     }
 
 }

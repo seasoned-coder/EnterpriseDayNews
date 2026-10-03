@@ -33,6 +33,10 @@ public class ImageMetadata {
     private String vettedBy;
     private LocalDateTime vettedAt;
 
+    /** Why staff rejected it, shown to the student (issue #38). Cleared when it's approved. */
+    @Column(length = 200)
+    private String rejectionReason;
+
     private boolean display;
     private int displayOrder;
 
@@ -52,8 +56,8 @@ public class ImageMetadata {
     private boolean isFlashMode;
     private String messageText;
 
-<span class="fc" id="L55">    public enum ApprovalStatus {</span>
-<span class="fc" id="L56">        NEW, APPROVED, REJECTED</span>
+<span class="fc" id="L59">    public enum ApprovalStatus {</span>
+<span class="fc" id="L60">        NEW, APPROVED, REJECTED</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
