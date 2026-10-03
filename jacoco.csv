@@ -13,6 +13,7 @@ enterprise-day-news,org.example.enterprisedaynews.config,StartupSeeder,0,13,0,0,
 enterprise-day-news,org.example.enterprisedaynews.config,WebConfig,0,45,0,0,0,7,0,2,0,2
 enterprise-day-news,org.example.enterprisedaynews.config,PasswordEncoderConfig,0,7,0,0,0,2,0,2,0,2
 enterprise-day-news,org.example.enterprisedaynews.controller,ImageViews,0,14,0,0,0,2,0,2,0,2
+enterprise-day-news,org.example.enterprisedaynews.controller,ApiExceptionHandler,1,18,1,1,0,5,1,2,0,2
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentController,0,38,0,0,0,7,0,3,0,3
 enterprise-day-news,org.example.enterprisedaynews.controller,AuthController,0,89,3,11,0,16,3,5,0,1
 enterprise-day-news,org.example.enterprisedaynews.controller,ProjectorController,0,17,0,0,0,3,0,3,0,3
