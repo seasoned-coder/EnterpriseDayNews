@@ -18,7 +18,7 @@ enterprise-day-news,org.example.enterprisedaynews.controller,AccountManagementCo
 enterprise-day-news,org.example.enterprisedaynews.controller,ImageViews,0,14,0,0,0,2,0,2,0,2
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentController,0,50,0,0,0,9,0,4,0,4
 enterprise-day-news,org.example.enterprisedaynews.controller,ProjectorController,0,17,0,0,0,3,0,3,0,3
-enterprise-day-news,org.example.enterprisedaynews.controller,StaffController,0,120,0,0,0,20,0,13,0,13
+enterprise-day-news,org.example.enterprisedaynews.controller,StaffController,0,118,0,0,0,19,0,13,0,13
 enterprise-day-news,org.example.enterprisedaynews.controller,ApiExceptionHandler,1,18,1,1,0,5,1,2,0,2
 enterprise-day-news,org.example.enterprisedaynews.controller,StaffAccountController,0,4,0,0,0,2,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.controller,StudentAccountController,0,4,0,0,0,2,0,1,0,1
@@ -29,11 +29,13 @@ enterprise-day-news,org.example.enterprisedaynews.service,UploadFileNames,0,51,0
 enterprise-day-news,org.example.enterprisedaynews.service,LoginGuard,7,207,6,26,3,47,6,22,0,12
 enterprise-day-news,org.example.enterprisedaynews.service,StaffAccountService,0,91,1,11,0,21,1,12,0,7
 enterprise-day-news,org.example.enterprisedaynews.service,ImageNotFoundException,0,5,0,0,0,2,0,1,0,1
+enterprise-day-news,org.example.enterprisedaynews.service,EventResetService.Result,0,6,0,0,0,1,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.service,StudentAccountService,0,93,0,8,0,21,0,9,0,5
-enterprise-day-news,org.example.enterprisedaynews.service,ImageService,103,478,8,40,30,113,12,41,4,24
+enterprise-day-news,org.example.enterprisedaynews.service,ImageService,103,475,8,40,30,113,12,41,4,24
 enterprise-day-news,org.example.enterprisedaynews.service,PasswordPolicy,6,166,3,17,1,23,3,12,0,5
 enterprise-day-news,org.example.enterprisedaynews.service,AccountService,1,268,0,14,1,62,1,22,1,15
 enterprise-day-news,org.example.enterprisedaynews.service,ImageStateMachine,0,54,0,6,0,11,0,6,0,3
-enterprise-day-news,org.example.enterprisedaynews.service,DisplaySettingsService,0,66,0,4,0,11,0,7,0,5
+enterprise-day-news,org.example.enterprisedaynews.service,EventResetService,0,13,0,0,0,3,0,1,0,1
+enterprise-day-news,org.example.enterprisedaynews.service,DisplaySettingsService,0,72,0,4,0,12,0,8,0,6
 enterprise-day-news,org.example.enterprisedaynews.model,ImageMetadata.ApprovalStatus,0,21,0,0,0,2,0,1,0,1
 enterprise-day-news,org.example.enterprisedaynews.model,DisplaySettings,0,11,0,0,0,6,0,1,0,1

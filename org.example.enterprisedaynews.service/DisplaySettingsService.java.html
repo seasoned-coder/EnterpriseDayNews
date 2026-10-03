@@ -36,18 +36,24 @@ public class DisplaySettingsService {
 <span class="fc" id="L36">        return repository.save(incoming);</span>
     }
 
+    /** Puts the projector settings back to their defaults (part of resetting the event). */
+    @Transactional
+    public DisplaySettings resetToDefaults() {
+<span class="fc" id="L42">        return repository.save(DisplaySettings.defaults());</span>
+    }
+
     /** Ensures a settings row always exists (called at startup). */
     @Transactional
     public DisplaySettings ensureSeeded() {
-<span class="fc" id="L42">        return repository.findById(DisplaySettings.DEFAULT_ID)</span>
-<span class="fc" id="L43">                .orElseGet(() -&gt; repository.save(DisplaySettings.defaults()));</span>
+<span class="fc" id="L48">        return repository.findById(DisplaySettings.DEFAULT_ID)</span>
+<span class="fc" id="L49">                .orElseGet(() -&gt; repository.save(DisplaySettings.defaults()));</span>
     }
 
     private static void requireInRange(String name, int value, int min, int max) {
-<span class="fc bfc" id="L47" title="All 4 branches covered.">        if (value &lt; min || value &gt; max) {</span>
-<span class="fc" id="L48">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc bfc" id="L53" title="All 4 branches covered.">        if (value &lt; min || value &gt; max) {</span>
+<span class="fc" id="L54">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
                     name + &quot; must be between &quot; + min + &quot; and &quot; + max + &quot; seconds&quot;);
         }
-<span class="fc" id="L51">    }</span>
+<span class="fc" id="L57">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

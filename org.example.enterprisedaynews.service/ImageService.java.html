@@ -282,32 +282,37 @@ public class ImageService {
 <span class="fc" id="L282">        imageRepository.delete(metadata);</span>
 <span class="fc" id="L283">    }</span>
 
+    /**
+     * Deletes every student advert and its file, keeping staff information items (Event Communications).
+     *
+     * @return how many adverts were deleted
+     */
     @Transactional
-    public void deleteAllImages() {
-        // Delete all images EXCEPT staff information messages (isInfoMessage = true)
-<span class="fc" id="L288">        List&lt;ImageMetadata&gt; all = imageRepository.findAll();</span>
-<span class="fc bfc" id="L289" title="All 2 branches covered.">        for (ImageMetadata metadata : all) {</span>
-<span class="fc bfc" id="L290" title="All 2 branches covered.">            if (!metadata.isInfoMessage()) {</span>
-<span class="fc" id="L291">                deletePhysicalFile(metadata.getFilePath());</span>
-<span class="fc" id="L292">                imageRepository.delete(metadata);</span>
+    public int deleteAllAdverts() {
+<span class="fc" id="L292">        int deleted = 0;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (ImageMetadata metadata : imageRepository.findAll()) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            if (!metadata.isInfoMessage()) {</span>
+<span class="fc" id="L295">                deleteImage(metadata);</span>
+<span class="fc" id="L296">                deleted++;</span>
             }
-<span class="fc" id="L294">        }</span>
-<span class="fc" id="L295">    }</span>
+<span class="fc" id="L298">        }</span>
+<span class="fc" id="L299">        return deleted;</span>
+    }
 
     private void deletePhysicalFile(String fileName) {
-<span class="pc bpc" id="L298" title="1 of 4 branches missed.">        if (fileName == null || fileName.isBlank()) {</span>
-<span class="fc" id="L299">            return;</span>
+<span class="pc bpc" id="L303" title="1 of 4 branches missed.">        if (fileName == null || fileName.isBlank()) {</span>
+<span class="fc" id="L304">            return;</span>
         }
         try {
-<span class="fc" id="L302">            Path filePath = Paths.get(uploadDir).resolve(fileName);</span>
-<span class="fc" id="L303">            Files.deleteIfExists(filePath);</span>
-<span class="nc" id="L304">        } catch (IOException e) {</span>
-<span class="nc" id="L305">            log.error(&quot;Failed to delete physical file: {}&quot;, fileName, e);</span>
-<span class="fc" id="L306">        }</span>
-<span class="fc" id="L307">    }</span>
+<span class="fc" id="L307">            Path filePath = Paths.get(uploadDir).resolve(fileName);</span>
+<span class="fc" id="L308">            Files.deleteIfExists(filePath);</span>
+<span class="nc" id="L309">        } catch (IOException e) {</span>
+<span class="nc" id="L310">            log.error(&quot;Failed to delete physical file: {}&quot;, fileName, e);</span>
+<span class="fc" id="L311">        }</span>
+<span class="fc" id="L312">    }</span>
 
     private ImageMetadata findOrThrow(Long id) {
-<span class="fc" id="L310">        return imageRepository.findById(id).orElseThrow(() -&gt; new ImageNotFoundException(id));</span>
+<span class="fc" id="L315">        return imageRepository.findById(id).orElseThrow(() -&gt; new ImageNotFoundException(id));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
