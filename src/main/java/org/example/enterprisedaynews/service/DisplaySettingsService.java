@@ -36,6 +36,12 @@ public class DisplaySettingsService {
         return repository.save(incoming);
     }
 
+    /** Puts the projector settings back to their defaults (part of resetting the event). */
+    @Transactional
+    public DisplaySettings resetToDefaults() {
+        return repository.save(DisplaySettings.defaults());
+    }
+
     /** Ensures a settings row always exists (called at startup). */
     @Transactional
     public DisplaySettings ensureSeeded() {

@@ -157,21 +157,24 @@ Staff items take turns, so with several displayed, each slot shows the next one.
 
 ---
 
-## End of Day: Clear Down
+## End of Day: reset the event
 
-Use this once the event is over.
+Use this once the event is over, or before the next one if the system wasn't freshly installed.
 
 1. Open the **End of Day** tab.
-2. Select **Clear Down**.
-3. Type `clear down` in the box.
-4. Select **Confirm Clear Down**.
+2. Turn on the switch **ARE YOU SURE? Yes, I want to reset the event**. The red **Clear Down** button stays greyed out until you do.
+3. Select **Clear Down**.
+4. Select **Yes, reset the event** to confirm (or **Cancel**).
 
-**What it deletes:** every student upload (new, approved and rejected) and its image file.
+**What it does:**
+
+- Deletes every student advert (new, approved and rejected) and its picture.
+- Puts the **projector settings** back to their defaults.
 
 **What it keeps:**
 
 - Staff information items from **Event Communications** (info images and the free-text message).
-- All student accounts.
+- All student and staff accounts.
 
 Delete info items individually if you don't want them next time. This cannot be undone.
 

@@ -273,8 +273,9 @@ export const api = {
     return staff<void>(`/api/staff/${id}`, { method: "DELETE" });
   },
 
-  deleteAll(_staffName = "staff") {
-    return staff<void>("/api/staff/all", { method: "DELETE" });
+  /** End of Day: delete all student adverts and restore default projector settings. */
+  resetEvent() {
+    return staff<{ deletedAdverts: number }>("/api/staff/reset-event", { method: "POST" });
   },
 
   listInfo(_staffName = "staff") {

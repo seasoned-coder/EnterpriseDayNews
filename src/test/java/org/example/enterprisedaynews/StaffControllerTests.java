@@ -5,6 +5,7 @@ import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
 import org.example.enterprisedaynews.model.StudentAccount;
 import org.example.enterprisedaynews.security.JwtProvider;
 import org.example.enterprisedaynews.security.Roles;
+import org.example.enterprisedaynews.service.EventResetService;
 import org.example.enterprisedaynews.service.ImageService;
 import org.example.enterprisedaynews.service.StudentAccountService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,6 +47,9 @@ class StaffControllerTests {
 
     @MockitoBean
     private StudentAccountService studentAccountService;
+
+    @MockitoBean
+    private EventResetService eventResetService;
 
     @Autowired
     private JwtProvider jwtProvider;
@@ -169,10 +174,22 @@ class StaffControllerTests {
     }
 
     @Test
-    void testDeleteAllImages() throws Exception {
-        mockMvc.perform(delete("/api/staff/all")
+    void testResetEvent() throws Exception {
+        when(eventResetService.resetEvent()).thenReturn(new EventResetService.Result(12));
+
+        mockMvc.perform(post("/api/staff/reset-event")
                 .header("Authorization", staffToken))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deletedAdverts").value(12));
+
+        verify(eventResetService).resetEvent();
+    }
+
+    @Test
+    void testOldDeleteAllEndpointIsGone() throws Exception {
+        mockMvc.perform(delete("/api/staff/all").header("Authorization", staffToken))
+                .andExpect(status().is4xxClientError());
+        verify(eventResetService, never()).resetEvent();
     }
 
     @Test

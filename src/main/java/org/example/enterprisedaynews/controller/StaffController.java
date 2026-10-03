@@ -3,6 +3,7 @@ package org.example.enterprisedaynews.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.enterprisedaynews.dto.ImageView;
 import org.example.enterprisedaynews.model.ImageMetadata.ApprovalStatus;
+import org.example.enterprisedaynews.service.EventResetService;
 import org.example.enterprisedaynews.service.ImageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class StaffController {
 
     private final ImageService imageService;
     private final ImageViews imageViews;
+    private final EventResetService eventResetService;
 
     @GetMapping("/new")
     public List<ImageView> getNewImages() {
@@ -64,10 +66,10 @@ public class StaffController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/all")
-    public ResponseEntity<Void> deleteAll() {
-        imageService.deleteAllImages();
-        return ResponseEntity.noContent().build();
+    /** End of Day: delete all student adverts and reset projector settings (issue #34). */
+    @PostMapping("/reset-event")
+    public EventResetService.Result resetEvent() {
+        return eventResetService.resetEvent();
     }
 
     @GetMapping("/info")

@@ -1,0 +1,39 @@
+package org.example.enterprisedaynews;
+
+import org.example.enterprisedaynews.model.DisplaySettings;
+import org.example.enterprisedaynews.repository.DisplaySettingsRepository;
+import org.example.enterprisedaynews.service.DisplaySettingsService;
+import org.example.enterprisedaynews.service.EventResetService;
+import org.example.enterprisedaynews.service.ImageService;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+/** Issue #34: resetting the event removes all adverts and restores the default projector settings. */
+class EventResetServiceTests {
+
+    private final ImageService imageService = mock(ImageService.class);
+    private final DisplaySettingsRepository settingsRepository = mock(DisplaySettingsRepository.class);
+    private final EventResetService eventResetService =
+            new EventResetService(imageService, new DisplaySettingsService(settingsRepository));
+
+    @Test
+    void deletesAllAdvertsAndRestoresDefaultSettings() {
+        when(imageService.deleteAllAdverts()).thenReturn(7);
+        when(settingsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventResetService.Result result = eventResetService.resetEvent();
+
+        assertEquals(7, result.deletedAdverts());
+        verify(imageService).deleteAllAdverts();
+        ArgumentCaptor<DisplaySettings> saved = ArgumentCaptor.forClass(DisplaySettings.class);
+        verify(settingsRepository).save(saved.capture());
+        assertEquals(DisplaySettings.DEFAULT_ID, saved.getValue().getId());
+        assertEquals(DisplaySettings.DEFAULT_INTERVAL_SECONDS, saved.getValue().getIntervalSpeedSeconds());
+        assertEquals(DisplaySettings.DEFAULT_DURATION_SECONDS, saved.getValue().getDisplayDurationSeconds());
+        assertEquals(DisplaySettings.DEFAULT_REFRESH_SECONDS, saved.getValue().getImageRefreshSeconds());
+    }
+}

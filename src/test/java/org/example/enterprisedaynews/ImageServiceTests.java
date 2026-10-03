@@ -393,7 +393,7 @@ class ImageServiceTests {
     }
 
     @Test
-    void testDeleteAllImagesProtectsInfoMessages() throws IOException {
+    void testDeleteAllAdvertsProtectsInfoMessages() throws IOException {
         String f1 = "student.png";
         String f2 = "staff-info.png";
         Files.writeString(tempDir.resolve(f1), "c1");
@@ -411,7 +411,7 @@ class ImageServiceTests {
 
         when(imageRepository.findAll()).thenReturn(List.of(m1, m2));
 
-        imageService.deleteAllImages();
+        assertEquals(1, imageService.deleteAllAdverts(), "one student advert deleted");
 
         assertFalse(Files.exists(tempDir.resolve(f1)), "Student image should be deleted from disk");
         assertTrue(Files.exists(tempDir.resolve(f2)), "Staff info image should NOT be deleted from disk");

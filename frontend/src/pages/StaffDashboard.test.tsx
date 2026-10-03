@@ -117,7 +117,8 @@ describe("StaffDashboard", () => {
     renderPage();
     await openTab(/end of day/i);
 
-    expect(await screen.findByText(/Staff items in Event Communications and all student accounts are kept/)).toBeInTheDocument();
+    expect(await screen.findByText(/Event Communications items/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear Down" })).toBeDisabled();
     expect(screen.queryByText(/ALL database records/)).not.toBeInTheDocument();
   });
 

@@ -282,16 +282,21 @@ public class ImageService {
         imageRepository.delete(metadata);
     }
 
+    /**
+     * Deletes every student advert and its file, keeping staff information items (Event Communications).
+     *
+     * @return how many adverts were deleted
+     */
     @Transactional
-    public void deleteAllImages() {
-        // Delete all images EXCEPT staff information messages (isInfoMessage = true)
-        List<ImageMetadata> all = imageRepository.findAll();
-        for (ImageMetadata metadata : all) {
+    public int deleteAllAdverts() {
+        int deleted = 0;
+        for (ImageMetadata metadata : imageRepository.findAll()) {
             if (!metadata.isInfoMessage()) {
-                deletePhysicalFile(metadata.getFilePath());
-                imageRepository.delete(metadata);
+                deleteImage(metadata);
+                deleted++;
             }
         }
+        return deleted;
     }
 
     private void deletePhysicalFile(String fileName) {

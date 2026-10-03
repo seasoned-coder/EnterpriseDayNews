@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, CalendarX, MessageSquare, Megaphone, Send, Upload } from "lucide-react";
+import { Search, Inbox, Loader2, Check, X, Eye, EyeOff, Trash2, MessageSquare, Megaphone, Send, Upload } from "lucide-react";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { BrandNav } from "@/components/BrandNav";
 import { SubmissionCard } from "@/components/SubmissionCard";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { api, formatRelative, type ApiSubmission } from "@/lib/api";
+import { EventResetPanel } from "@/components/EventResetPanel";
 import { ProjectorSettingsPanel } from "@/components/ProjectorSettingsPanel";
 import { StaffFooter } from "@/components/StaffFooter";
 import { STAFF_NAV } from "@/lib/staffNav";
@@ -47,8 +48,6 @@ const StaffDashboard = () => {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<ApiSubmission | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [clearDownOpen, setClearDownOpen] = useState(false);
-  const [clearDownConfirm, setClearDownConfirm] = useState("");
   const [freeText, setFreeText] = useState("");
   // Off by default: a FLASH item takes over the projector immediately, even when hidden.
   const [isFlash, setIsFlash] = useState(false);
@@ -196,20 +195,6 @@ const StaffDashboard = () => {
       toast({ title: "Delete failed", description: e.message, variant: "destructive" }),
   });
 
-  const clearDown = useMutation({
-    mutationFn: async () => {
-      return api.deleteAll(staffName);
-    },
-    onSuccess: () => {
-      toast({ title: "Cleared", description: "All student submissions and their files have been deleted." });
-      refreshAll();
-      refreshProjector();
-      setClearDownOpen(false);
-      setClearDownConfirm("");
-    },
-    onError: (e: Error) =>
-      toast({ title: "Clear down failed", description: e.message, variant: "destructive" }),
-  });
 
   const uploadInfo = useMutation({
     mutationFn: async ({ file, flash }: { file: File; flash: boolean }) => {
@@ -251,7 +236,7 @@ const StaffDashboard = () => {
       toast({ title: "Flash toggle failed", description: e.message, variant: "destructive" }),
   });
 
-  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || clearDown.isPending || uploadInfo.isPending || postFreeText.isPending || toggleFlash.isPending;
+  const busy = approve.isPending || reject.isPending || toggleDisplay.isPending || reorder.isPending || deleteSub.isPending || uploadInfo.isPending || postFreeText.isPending || toggleFlash.isPending;
 
   if (!user) return null;
 
@@ -464,24 +449,7 @@ const StaffDashboard = () => {
           </TabsContent>
 
           <TabsContent value="eod" className="mt-6">
-            <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/50 px-6 py-20 text-center">
-              <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-destructive/10 text-destructive">
-                <CalendarX className="h-6 w-6" />
-              </div>
-              <p className="font-display text-lg font-semibold text-destructive">Clear All Student Submissions</p>
-              <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                Permanently deletes every student upload (new, approved and rejected) and its image file.
-                Staff items in Event Communications and all student accounts are kept.
-                This cannot be undone.
-              </p>
-              <Button
-                variant="destructive"
-                className="mt-6"
-                onClick={() => setClearDownOpen(true)}
-              >
-                Clear Down
-              </Button>
-            </div>
+            <EventResetPanel />
           </TabsContent>
         </Tabs>
       </main>
@@ -623,36 +591,6 @@ const StaffDashboard = () => {
          </DialogContent>
        </Dialog>
 
-       <Dialog open={clearDownOpen} onOpenChange={(o) => !o && setClearDownOpen(false)}>
-         <DialogContent>
-           <DialogHeader>
-             <DialogTitle className="text-destructive">Are you absolutely sure?</DialogTitle>
-             <DialogDescription>
-               This deletes every student upload and its image. Event Communications items and student
-               accounts are kept. To confirm, please type <span className="font-bold text-foreground">clear down</span> below.
-             </DialogDescription>
-           </DialogHeader>
-           <div className="space-y-4 mt-4">
-             <Input
-               value={clearDownConfirm}
-               onChange={(e) => setClearDownConfirm(e.target.value)}
-               placeholder="Type 'clear down' to confirm"
-               className="border-destructive/30 focus-visible:ring-destructive"
-             />
-             <div className="flex justify-end gap-3">
-               <Button variant="outline" onClick={() => setClearDownOpen(false)}>Cancel</Button>
-               <Button
-                  variant="destructive"
-                  disabled={busy || clearDownConfirm !== "clear down"}
-                  onClick={() => clearDown.mutate()}
-               >
-                 {clearDown.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                 Confirm Clear Down
-               </Button>
-             </div>
-           </div>
-         </DialogContent>
-       </Dialog>
     </div>
   );
 };

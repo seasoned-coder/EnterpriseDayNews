@@ -309,7 +309,7 @@ The frontend automatically handles login and token management when navigating to
 -   `POST /api/staff/info/free-text?flash=true|false`: Post a free-text urgent message.
 -   `POST /api/staff/toggle-flash/{id}?flash=true|false`: Toggle FLASH mode for an image/message.
 -   `DELETE /api/staff/{id}`: Delete an image.
--   `DELETE /api/staff/all`: Delete all images (resets for end of day, preserves staff library items).
+-   `POST /api/staff/reset-event`: Reset the event: delete all student adverts and restore the default projector settings (keeps staff library items and accounts). Returns `{"deletedAdverts": n}`.
 -   `GET  /api/staff/students`: List student accounts (incl. lock state, last login time and IP).
 -   `POST /api/staff/students`: Create a student account (JSON body: `{"username": "...", "password": "..."}`).
 -   `POST /api/staff/students/{id}/lock?locked=true|false`: Lock or unlock a student account.
