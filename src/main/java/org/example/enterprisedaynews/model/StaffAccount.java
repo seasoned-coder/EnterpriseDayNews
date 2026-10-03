@@ -8,10 +8,10 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(
-        name = "student_accounts",
-        uniqueConstraints = @UniqueConstraint(name = "uk_student_accounts_username", columnNames = "username")
+        name = "staff_accounts",
+        uniqueConstraints = @UniqueConstraint(name = "uk_staff_accounts_username", columnNames = "username")
 )
 @NoArgsConstructor
 @SuperBuilder
-public class StudentAccount extends LoginAccount {
+public class StaffAccount extends LoginAccount {
 }

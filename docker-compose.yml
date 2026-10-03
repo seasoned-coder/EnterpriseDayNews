@@ -24,6 +24,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (see .env.example)}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       APP_JWT_SECRET: ${APP_JWT_SECRET:?Set APP_JWT_SECRET in .env (see .env.example)}
+      # Only used to create the first staff account; safe to remove from .env afterwards.
+      APP_STAFF_BOOTSTRAP_USERNAME: ${APP_STAFF_BOOTSTRAP_USERNAME:-}
+      APP_STAFF_BOOTSTRAP_PASSWORD: ${APP_STAFF_BOOTSTRAP_PASSWORD:-}
     depends_on:
       - db
     volumes:

@@ -3,7 +3,9 @@ package org.example.enterprisedaynews;
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.example.enterprisedaynews.security.JwtProvider;
 import org.example.enterprisedaynews.security.Roles;
+import org.example.enterprisedaynews.repository.StudentAccountRepository;
 import org.example.enterprisedaynews.service.ImageService;
+import org.example.enterprisedaynews.service.StudentAccountService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,12 +38,24 @@ class StudentControllerTests {
     @Autowired
     private JwtProvider jwtProvider;
 
+    @Autowired
+    private StudentAccountService studentAccountService;
+
+    @Autowired
+    private StudentAccountRepository studentAccountRepository;
+
+    /** Student tokens are only honoured for an existing, unlocked account. */
+    private static final String STUDENT_USERNAME = "uploadco";
+
     private String studentToken;
     private String staffToken;
 
     @BeforeEach
     void setUp() {
-        studentToken = "Bearer " + jwtProvider.generateToken("student", Roles.STUDENT);
+        if (!studentAccountRepository.existsByUsername(STUDENT_USERNAME)) {
+            studentAccountService.createAccount(STUDENT_USERNAME, "Upload42");
+        }
+        studentToken = "Bearer " + jwtProvider.generateToken(STUDENT_USERNAME, Roles.STUDENT);
         staffToken = "Bearer " + jwtProvider.generateToken("staff1", Roles.STAFF);
     }
 
@@ -51,20 +65,20 @@ class StudentControllerTests {
                 "file", "test.jpg", "image/jpeg", "content".getBytes());
         ImageMetadata metadata = new ImageMetadata();
         metadata.setId(1L);
-        metadata.setUploadedBy("student");
+        metadata.setUploadedBy(STUDENT_USERNAME);
 
-        when(imageService.uploadImage(any(), eq("student"), anyInt(), anyInt())).thenReturn(metadata);
+        when(imageService.uploadImage(any(), eq(STUDENT_USERNAME), anyInt(), anyInt())).thenReturn(metadata);
 
         mockMvc.perform(multipart("/api/student/upload")
                 .file(file)
                 .header("Authorization", studentToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedBy").value("student"));
+                .andExpect(jsonPath("$.uploadedBy").value(STUDENT_USERNAME));
     }
 
     @Test
     void testGetMyUploads() throws Exception {
-        when(imageService.getUserUploads("student")).thenReturn(Collections.emptyList());
+        when(imageService.getUserUploads(STUDENT_USERNAME)).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/student/uploads")
                 .header("Authorization", studentToken))
@@ -78,7 +92,7 @@ class StudentControllerTests {
                 .header("Authorization", studentToken))
                 .andExpect(status().isNoContent());
 
-        verify(imageService).deleteStudentImage(42L, "student");
+        verify(imageService).deleteStudentImage(42L, STUDENT_USERNAME);
     }
 
     @Test

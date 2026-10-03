@@ -69,7 +69,7 @@ const StaffLogin = () => {
                   id="staff-id"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. staff1"
+                  placeholder="Your staff username"
                   autoFocus
                   className="h-14 w-full rounded-xl border border-input bg-background px-4 text-lg outline-none ring-offset-background transition focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 />

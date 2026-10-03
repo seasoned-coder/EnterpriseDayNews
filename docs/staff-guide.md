@@ -20,6 +20,8 @@ This guide is for adult staff running the event. It covers:
 You'll see **Staff Access Granted** and land on the **Advert Dashboard**. A failed sign-in shows **Access Denied**.
 
 - The username is not case-sensitive. The password is.
+- After **5 wrong passwords in a row**, your staff account is locked for **15 minutes**.
+- Staff passwords must be at least 10 characters, with a capital letter and a number. Don't share your staff login with students.
 - Your session lasts about an hour. When it expires you are sent back to the home page; sign in again.
 - To sign out, use the **Logout** icon at the top right.
 
@@ -210,7 +212,7 @@ This does not unlock a locked account. Select **Unlock** as well if needed.
 
 The student can no longer sign in. **Their existing uploads stay in the system.** Remove those from the Advert Dashboard if needed.
 
-**Note on built-in accounts:** the system creates a small number of built-in student accounts when it starts. If you delete one, it is recreated the next time the system restarts. If you don't need them, **Lock** them (or change their passwords) instead of deleting them.
+**Note on old built-in accounts:** older versions created built-in `student` and `guest` accounts. They are no longer created, and if they still have their original passwords they are **locked automatically** when the system starts. If you need one, select **Password** to set a new password, then **Unlock** it. Otherwise you can delete it.
 
 ---
 

@@ -117,6 +117,7 @@ Docker Compose reads secrets from an untracked `.env` file next to `docker-compo
 2. Fill in random values (the file explains how to generate them):
    - `APP_JWT_SECRET`: signs login tokens; at least 32 characters. The backend refuses to start if it's missing, too short, or a value that has appeared in this repo.
    - `POSTGRES_PASSWORD`: the database password.
+   - `APP_STAFF_BOOTSTRAP_USERNAME` / `APP_STAFF_BOOTSTRAP_PASSWORD`: creates the first staff account (see [Authentication](#authentication-jwt)).
    - `FREEDNS_UPDATE_KEY`: hosted server only, used by `auto-deploy-docker.sh`.
 
 `POSTGRES_PASSWORD` only takes effect when the database volume is **first created**. To change the password on an existing database without losing data, change it inside the database first, then update `.env` and restart:
@@ -224,7 +225,11 @@ The system uses JWT (JSON Web Token) authentication.
 -   Five failed sign-ins temporarily lock an account for 15 minutes. Staff can also lock an account indefinitely; unlocking clears any temporary lock.
 -   The time and IP address of each successful sign-in are recorded.
 
-**Staff accounts** are currently fixed in the backend; moving them into the database is tracked in issues #6 and #12.
+**Staff accounts** are stored in the database too (BCrypt-hashed, same 5-attempt / 15-minute lockout). Staff passwords must be at least 10 characters with a capital letter and a number.
+-   **First staff account:** set `APP_STAFF_BOOTSTRAP_USERNAME` and `APP_STAFF_BOOTSTRAP_PASSWORD` in `.env` and start the stack. The account is created **only if there are no staff accounts yet**, and is never reset from `.env` afterwards, so you can delete the password line once you've signed in. If no staff account exists and these are not set, the backend logs a warning and nobody can sign in to `/staff`.
+-   Adding and managing further staff accounts from the staff app is tracked in #12.
+
+**No built-in accounts.** Older versions created `student` and `guest` student accounts with passwords published in this repository. They are no longer created. On startup, any existing account still using one of those passwords is **locked automatically** (logged as a warning). To reuse it, set a new password and unlock it from the Student Account Dashboard.
 
 The frontend automatically handles login and token management when navigating to `/student` or `/staff`.
 

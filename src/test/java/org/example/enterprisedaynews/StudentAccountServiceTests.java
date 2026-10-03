@@ -147,6 +147,25 @@ class StudentAccountServiceTests {
     }
 
     @Test
+    void accountsStillUsingPublishedPasswordsAreLocked() {
+        // Older versions created these accounts with passwords published in this repository.
+        studentAccountRepository.findByUsername("student").ifPresent(studentAccountRepository::delete);
+        studentAccountRepository.findByUsername("guest").ifPresent(studentAccountRepository::delete);
+        StudentAccount stillPublished = studentAccountService.createAccount("student", "EdNews1");
+        StudentAccount changed = studentAccountService.createAccount("guest", "Changed9");
+
+        assertEquals(1, studentAccountService.lockAccountsWithPublishedPasswords());
+
+        assertTrue(studentAccountRepository.findById(stillPublished.getId()).orElseThrow().isLocked());
+        assertFalse(studentAccountRepository.findById(changed.getId()).orElseThrow().isLocked());
+        // Running again changes nothing.
+        assertEquals(0, studentAccountService.lockAccountsWithPublishedPasswords());
+
+        studentAccountRepository.deleteById(stillPublished.getId());
+        studentAccountRepository.deleteById(changed.getId());
+    }
+
+    @Test
     void operationsOnMissingAccountReturnNotFound() {
         long missingId = 999_999L;
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
