@@ -288,6 +288,8 @@ npm test
 ```
 This runs Vitest for the new frontend structure. For watch mode use `npm run test:watch`.
 
+For coverage, run `npm run test:coverage`. It prints a summary and writes an HTML report to `frontend/coverage/index.html`. Generated shadcn/ui components (`src/components/ui`) are excluded.
+
 Tests cover:
 - `api.test.ts` — API client logic and header handling.
 - `fileSizeCheck.test.ts` — upload size limits.

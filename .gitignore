@@ -48,4 +48,5 @@ src/main/resources/static/uploads/
 node_modules/
 frontend/build/
 frontend/dist/
+frontend/coverage/
 /.output.txt
