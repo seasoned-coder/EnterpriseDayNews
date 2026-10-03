@@ -131,15 +131,16 @@ async function signedInPage(browser, viewport, sessions) {
   const page = await browser.newPage();
   await page.setViewport(viewport);
   await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0" });
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle2" });
   await page.evaluate((s) => {
     for (const [key, value] of Object.entries(s)) localStorage.setItem(key, JSON.stringify(value));
   }, sessions);
   return page;
 }
 
+// networkidle2, not 0: pages keep their live-updates stream (#43) open, so they're never fully idle.
 async function shoot(page, path, name) {
-  await page.goto(`${BASE}${path}`, { waitUntil: "networkidle0" });
+  await page.goto(`${BASE}${path}`, { waitUntil: "networkidle2" });
   await settle(page);
   await page.screenshot({ path: join(OUT, `${name}.png`) });
   console.log(`  ${name}.png`);
@@ -230,7 +231,7 @@ async function main() {
       method: "PUT",
       json: { wifiName: "EnterpriseDay", wifiPassword: "Sunflower88", appAddress: "http://192.168.1.10" },
     });
-    await staffPage.reload({ waitUntil: "networkidle0" });
+    await staffPage.reload({ waitUntil: "networkidle2" });
     await staffPage.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent === "List of names").click());
     await staffPage.type("textarea", "Nova Noodles\nStar Socks");
     await staffPage.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent.includes("Create teams")).click());
@@ -250,7 +251,7 @@ async function main() {
 
     const projector = await signedInPage(browser, { width: 1280, height: 720, deviceScaleFactor: 1 }, {});
     await projector.bringToFront();
-    await projector.goto(`${BASE}/projector`, { waitUntil: "networkidle0" });
+    await projector.goto(`${BASE}/projector`, { waitUntil: "networkidle2" });
     await settle(projector, 4000);
     await projector.screenshot({ path: join(OUT, "projector.png") });
     console.log("  projector.png");

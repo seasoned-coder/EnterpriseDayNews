@@ -23,21 +23,27 @@ Students run companies with virtual event money: they **pay for priority** (how 
 
 All teams, adverts and names below are made up.
 
-**Student app** (on a phone): the upload page, choosing and paying for screen time, and the team's adverts with their review status.
+**Student app** (on a phone): the upload page, choosing and paying for screen time, and the team's adverts with their review status and results.
 
 | Upload | Prices | Your uploads |
 |---|---|---|
 | <img src="docs/screenshots/student-upload.png" alt="Student upload page on a phone" width="250"> | <img src="docs/screenshots/student-prices.png" alt="Tap-to-choose priority and duration with the total cost" width="250"> | <img src="docs/screenshots/student-uploads.png" alt="A team's uploads: waiting for approval, approved" width="250"> |
 
-**Staff app:** reviewing new uploads, the approved adverts in projector order, and managing team accounts.
+**Staff app:** reviewing new uploads, the approved adverts in projector order, each team's results, and setting up team accounts.
 
 ![Advert Dashboard: new uploads waiting for review](docs/screenshots/staff-new.png)
 ![Advert Dashboard: approved adverts in projector order, with a staff notice](docs/screenshots/staff-approved.png)
-![Student Account Dashboard](docs/screenshots/staff-students.png)
+![Results: each team's spend, screen time and value](docs/screenshots/staff-results.png)
+![Student Account Dashboard with team setup](docs/screenshots/staff-students.png)
 
-**Projector:** the big screen playing an approved advert.
+**Team login slip**, as printed on an 80 mm till printer, with QR codes to join the Wi-Fi and open the app:
+
+<img src="docs/screenshots/login-slip.png" alt="A printed team login slip with the team name, password and two QR codes" width="300">
+
+**Projector:** the big screen playing an approved advert, and carrying on in **OFFLINE MODE** when it can't reach the server.
 
 ![Projector showing a student advert](docs/screenshots/projector.png)
+![Projector in offline mode, still playing adverts](docs/screenshots/projector-offline.png)
 
 To regenerate them after UI changes, run `.\tools\screenshots\make-screenshots.ps1` (add `-Build` to use this checkout's code). It runs a separate demo copy of the apps with made-up data, so local and event data are never touched or shown.
 
