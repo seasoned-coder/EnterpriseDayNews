@@ -11,32 +11,9 @@ class JwtProviderTests {
     private static final String SECRET_B = "b-test-secret-that-is-long-enough-0002";
 
     private static JwtProvider providerWith(String secret) {
-        JwtProvider provider = new JwtProvider();
-        ReflectionTestUtils.setField(provider, "secret", secret);
+        JwtProvider provider = new JwtProvider(secret);
         ReflectionTestUtils.setField(provider, "expirationMs", 60_000L);
-        provider.init();
         return provider;
-    }
-
-    @Test
-    void refusesToStartWithoutSecret() {
-        assertThrows(IllegalStateException.class, () -> providerWith(null));
-        assertThrows(IllegalStateException.class, () -> providerWith(""));
-        assertThrows(IllegalStateException.class, () -> providerWith("   "));
-    }
-
-    @Test
-    void refusesSecretPublishedInSource() {
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> providerWith("defaultSecretKeyThatIsAtLeast32CharactersLong"));
-        assertTrue(ex.getMessage().contains("published"));
-    }
-
-    @Test
-    void refusesShortSecret() {
-        assertThrows(IllegalStateException.class,
-                () -> providerWith("x".repeat(JwtProvider.MIN_SECRET_BYTES - 1)));
-        assertDoesNotThrow(() -> providerWith("x".repeat(JwtProvider.MIN_SECRET_BYTES)));
     }
 
     @Test

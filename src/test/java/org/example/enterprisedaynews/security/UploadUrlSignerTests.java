@@ -101,9 +101,4 @@ class UploadUrlSignerTests {
     void textOnlyMessagesHaveNoUrl() {
         assertNull(signerAt(NOW).urlFor(image(null, ApprovalStatus.APPROVED, true, true)));
     }
-
-    @Test
-    void requiresAValidSecret() {
-        assertThrows(IllegalStateException.class, () -> new UploadUrlSigner(""));
-    }
 }

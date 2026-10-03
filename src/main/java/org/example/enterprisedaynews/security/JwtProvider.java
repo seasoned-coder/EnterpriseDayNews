@@ -3,54 +3,29 @@ package org.example.enterprisedaynews.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.Set;
 
 @Component
 public class JwtProvider {
 
-    /** HS256 needs a key of at least 256 bits. */
-    static final int MIN_SECRET_BYTES = 32;
-
-    /** Values that have been published in this (public) repository and must never sign real tokens. */
-    private static final Set<String> KNOWN_PUBLIC_SECRETS = Set.of(
-            "defaultSecretKeyThatIsAtLeast32CharactersLong"
-    );
-
-    // Deliberately no default: the secret must come from deployment config (APP_JWT_SECRET).
-    @Value("${app.jwt.secret:}")
-    private String secret;
-
     @Value("${app.jwt.expiration-ms:3600000}") // 1 hour
     private long expirationMs;
 
-    private SecretKey secretKey;
+    private final SecretKey secretKey;
 
-    @PostConstruct
-    void init() {
-        secretKey = Keys.hmacShaKeyFor(validateSecret(secret).getBytes(StandardCharsets.UTF_8));
+    @Autowired
+    public JwtProvider(SigningSecret signingSecret) {
+        this(signingSecret.value());
     }
 
-    static String validateSecret(String secret) {
-        if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException(
-                    "No JWT signing secret configured. Set APP_JWT_SECRET (see .env.example).");
-        }
-        if (KNOWN_PUBLIC_SECRETS.contains(secret)) {
-            throw new IllegalStateException(
-                    "APP_JWT_SECRET is a value published in the source code. Generate a new random secret.");
-        }
-        if (secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
-            throw new IllegalStateException(
-                    "APP_JWT_SECRET must be at least " + MIN_SECRET_BYTES + " bytes long.");
-        }
-        return secret;
+    JwtProvider(String secret) {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(String username, String role) {

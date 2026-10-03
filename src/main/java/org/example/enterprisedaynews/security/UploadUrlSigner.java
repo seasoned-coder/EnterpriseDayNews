@@ -2,7 +2,6 @@ package org.example.enterprisedaynews.security;
 
 import org.example.enterprisedaynews.model.ImageMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
 
@@ -32,14 +31,13 @@ public class UploadUrlSigner {
     private final Clock clock;
 
     @Autowired
-    public UploadUrlSigner(@Value("${app.jwt.secret:}") String jwtSecret) {
-        this(jwtSecret, Clock.systemUTC());
+    public UploadUrlSigner(SigningSecret signingSecret) {
+        this(signingSecret.value(), Clock.systemUTC());
     }
 
-    UploadUrlSigner(String jwtSecret, Clock clock) {
-        // Derived from the (validated) JWT secret so there is no extra secret to manage.
-        this.key = hmac(JwtProvider.validateSecret(jwtSecret).getBytes(StandardCharsets.UTF_8),
-                "upload-url-signing-v1");
+    UploadUrlSigner(String signingSecret, Clock clock) {
+        // Derived from the login-token secret so there is no extra secret to manage.
+        this.key = hmac(signingSecret.getBytes(StandardCharsets.UTF_8), "upload-url-signing-v1");
         this.clock = clock;
     }
 

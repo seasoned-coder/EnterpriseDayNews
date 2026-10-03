@@ -50,7 +50,7 @@ Plug the server, and ideally the projector computer, into the router with **cabl
 Do this a day or more ahead, on the server, while it **is** connected to the internet:
 
 1. Get the latest project files: `git pull` (or copy the repo, including `docker-compose.yml`).
-2. First time only: copy `.env.example` to `.env` and fill it in (see [Secrets](#secrets-env-required)). For the event set **`FRONTEND_PORT=80`**, so the address has no port number.
+2. First time only: create a `.env` next to `docker-compose.yml` with `FRONTEND_PORT=80` (so the address has no port number) and the first staff login (`APP_STAFF_BOOTSTRAP_USERNAME`, `APP_STAFF_BOOTSTRAP_PASSWORD`). Nothing else is needed; see [Settings](#settings-env).
 3. If the images on GitHub Container Registry are private, sign in: `docker login ghcr.io`.
 4. Download the images: `docker compose pull db backend frontend`.
 5. Start it once to check: `docker compose up -d db backend frontend`. Sign in as staff, create the student accounts, and check the **Projector** settings.
@@ -151,7 +151,7 @@ You can build the backend and frontend separately or let Docker Compose handle i
 ```bash
 mvn clean package
 ```
-To run the backend outside Docker, set `APP_JWT_SECRET` (and the datasource settings) in the environment first, as described in [Secrets](#secrets-env-required).
+To run the backend outside Docker, point the datasource settings at a PostgreSQL database. A signing secret is generated automatically (see [Settings](#settings-env)).
 
 #### Frontend (NPM / Vite)
 ```bash
@@ -163,27 +163,20 @@ npm run build # For production build
 
 ### 2. Run with Docker Compose
 
-#### Secrets (`.env`), required
+#### Settings (`.env`)
 
-Docker Compose reads secrets from an untracked `.env` file next to `docker-compose.yml`, and won't start without it. **This repository is public: never commit real secrets.**
+Docker Compose reads optional settings from an untracked `.env` file next to `docker-compose.yml`. **This repository is public: never commit your `.env`.** Copy `.env.example` to start. Normally only the first staff login is needed:
 
-1. Copy `.env.example` to `.env`.
-2. Fill in random values (the file explains how to generate them):
-   - `APP_JWT_SECRET`: signs login tokens; at least 32 characters. The backend refuses to start if it's missing, too short, or a value that has appeared in this repo.
-   - `POSTGRES_PASSWORD`: the database password.
-   - `APP_STAFF_BOOTSTRAP_USERNAME` / `APP_STAFF_BOOTSTRAP_PASSWORD`: creates the first staff account (see [Authentication](#authentication-jwt)).
-   - `FREEDNS_UPDATE_KEY`: hosted server only, used by `auto-deploy-docker.sh`.
+| Setting | Needed? | What it does |
+|---|---|---|
+| `APP_STAFF_BOOTSTRAP_USERNAME` / `APP_STAFF_BOOTSTRAP_PASSWORD` | **First start only** | Creates the first staff account (see [Authentication](#authentication-jwt)). After that you can delete these lines. |
+| `FRONTEND_PORT` | At the event | `80` so the address is just `http://<server-ip>/`. Defaults to `3000`. |
+| `POSTGRES_PASSWORD` | No | Database password. Defaults to `password`. That's deliberate: the database port is only reachable from the server itself, and a once-a-year event shouldn't depend on remembering a password. |
+| `APP_JWT_SECRET` | No | The key that signs logins. If unset, the backend **generates a random one on first start and keeps it in the database** (`app_secrets` table), so there's nothing to create or remember. If you do set one, it must be at least 32 characters and never a value that has appeared in this repo. |
+| `FREEDNS_UPDATE_KEY` | Hosted deployment only | Used by `auto-deploy-docker.sh`. |
+| `APP_CORS_ALLOWED_ORIGINS` | Rarely | See [Network exposure](#network-exposure). |
 
-`POSTGRES_PASSWORD` only takes effect when the database volume is **first created**. To change the password on an existing database without losing data, change it inside the database first, then update `.env` and restart:
-
-```bash
-docker compose exec -T db psql -U user -d enterpriseday -c "ALTER USER \"user\" WITH PASSWORD 'new-password-here';"
-# then set POSTGRES_PASSWORD=new-password-here in .env
-docker compose up -d
-```
-
-Changing `APP_JWT_SECRET` signs everyone out; they just sign in again.
-
+Changing or removing the signing secret signs everyone out; they just sign in again.
 #### Starting the stack
 
 The easiest way to run the entire stack is using Docker Compose:
@@ -249,7 +242,7 @@ This will start:
 
 ### 2.2 Local Testing with Docker
 
-Testing is done locally with Docker Desktop. Create your `.env` first (see [Secrets](#secrets-env-required)). The `caddy` service is configured for the public hosted domain and needs ports 80/443, so leave it out locally:
+Testing is done locally with Docker Desktop. For a first start, put a staff login in `.env` (see [Settings](#settings-env)). The `caddy` service is configured for the public hosted domain and needs ports 80/443, so leave it out locally:
 
 ```bash
 docker compose up --build db backend frontend
@@ -344,7 +337,7 @@ Every image in API responses includes an `imageUrl` field. Always load images fr
 
 ### Configuration
 
--   `app.jwt.secret` (env: `APP_JWT_SECRET`): secret key for signing JWTs. **Required, no default.** Tests use their own test-only value in `src/test/resources/application.properties`.
+-   `app.jwt.secret` (env: `APP_JWT_SECRET`): secret key for signing JWTs. Optional: generated and stored in the database if unset. Tests use their own test-only value in `src/test/resources/application.properties`.
 -   `spring.datasource.password` (env: `SPRING_DATASOURCE_PASSWORD`): set from `POSTGRES_PASSWORD` in `.env` when run with Docker Compose.
 -   `app.jwt.expiration-ms` — Token expiration time (default: 1 hour).
 -   `app.upload-dir` (env: `APP_UPLOAD_DIR`) — directory where uploaded images are stored. Defaults to `./uploads`.

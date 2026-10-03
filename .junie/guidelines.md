@@ -3,7 +3,7 @@
 See also `docs/design-notes.md` for how the product is meant to behave (audiences, advert economics, projector scheduling, security model, offline event).
 
 ## Ground rules
-- **The repository is PUBLIC.** Never commit secrets, real passwords, hostnames, IPs or personal data. All secrets come from an untracked `.env` (see `.env.example`).
+- **The repository is PUBLIC.** Never commit secrets, real passwords, hostnames, IPs or personal data. Deployment settings come from an untracked `.env` (see `.env.example`); the signing secret is generated and stored in the database if unset.
 - **Audiences:** students are 13–14 and mostly on phones; keep their UI simple, friendly and touch-friendly. Staff are adults. The projector runs unattended.
 - **The event is offline** (private Wi-Fi, no internet). Don't add runtime dependencies on external URLs (CDNs, web fonts, remote models).
 - With every change: add tests, check coverage (JaCoCo + Vitest), and update the README and the user guides in `docs/`.
@@ -36,7 +36,7 @@ See also `docs/design-notes.md` for how the product is meant to behave (audience
 - `npx tsc --noEmit -p tsconfig.json` reports pre-existing TS5097 errors (`.tsx` import extensions in `App.tsx`/`main.tsx`); treat any *other* error as new.
 
 ## Local testing
-- `docker compose up --build -d db backend frontend` (always `--build`; skip `caddy`). Needs a `.env`.
+- `docker compose up --build -d db backend frontend` (always `--build`; skip `caddy`). A fresh database needs the staff bootstrap login in `.env`.
 - Chrome autofill on the login pages can overwrite typed values; set fields directly or use the API to get a token.
 
 ## Known Issues

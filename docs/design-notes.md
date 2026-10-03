@@ -59,7 +59,7 @@ Settings are validated server-side (`DisplaySettingsService`: interval 0–3600,
 
 The repository is **public**, and the users are children, so:
 
--   **No secrets in source.** Everything sensitive comes from an untracked `.env`: the JWT secret, database password, first staff account and FreeDNS key. The backend refuses to start with a missing, short or previously published JWT secret.
+-   **No secrets in source, and as little to remember as possible.** The login-signing secret is generated randomly on first start and kept in the database (`app_secrets`), unless `APP_JWT_SECRET` is set, in which case it must be strong and never a value published here. The only thing a new deployment must supply is the first staff login, via an untracked `.env`. The database password deliberately defaults to `password`: the database port is only reachable from the server itself, and the organiser runs the event once a year.
 -   **Accounts:** students and staff each have database accounts with BCrypt hashes, the same 5-attempt / 15-minute lockout, and login time and IP recording. The first staff account is bootstrapped from `.env` only while none exist. Old built-in accounts with published passwords are locked at startup.
 -   **Sessions:** a stateless JWT per role, stored separately in the browser (`session.STUDENT`, `session.STAFF`), so one browser can be signed in to both apps.
 -   **Images:** only projector-visible items are public under `/uploads`. Everything else needs an HMAC-signed, expiring link (derived from the JWT secret, stable per hour for caching), which the API only gives to staff and to the uploading student.
