@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountManagementController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">enterprise-day-news</a> &gt; <a href="index.source.html" class="el_package">org.example.enterprisedaynews.controller</a> &gt; <span class="el_source">AccountManagementController.java</span></div><h1>AccountManagementController.java</h1><pre class="source lang-java linenums">package org.example.enterprisedaynews.controller;
+
+import org.example.enterprisedaynews.dto.AccountView;
+import org.example.enterprisedaynews.dto.CreateAccountRequest;
+import org.example.enterprisedaynews.dto.UpdatePasswordRequest;
+import org.example.enterprisedaynews.model.LoginAccount;
+import org.example.enterprisedaynews.service.AccountService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+import java.util.List;
+
+/**
+ * The staff-only endpoints for managing one kind of account. Subclasses only choose the URL and service.
+ * Staff-only is enforced by SecurityConfig (&quot;/api/staff/**&quot;).
+ */
+public abstract class AccountManagementController&lt;T extends LoginAccount&gt; {
+
+    private final AccountService&lt;T&gt; accountService;
+
+<span class="fc" id="L22">    protected AccountManagementController(AccountService&lt;T&gt; accountService) {</span>
+<span class="fc" id="L23">        this.accountService = accountService;</span>
+<span class="fc" id="L24">    }</span>
+
+    @GetMapping
+    public List&lt;AccountView&gt; list() {
+<span class="fc" id="L28">        return accountService.listAccounts().stream().map(AccountView::from).toList();</span>
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;AccountView&gt; create(@RequestBody CreateAccountRequest request) {
+<span class="fc" id="L33">        return ResponseEntity.status(201).body(AccountView.from(</span>
+<span class="fc" id="L34">                accountService.createAccount(request.username(), request.password())));</span>
+    }
+
+    @PostMapping(&quot;/{id}/lock&quot;)
+    public AccountView setLocked(@PathVariable Long id, @RequestParam boolean locked, Principal principal) {
+<span class="fc" id="L39">        return AccountView.from(accountService.setLocked(id, locked, ControllerSupport.usernameOf(principal)));</span>
+    }
+
+    @PutMapping(&quot;/{id}/password&quot;)
+    public AccountView changePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest request) {
+<span class="fc" id="L44">        return AccountView.from(accountService.changePassword(id, request.password()));</span>
+    }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id, Principal principal) {
+<span class="fc" id="L49">        accountService.deleteAccount(id, ControllerSupport.usernameOf(principal));</span>
+<span class="fc" id="L50">        return ResponseEntity.noContent().build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

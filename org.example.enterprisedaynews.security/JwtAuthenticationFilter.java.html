@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.enterprisedaynews.service.StaffAccountService;
 import org.example.enterprisedaynews.service.StudentAccountService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,33 +22,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final StudentAccountService studentAccountService;
+    private final StaffAccountService staffAccountService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-<span class="fc" id="L30">        String header = request.getHeader(&quot;Authorization&quot;);</span>
+<span class="fc" id="L32">        String header = request.getHeader(&quot;Authorization&quot;);</span>
 
-<span class="pc bpc" id="L32" title="1 of 4 branches missed.">        if (header != null &amp;&amp; header.startsWith(&quot;Bearer &quot;)) {</span>
-<span class="fc" id="L33">            String token = header.substring(7);</span>
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">            if (jwtProvider.validateToken(token)) {</span>
-<span class="fc" id="L35">                String username = jwtProvider.getUsernameFromToken(token);</span>
-<span class="fc" id="L36">                String role = jwtProvider.getRoleFromToken(token);</span>
+<span class="pc bpc" id="L34" title="1 of 4 branches missed.">        if (header != null &amp;&amp; header.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="fc" id="L35">            String token = header.substring(7);</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">            if (jwtProvider.validateToken(token)) {</span>
+<span class="fc" id="L37">                String username = jwtProvider.getUsernameFromToken(token);</span>
+<span class="fc" id="L38">                String role = jwtProvider.getRoleFromToken(token);</span>
 
-<span class="fc bfc" id="L38" title="All 2 branches covered.">                boolean activeStudent = !Roles.STUDENT.equals(role)</span>
-<span class="fc bfc" id="L39" title="All 2 branches covered.">                        || studentAccountService.findActiveAccount(username).isPresent();</span>
+                // Tokens only count while their account still exists and isn't locked, so locking or
+                // deleting an account takes effect immediately rather than when the token expires.
+<span class="fc bfc" id="L42" title="All 2 branches covered.">                boolean activeAccount = Roles.STUDENT.equals(role)</span>
+<span class="fc" id="L43">                        ? studentAccountService.findActiveAccount(username).isPresent()</span>
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">                        : Roles.STAFF.equals(role) &amp;&amp; staffAccountService.findActiveAccount(username).isPresent();</span>
 
-<span class="pc bpc" id="L41" title="2 of 6 branches missed.">                if (username != null &amp;&amp; role != null &amp;&amp; activeStudent) {</span>
-<span class="fc" id="L42">                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);</span>
-<span class="fc" id="L43">                    UsernamePasswordAuthenticationToken auth =</span>
-<span class="fc" id="L44">                            new UsernamePasswordAuthenticationToken(username, null, List.of(authority));</span>
-<span class="fc" id="L45">                    SecurityContextHolder.getContext().setAuthentication(auth);</span>
+<span class="pc bpc" id="L46" title="1 of 4 branches missed.">                if (username != null &amp;&amp; activeAccount) {</span>
+<span class="fc" id="L47">                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Roles.ROLE_PREFIX + role);</span>
+<span class="fc" id="L48">                    UsernamePasswordAuthenticationToken auth =</span>
+<span class="fc" id="L49">                            new UsernamePasswordAuthenticationToken(username, null, List.of(authority));</span>
+<span class="fc" id="L50">                    SecurityContextHolder.getContext().setAuthentication(auth);</span>
                 }
             }
         }
 
-<span class="fc" id="L50">        filterChain.doFilter(request, response);</span>
-<span class="fc" id="L51">    }</span>
+<span class="fc" id="L55">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L56">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
